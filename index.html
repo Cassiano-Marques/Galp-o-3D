@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Araucária Perfis — Visualizações 3D</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#060a10; color:#dce8f4; min-height:100vh;
+  font-family:'Courier New',monospace; padding:32px 20px;
+  display:flex; flex-direction:column; align-items:center;
+}
+header { text-align:center; margin-bottom:36px; }
+header h1 { font-size:20px; letter-spacing:4px; text-transform:uppercase; }
+header p  { font-size:11px; color:#3a5a7a; margin-top:8px; letter-spacing:2px; }
+.grid { display:flex; flex-wrap:wrap; gap:18px; justify-content:center; max-width:980px; }
+.card {
+  display:block; text-decoration:none; color:#dce8f4;
+  background:rgba(10,18,28,0.9); border:1px solid #1a2a3a; border-radius:10px;
+  padding:22px 26px; min-width:260px; transition:border-color .15s, transform .15s;
+}
+.card:hover { border-color:#468a3d; transform:translateY(-2px); }
+.card h2 { font-size:14px; letter-spacing:2px; margin-bottom:10px; color:#66ccff; }
+.card ul { list-style:none; font-size:10px; color:#a0b8d0; line-height:1.9; }
+.card .go {
+  display:inline-block; margin-top:14px; font-size:10px; letter-spacing:2px;
+  color:#fff; background:#468a3d; padding:7px 14px; border-radius:6px;
+}
+footer { margin-top:48px; font-size:9px; color:#2a4a6a; letter-spacing:2px; text-align:center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Araucária Perfis</h1>
+  <p>GALPÕES PORTAL FRAME EM LIGHT STEEL FRAMING · VISUALIZAÇÃO 3D INTERATIVA</p>
+</header>
+
+<div class="grid">
+  <a class="card" href="galpao-20x50.html">
+    <h2>GALPÃO 20×50m</h2>
+    <ul>
+      <li>► Vão livre 20m · Comprimento 50m</li>
+      <li>► Pé-direito 8m · 11 pórticos</li>
+      <li>► Perfil C300 · 100% parafusado</li>
+      <li>► Paredes + cobertura contraventadas</li>
+    </ul>
+    <span class="go">ABRIR 3D ▶</span>
+  </a>
+</div>
+
+<footer>
+  ARAUCÁRIA PERFIS · ARAUCÁRIA/PR<br>
+  ARRASTE PARA GIRAR · PINÇA PARA ZOOM · BOTÃO VISTAS PARA DETALHES
+</footer>
+</body>
+</html>
