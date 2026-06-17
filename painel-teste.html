@@ -1,0 +1,463 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Painel v2 — Projeto 3</title>
+<style>body{margin:0;background:#060a10;color:#dce8f4;font-family:'Courier New',monospace;overflow:hidden}
+#hud{position:fixed;top:10px;left:12px;font-size:11px;z-index:5}
+#vp{position:fixed;bottom:14px;right:14px;z-index:6}
+#vp button{display:block;width:170px;margin:3px 0;padding:6px;background:#0e1722;color:#dce8f4;border:1px solid #1a2a3a;border-radius:6px;font-family:inherit;font-size:10px;cursor:pointer}</style>
+</head><body><div id="hud">PAINEL v2 · 5.00 × 2.70 · Ue140 @400 · K-BRACE</div>
+<div id="vp">
+<button onclick="sv(0)">GERAL</button>
+<button onclick="sv(1)">FRENTE (face externa)</button>
+<button onclick="sv(2)">FUNDOS (face interna)</button>
+<button onclick="sv(3)">DE CIMA</button>
+<button onclick="sv(4)">NÓ MONTANTE × GUIA INF</button>
+<button onclick="sv(5)">NÓ MONTANTE × GUIA SUP</button>
+<button onclick="sv(6)">FECHAMENTO (invertido)</button>
+<button onclick="sv(7)">NÓ DO K</button>
+<button onclick="sv(8)">PONTA K SUPERIOR</button>
+<button onclick="sv(9)">PONTA K INFERIOR</button>
+<button onclick="sv(10)">K × MONTANTE (janela)</button>
+<button onclick="sv(11)">BLOQUEADOR — VÃO</button>
+<button onclick="sv(12)">BLOQUEADOR — TAB/DIMPLE</button>
+<button onclick="sv(13)">ALTERNÂNCIA (3 vãos)</button></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+var H=0.140000,FW=0.045000,LL=0.012000,T=0.001250,SWD=0.137100,FWS=0.043550,RED=0.001450,LIPR=0.0115;
+var COMP=5.000000,ALT=2.700000,KX=4.000000,MONT=[0.0000,0.4000,0.8000,1.2000,1.6000,2.0000,2.4000,2.8000,3.2000,3.6000,4.0000,4.4000,4.8000];
+var scene=new THREE.Scene();scene.background=new THREE.Color(0x060a10);
+var camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.005,100);
+var renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);
+document.body.appendChild(renderer.domElement);
+scene.add(new THREE.AmbientLight(0xffffff,0.75));
+var dl=new THREE.DirectionalLight(0xffffff,0.7);dl.position.set(3,6,5);scene.add(dl);
+var dl2=new THREE.DirectionalLight(0xffffff,0.35);dl2.position.set(-4,2,-3);scene.add(dl2);
+var mGuia=new THREE.MeshLambertMaterial({color:0x5a8ab8});
+var mMont=new THREE.MeshLambertMaterial({color:0x4a9ad8});
+var mMontC=new THREE.MeshLambertMaterial({color:new THREE.Color(0x4a9ad8).multiplyScalar(0.72)});
+var mK=new THREE.MeshLambertMaterial({color:0x28c08a});
+var mBlo=new THREE.MeshLambertMaterial({color:0x66ccff});
+var mKC=new THREE.MeshLambertMaterial({color:new THREE.Color(0x28c08a).multiplyScalar(0.72)});
+var mHole=new THREE.MeshLambertMaterial({color:0x050810});
+// ── MOTOR COMPARTILHADO (lsf_core.js — fonte única executável) ──
+// ══════════════════════════════════════════════════════════════════════
+// LSF_CORE — MOTOR COMPARTILHADO (Global Design Standards executável)
+// Regras GRAVADAS como FUNÇÕES: todo gerador injeta este arquivo.
+// Mudou aqui, mudou em TODOS os modelos. Copiar este código = PROIBIDO.
+// Requer no escopo: THREE, scene, T (espessura), PIECE (id de peça).
+// Índice: 05-Skills/00-INDICE-REGRAS.md · Lei: módulos 01-04.
+// ══════════════════════════════════════════════════════════════════════
+
+// R33 — materiais do parafuso (zincado + fenda)
+var mScrew=new THREE.MeshLambertMaterial({color:0xc9ccd2,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
+var mCross=new THREE.MeshLambertMaterial({color:0x1a2026,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+
+// R21 — segmentos com cortes; ml=0.006 p/ ABERTURAS de fabricação (sliver),
+// 0.0005 p/ fatias de CONSTRUÇÃO (rampas etc.)
+function segs(a,b,cuts,ml){var v=[[a,b]];cuts.forEach(function(c){var nv=[];
+ v.forEach(function(s){if(c[1]<=s[0]||c[0]>=s[1]){nv.push(s);return}
+  if(c[0]>s[0])nv.push([s[0],c[0]]);if(c[1]<s[1])nv.push([c[1],s[1]])});v=nv});
+ return v.filter(function(s){return s[1]-s[0]>(ml||0.006)})}
+
+// R22 — funde bandas sobrepostas/próximas (tol em metros)
+function mergeB(arr,tol){arr.sort(function(a,b){return a[0]-b[0]});var m=[];
+ arr.forEach(function(c){if(m.length&&c[0]<=m[m.length-1][1]+(tol||0.024))
+  m[m.length-1][1]=Math.max(m[m.length-1][1],c[1]);else m.push([c[0],c[1]])});return m}
+
+// R33 — PARAFUSO AUTO BROCANTE 4,8×19 (só visual; din = p/ dentro da montagem)
+// cabeça Philips Ø8,5 FACEADA (ultrafina ≤0,1mm — cabe na folga de 0,2mm)
+// + corpo passante Ø4,8 + rosca (anéis) + ponta cônica saindo do lado interno
+function screwZ(x,y,zF,din,par){var P=par||scene;
+ var hd=new THREE.Mesh(new THREE.CylinderGeometry(0.00425,0.00425,0.00006,18),mScrew);
+ hd.rotation.x=Math.PI/2;hd.position.set(x,y,zF-din*0.00003);hd.renderOrder=1;P.add(hd);
+ [0,Math.PI/2].forEach(function(rz){
+  var c=new THREE.Mesh(new THREE.BoxGeometry(0.0062,0.0013,0.00005),mCross);
+  c.position.set(x,y,zF-din*0.00008);c.rotation.z=rz;c.renderOrder=2;
+  c.userData.p=-1;P.add(c)});
+ var sh=new THREE.Mesh(new THREE.CylinderGeometry(0.0024,0.0024,0.0125,12),mScrew);
+ sh.rotation.x=din*Math.PI/2;sh.position.set(x,y,zF+din*0.00625);P.add(sh);
+ for(var i5=0;i5<4;i5++){
+  var rg=new THREE.Mesh(new THREE.CylinderGeometry(0.0030,0.0030,0.0007,12),mScrew);
+  rg.rotation.x=Math.PI/2;rg.position.set(x,y,zF+din*(0.0045+0.0019*i5));P.add(rg)}
+ var tp=new THREE.Mesh(new THREE.CylinderGeometry(0.0001,0.0024,0.0065,12),mScrew);
+ tp.rotation.x=din*Math.PI/2;tp.position.set(x,y,zF+din*0.01575);P.add(tp)}
+
+// R33b — PARAFUSO ORIENTÁVEL: mesmo 4,8×19 do screwZ, mas em qualquer eixo.
+// Cabeça assenta em (x,y,z); broca/corpo segue din·axis (axis 'x'|'y'|'z').
+// Reusa screwZ dentro de um Group rotacionado (não duplica geometria).
+// Uso típico: onde há DIMPLE há este parafuso (costura de chapa).
+function screwV(x,y,z,axis,din,par){
+ var g=new THREE.Group();g.position.set(x,y,z);
+ if(axis==='x')g.rotation.y=(din>0)?Math.PI/2:-Math.PI/2;
+ else if(axis==='y')g.rotation.x=(din>0)?-Math.PI/2:Math.PI/2;
+ else if(din<0)g.rotation.x=Math.PI;
+ (par||scene).add(g);
+ screwZ(0,0,0,1,g);return g}
+
+// R01/R35/R36 — AUDITOR GLOBAL DE COLISÃO (AABB rápido + OBB/SAT 15 eixos).
+// Contato (folga 0) permitido; sobreposição > 0,05mm = violação.
+// 100% dos sólidos BoxGeometry; pares da MESMA peça (userData.p) ignorados.
+function auditorGlobal(){
+ var TOL=0.00005,it=[],viol=[];
+ scene.updateMatrixWorld(true);
+ scene.traverse(function(o){if(!o.isMesh||o.geometry.type!=='BoxGeometry')return;
+  o.geometry.computeBoundingBox();var bb=o.geometry.boundingBox;
+  var c=new THREE.Vector3();bb.getCenter(c);c.applyMatrix4(o.matrixWorld);
+  var e=new THREE.Vector3();bb.getSize(e).multiplyScalar(0.5);
+  var m=o.matrixWorld.elements;
+  it.push({p:o.userData.p,aabb:new THREE.Box3().setFromObject(o),c:c,
+   e:[e.x,e.y,e.z],a:[new THREE.Vector3(m[0],m[1],m[2]).normalize(),
+    new THREE.Vector3(m[4],m[5],m[6]).normalize(),
+    new THREE.Vector3(m[8],m[9],m[10]).normalize()]})});
+ function sep(A,B){var axes=A.a.concat(B.a);
+  for(var i=0;i<3;i++)for(var j2=0;j2<3;j2++){
+   var cr=new THREE.Vector3().crossVectors(A.a[i],B.a[j2]);
+   if(cr.lengthSq()>1e-8)axes.push(cr.normalize())}
+  var d=new THREE.Vector3().subVectors(B.c,A.c);
+  for(var k=0;k<axes.length;k++){var ax=axes[k];
+   var ra=A.e[0]*Math.abs(ax.dot(A.a[0]))+A.e[1]*Math.abs(ax.dot(A.a[1]))+A.e[2]*Math.abs(ax.dot(A.a[2]));
+   var rb=B.e[0]*Math.abs(ax.dot(B.a[0]))+B.e[1]*Math.abs(ax.dot(B.a[1]))+B.e[2]*Math.abs(ax.dot(B.a[2]));
+   if(Math.abs(d.dot(ax))>=ra+rb-TOL)return true}
+  return false}
+ var pares=0,sat=0;
+ for(var i=0;i<it.length;i++)for(var j3=i+1;j3<it.length;j3++){
+  if(it[i].p===it[j3].p)continue;pares++;
+  var a=it[i].aabb,b=it[j3].aabb;
+  if(Math.min(a.max.x,b.max.x)-Math.max(a.min.x,b.min.x)<=TOL)continue;
+  if(Math.min(a.max.y,b.max.y)-Math.max(a.min.y,b.min.y)<=TOL)continue;
+  if(Math.min(a.max.z,b.max.z)-Math.max(a.min.z,b.min.z)<=TOL)continue;
+  sat++;if(!sep(it[i],it[j3]))viol.push([it[i].p,it[j3].p])}
+ var msg='AUDITOR: '+PIECE+' peças · '+it.length+' sólidos (100%) · '+pares+
+  ' pares · '+sat+' SAT · '+(viol.length===0?'0 VIOLAÇÕES ✓':viol.length+' VIOLAÇÕES ⚠');
+ console.log(msg);viol.slice(0,12).forEach(function(v){console.log('  ⚠ peça '+v[0]+' × peça '+v[1])});
+ document.getElementById('hud').textContent+=' — '+msg;}
+
+var PIECE=0;  // id da peca corrente (auditor ignora pares da MESMA peca)
+function box(m,x,y,z,w,h,d,par){var b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
+ b.position.set(x,y,z);b.userData.p=PIECE;(par||scene).add(b);return b}
+// screwZ: vem do lsf_core (R33)
+function dscZ(x,y,z,dout){}  // legado (substituído pelo parafuso)
+function furoZ(x,y,z){var c=new THREE.Mesh(new THREE.CylinderGeometry(0.00193,0.00193,T+0.004,12),mHole);
+ c.rotation.x=Math.PI/2;c.position.set(x,y,z);scene.add(c)}
+// segs: vem do lsf_core (R21)
+var AB=MONT.map(function(x){return [x-0.010,x+T+FW+0.010]});
+AB.push([COMP-T-FW-0.010,COMP+0.001]);   // montante INVERTIDO no endface
+// CUNHA do lip da guia (corte em grau): plano X-Z, cheia na DOBRA (z=zFold)
+function cunha(xE,dr,yLip,zFold,zDir){var sh=new THREE.Shape();
+ sh.moveTo(xE+dr*LIPR,0);sh.lineTo(xE,0);sh.lineTo(xE+dr*LIPR,zDir*LL);sh.closePath();
+ var g=new THREE.ExtrudeGeometry(sh,{depth:T,bevelEnabled:false});
+ var mm=new THREE.Mesh(g,mGuia);mm.rotation.x=Math.PI/2;
+ mm.position.set(0,yLip+T/2,zFold);scene.add(mm)}
+// ══ GUIAS — lips com aberturas EM GRAU (cunhas) ══
+function guia(yW,sg){PIECE++;
+ box(mGuia,COMP/2,yW+sg*T/2,H/2,COMP,T,H);
+ [T/2,H-T/2].forEach(function(zf){box(mGuia,COMP/2,yW+sg*(T+FW/2),zf,COMP,FW,T)});
+ var yL=yW+sg*(T+FW-T/2);
+ var EXP=AB.map(function(C){return [C[0]-LIPR,C[1]+LIPR]});   // alivio da ferramenta
+ [[T+LL/2,T,1],[H-T-LL/2,H-T,-1]].forEach(function(Lp){
+  segs(0,COMP,EXP).forEach(function(s){box(mGuia,(s[0]+s[1])/2,yL,Lp[0],s[1]-s[0],T,LL)});
+  AB.forEach(function(C){[[C[0],-1],[C[1],1]].forEach(function(E){
+   if(E[0]<0.001||E[0]>COMP-0.001)return;cunha(E[0],E[1],yL,Lp[1],Lp[2])});});});
+}
+guia(0,+1);guia(ALT,-1);
+// ══ MONTANTES — POR REGIÕES (corpo/rampa/flat) · corrugado · dimples ══
+var y0=T,swF=FW+0.010,swR=0.005;
+// ══ BLOQUEADORES SECCIONADOS ALTERNADOS (regra Cassiano 12/06) ══
+// Um segmento por vão, alternando abaixo/acima da linha de referência
+// (ALT/2 ∓ 30mm). Tabs SÓ DE MESA (web cut + lip cut nas pontas) lapeiam
+// POR FORA do montante swagejado; dimples por interseção nos dois perfis.
+// Vãos atravessados pelo K NÃO levam bloqueador (o K já trava; e o montante
+// do nó não pode ser swagejado — regra gravada).
+var OFFB=0.030;
+function bayY(b){return ALT/2+((b%2===0)?-OFFB:OFFB)}
+function bayOK(b){ // bloqueador em TODOS os vãos (K afastado abre o corredor);
+ var xl=MONT[b],xr=(b<MONT.length-1)?MONT[b+1]:COMP;     // checagem geométrica
+ var yb=bayY(b);                                          // continua de guarda
+ return !KE.some(function(E){
+  var x0=Math.max(xl,Math.min(E[0],E[2])),x1=Math.min(xr,Math.max(E[0],E[2]));
+  if(x1<=x0)return false;
+  var s=(E[3]-E[1])/(E[2]-E[0]);
+  var ya=E[1]+s*(x0-E[0]),yc=E[1]+s*(x1-E[0]);
+  return Math.max(ya,yc)+FW/2>yb-FW/2-0.005&&Math.min(ya,yc)-FW/2<yb+FW/2+0.005})}
+// CUNHA do lip cut vertical do montante (grau da ferramenta): triângulo na
+// face do lip (plano Y-Z, extrudado na espessura) — cheio na DOBRA (z=fold),
+// zero na borda livre. Mesmo truque do mkCh do galpão (rotation.y=π/2).
+function cunhaMont(xL,cuts){
+ cuts.forEach(function(C){[[C[0],-1],[C[1],1]].forEach(function(Ed){
+  if(Ed[0]<T+0.01||Ed[0]>ALT-T-0.01)return;
+  [[T,T+LL],[H-T,H-T-LL]].forEach(function(F){
+   var sh=new THREE.Shape();
+   sh.moveTo(-F[0],Ed[0]+Ed[1]*LIPR);sh.lineTo(-F[0],Ed[0]);
+   sh.lineTo(-F[1],Ed[0]+Ed[1]*LIPR);sh.closePath();
+   var g2=new THREE.ExtrudeGeometry(sh,{depth:T,bevelEnabled:false});
+   var mm=new THREE.Mesh(g2,mMont);mm.rotation.y=Math.PI/2;
+   mm.position.x=xL-T/2;mm.userData.p=PIECE;scene.add(mm)})})})}
+// K-brace (lado direito): no em (KX,1.35), pontas DENTRO do canal do
+// montante invertido (chegam pelo lado aberto da boca dele)
+var XC=COMP-(T+0.012);                       // ponta ~junto a alma do invertido
+// nos desencontrados (uma diagonal chega acima, outra abaixo — sem sobrepor)
+// nós do K afastados do centro (±110mm) — corredor livre p/ os bloqueadores
+// passarem na linha ALT/2±30 (regra Cassiano 12/06)
+var KE=[[KX,ALT/2-0.110,XC,0.110],[KX,ALT/2+0.110,XC,ALT-0.110]];
+// LIP CUT MÍNIMO (regra Cassiano 12/06: lip é estrutural — corta só o que o
+// sólido exige + folga 10-15mm). Seção boca-pra-baixo: quem cruza o plano do
+// lip é a ALTURA da seção (FW), não a profundidade.
+function bandLip(E,xL){var a=Math.atan2(E[3]-E[1],E[2]-E[0]);
+ var yc=E[1]+Math.tan(a)*(xL-E[0]),h=(FW/2)/Math.cos(Math.abs(a))+0.012;
+ return [yc-h,yc+h]}
+// SWAGE do cruzamento (regra Cassiano 12/06): banda = BATIDAS da ferramenta
+// (flat 60, passo 56) — 1 batida e, SÓ se a geometria exigir, +1 sobreposta.
+// Necessidade real = envelope da diagonal na largura do montante.
+function bandSwage(E,xi){var a=Math.atan2(E[3]-E[1],E[2]-E[0]);
+ var yc=E[1]+Math.tan(a)*(xi+(T+FW)/2-E[0]);
+ // banda construída = NECESSIDADE REAL (envelope da diagonal na largura do
+ // montante); a ferramenta cobre com batidas SOBREPOSTAS posicionadas no
+ // vão exato (1 batida ≤60 · 2 ≤116 · 3 ≤172 — algoritmo de batidas)
+ var need=Math.max(0.060,FW/Math.cos(Math.abs(a))+(T+FWS)*Math.abs(Math.tan(a))+0.004);
+ return [yc-need/2,yc+need/2]}
+function secao(xi,yA,yB,dep,fw,mat,dir,lipCuts){ // fatia do montante; dir=-1 = boca pra dentro
+ dir=dir||1;var yc=(yA+yB)/2,len=yB-yA,off=(H-dep)/2;
+ box(mat,xi+dir*T/2,yc,H/2,T,len,dep);                                // alma
+ [off+T/2,H-off-T/2].forEach(function(zc){box(mat,xi+dir*(T/2+fw/2),yc,zc,fw,len,T)}); // mesas
+ [off+T+LL/2,H-off-T-LL/2].forEach(function(zl){                      // lips (c/ cortes)
+  var exp=(lipCuts||[]).map(function(c){return [c[0]-LIPR,c[1]+LIPR]}); // alívio
+  segs(yA,yB,exp,0.0005).forEach(function(s){
+   box(mat,xi+dir*(T/2+fw-T/2),(s[0]+s[1])/2,zl,T,s[1]-s[0],LL)});});
+}
+MONT.forEach(function(xi,idx){PIECE++;
+ var yT=ALT-T;
+ // lips cortados onde as diagonais do K passam (2 ultimos montantes da grade)
+ // SWAGE no MONTANTE na faixa de cruzamento do K (decisão Cassiano 12/06:
+ // o montante conificado passa pela JANELA web+lip da diagonal)
+ var bands=[],lipB=[],dimY=[];
+ function yInt(E,xr){return E[1]+((E[3]-E[1])/(E[2]-E[0]))*(xr-E[0])}  // interseção
+ if(idx>=MONT.length-2){KE.forEach(function(E){          // cruzamentos: SWAGE
+  if(xi>Math.min(E[0],E[2])+0.01&&xi<Math.max(E[0],E[2])-0.01){
+   bands.push(bandSwage(E,xi));dimY.push({y:yInt(E,xi+T/2+FW/2),c:1})}})}
+ if(Math.abs(xi-KX)<0.01){KE.forEach(function(E){        // NÓ: barras entram no
+  lipB.push(bandLip(E,xi+T/2+FW-T/2));                   // canal → LIP CUT mínimo
+  dimY.push({y:yInt(E,xi+T/2+FW/2),c:0})})}
+ // bandas de SWAGE p/ os bloqueadores (tabs lapeiam por fora do conificado)
+ [idx-1,idx].forEach(function(b){
+  if(b<0||b>=MONT.length||!bayOK(b))return;
+  var yb=bayY(b);bands.push([yb-FW/2-0.010,yb+FW/2+0.010])});
+ bands.sort(function(a,b){return a[0]-b[0]});
+ var mb=[];bands.forEach(function(B){                 // funde bandas sobrepostas
+  if(mb.length&&B[0]<=mb[mb.length-1][1]+2*swR)mb[mb.length-1][1]=Math.max(mb[mb.length-1][1],B[1]);
+  else mb.push([B[0],B[1]])});bands=mb;
+ var marks=[[y0,y0+swF,'f'],[y0+swF,y0+swF+swR,'r']],cur=y0+swF+swR;
+ bands.forEach(function(B){
+  if(B[0]-swR>cur)marks.push([cur,B[0]-swR,'b']);
+  marks.push([B[0]-swR,B[0],'r'],[B[0],B[1],'f'],[B[1],B[1]+swR,'r']);cur=B[1]+swR});
+ marks.push([cur,yT-swF-swR,'b'],[yT-swF-swR,yT-swF,'r'],[yT-swF,yT,'f']);
+ marks.forEach(function(M){if(M[1]-M[0]<=0.0005)return;
+  var dz=M[2]==='b'?H:(M[2]==='f'?SWD:(H+SWD)/2),fy=M[2]==='b'?FW:(M[2]==='f'?FWS:(FW+FWS)/2);
+  secao(xi,M[0],M[1],dz,fy,mMont,1,lipB)});
+ // CORRUGADO nos flats (pontas + cruzamentos)
+ [[y0,y0+swF],[yT-swF,yT]].concat(bands).forEach(function(F){
+  var yc=(F[0]+F[1])/2,len=F[1]-F[0]-0.004;
+  [RED+T+0.004,H-RED-T-0.004].forEach(function(zr){
+   box(mMontC,xi+T/2,yc,zr,T+0.0008,len,0.006)});});
+ if(lipB.length)cunhaMont(xi+T/2+FW-T/2,lipB);            // grau do corte no nó
+ // DIMPLES do K no montante — na INTERSEÇÃO das linhas centrais das mesas
+ // (regra do alinhamento do galpão); conificado nos cruzamentos, cheio no nó
+ dimY.forEach(function(D){var xD=xi+T/2+(D.c?FWS:FW)/2;
+  screwZ(xD,D.y,0,1);screwZ(xD,D.y,H,-1);});
+ // DIMPLES: 22.5mm do End Face (entrante 2 mesas x 2 faces) + receptor guia
+ [[y0,1],[ALT-T,-1]].forEach(function(E){
+  var yD=E[0]+E[1]*FW/2,xD=xi+T/2+FWS/2;
+  screwZ(xD,yD,0,1);screwZ(xD,yD,H,-1);});
+});
+// ══ MONTANTE INVERTIDO no endface (boca pra DENTRO — acabamento liso) ══
+(function(){PIECE++;var XF=COMP,yT=ALT-T;
+ var cutsF=KE.map(function(E){return bandLip(E,COMP-(T/2+FW-T/2))}); // chegada do K — corte mínimo
+ // marks com banda de swage do bloqueador do último vão (tab lapeia aqui)
+ var bandsF=[];
+ if(bayOK(MONT.length-1)){var ybF=bayY(MONT.length-1);
+  bandsF.push([ybF-FW/2-0.010,ybF+FW/2+0.010])}
+ var marksF=[[y0,y0+swF,'f'],[y0+swF,y0+swF+swR,'r']],curF=y0+swF+swR;
+ bandsF.forEach(function(B){
+  if(B[0]-swR>curF)marksF.push([curF,B[0]-swR,'b']);
+  marksF.push([B[0]-swR,B[0],'r'],[B[0],B[1],'f'],[B[1],B[1]+swR,'r']);curF=B[1]+swR});
+ marksF.push([curF,yT-swF-swR,'b'],[yT-swF-swR,yT-swF,'r'],[yT-swF,yT,'f']);
+ marksF.forEach(function(M){if(M[1]-M[0]<=0.0005)return;
+  var dz=M[2]==='b'?H:(M[2]==='f'?SWD:(H+SWD)/2),fy=M[2]==='b'?FW:(M[2]==='f'?FWS:(FW+FWS)/2);
+  secao(XF,M[0],M[1],dz,fy,mMont,-1,cutsF)});
+ [[y0,y0+swF],[yT-swF,yT]].forEach(function(F){var yc=(F[0]+F[1])/2,len=F[1]-F[0]-0.004;
+  [RED+T+0.004,H-RED-T-0.004].forEach(function(zr){
+   box(mMontC,XF-T/2,yc,zr,T+0.0008,len,0.006)});});
+ cunhaMont(COMP-(T/2+FW-T/2),cutsF);                   // grau do corte na chegada
+ // parafusos receptores da chegada do K (interseção das linhas centrais)
+ KE.forEach(function(E){var yD=E[1]+((E[3]-E[1])/(E[2]-E[0]))*(COMP-(T/2+FW/2)-E[0]);
+  var xD=COMP-(T/2+FW/2);
+  screwZ(xD,yD,0,1);screwZ(xD,yD,H,-1);});
+ [[y0,1],[ALT-T,-1]].forEach(function(E){
+  var yD=E[0]+E[1]*FW/2,xD=XF-(T/2+FWS/2);
+  screwZ(xD,yD,0,1);screwZ(xD,yD,H,-1);});
+})();
+// ══ K-BRACE — boca pra BAIXO ("não pode beber água"), lado direito ══
+// Ponta entra no canal do montante INVERTIDO: lip cut (no receptor) +
+// SWAGE + CHANFRO (alma e lips recuam, mesas vão até a ponta) + DIMPLES.
+var CH=0.0135;
+function dscZg(g,x,y,z,dout){
+ var hd=new THREE.Mesh(new THREE.CylinderGeometry(0.0085,0.0085,0.00006,20),mScrew);
+ hd.rotation.x=Math.PI/2;hd.position.set(x,y,z+dout*0.00004);hd.renderOrder=1;g.add(hd);
+ [0,Math.PI/2].forEach(function(rz){
+  var c=new THREE.Mesh(new THREE.BoxGeometry(0.0118,0.0022,0.00005),mCross);
+  c.position.set(x,y,z+dout*0.00009);c.rotation.z=rz;c.renderOrder=2;
+  c.userData.p=-1;g.add(c)})}
+function barK(E){PIECE++;
+ var a=Math.atan2(E[3]-E[1],E[2]-E[0]),L=Math.hypot(E[2]-E[0],E[3]-E[1]),sa=Math.abs(a);
+ var g=new THREE.Group();g.position.set(E[0],E[1],0);g.rotation.z=a;scene.add(g);
+ function fat(u0,u1,dz,fy,web,lips,mat){var len=u1-u0;if(len<=0.0005)return;
+  var c=(u0+u1)/2,oz=(H-dz)/2;
+  if(web)box(mat,c,fy/2-T/2,H/2,len,T,dz,g);                 // alma no TOPO
+  [oz+T/2,H-oz-T/2].forEach(function(zc){box(mat,c,0,zc,len,fy,T,g)}); // mesas nas faces
+  if(lips)[oz+T+LL/2,H-oz-T-LL/2].forEach(function(zl){
+   box(mat,c,-fy/2+T/2,zl,len,T,LL,g)});}                    // lips EMBAIXO (boca pra baixo)
+ // CONTÍNUA (decisão Cassiano 12/06): no cruzamento a DIAGONAL é o RECEPTOR
+ // — WEB CUT + LIP CUT nela (janela alinhada ao montante swagejado que
+ // passa por dentro) + DIMPLES nos dois. SEM chanfro nos cruzamentos;
+ // chanfro só nas PONTAS (ferramenta fixa — o ângulo dá o quase-encosta).
+ // canto rotacionado: a mesa (fy/2) desloca ±(fy/2)·sen ao longo de X —
+ // o início da barra e o flat compensam isso (diagnóstico do auditor 12/06)
+ var co=Math.max(Math.cos(sa),0.30),si=Math.abs(Math.sin(a)),RAMP=0.005;
+ // SWAGE das pontas = NECESSIDADE REAL: livrar a boca do receptor
+ // (mesa+10mm)/cos — os termos do canto se CANCELAM (mesma referência nas
+ // duas pontas do flat). Mínimo 60 (1 batida); acima, batidas SOBREPOSTAS
+ // posicionadas pra cobrir exatamente o vão (não o span máximo).
+ var fl=Math.max(0.060,(FW+0.010)/co);
+ // WEB CUT só onde a barra ATRAVESSA e continua (regra galpão — Cassiano):
+ // em chegada de ponta (nó/invertido) a barra fica INTEIRA (swage+chanfro)
+ // JANELAS MÍNIMAS por plano (Cassiano: furo do web menor!): cada plano
+ // (web no topo, lips embaixo) tem sua janela = faixa do montante +10mm/lado,
+ // DESLOCADA pelo offset do plano (±h·tan) — ~100mm = 2 batidas Notch 60/56
+ var winW=[],winL=[],hW=(FW/2-T/2),shW=hW*Math.tan(a);
+ MONT.slice(-3).forEach(function(xi){
+  if(xi<=Math.min(E[0],E[2])+0.01||xi>=Math.max(E[0],E[2])-0.01)return;
+  var b0=(xi-0.010-E[0])/co,b1=(xi+T+FWS+0.010-E[0])/co;
+  winW.push([b0+shW,b1+shW]);winL.push([b0-shW,b1-shW])});
+ winW.sort(function(a,b){return a[0]-b[0]});winL.sort(function(a,b){return a[0]-b[0]});
+ var winLE=winL.map(function(c){return [c[0]-LIPR,c[1]+LIPR]});  // alívio do grau
+ // PONTA: limite = face da alma do invertido −0.2mm; flat vai até o canto
+ // cheio permitir; o CHANFRO (tira 18mm) avança além — chega na fixação
+ var xLim=COMP-T-0.0002-E[0];
+ var u0=(T+0.0002+(FWS/2)*si)/co;
+ var u1=(xLim-(FWS/2)*si)/co, uTip=(xLim-0.009*si)/co;
+ function fat2(a0,a1,dz,fy){if(a1-a0<=0.0005)return;var oz=(H-dz)/2;
+  segs(a0,a1,winW,0.0005).forEach(function(s){                // WEB CUT (janela própria)
+   box(mK,(s[0]+s[1])/2,fy/2-T/2,H/2,s[1]-s[0],T,dz,g)});
+  [oz+T/2,H-oz-T/2].forEach(function(zc){                     // mesas CONTÍNUAS
+   box(mK,(a0+a1)/2,0,zc,a1-a0,fy,T,g)});
+  segs(a0,a1,winLE,0.0005).forEach(function(s){               // LIP CUT (c/ alívio)
+   [oz+T+LL/2,H-oz-T-LL/2].forEach(function(zl){
+    box(mK,(s[0]+s[1])/2,-fy/2+T/2,zl,s[1]-s[0],T,LL,g)})});}
+ // CUNHAS do lip cut da diagonal (grau da ferramenta): cheias na DOBRA (z=T),
+ // zero na borda livre — mesmo padrão de guia/montante
+ winL.forEach(function(C){[[C[0],-1],[C[1],1]].forEach(function(Ed){
+  [[T,T+LL],[H-T,H-T-LL]].forEach(function(F){
+   var sh=new THREE.Shape();
+   sh.moveTo(Ed[0]+Ed[1]*LIPR,F[0]);sh.lineTo(Ed[0],F[0]);
+   sh.lineTo(Ed[0]+Ed[1]*LIPR,F[1]);sh.closePath();
+   var g2=new THREE.ExtrudeGeometry(sh,{depth:T,bevelEnabled:false});
+   var mm=new THREE.Mesh(g2,mK);mm.rotation.x=Math.PI/2;
+   mm.position.y=-FW/2+T;mm.userData.p=PIECE;g.add(mm)})})});
+ // CHANFRO na forma do GALPÃO: cantos da mesa recuam a 45°, sobra a tira
+ // central de 18mm até a ponta (alma e lips já recuam junto — fat sem eles)
+ function chK(uA,uB){ // trapézio: mesa cheia em uA → tira de 18mm em uB
+  [RED,H-RED-T].forEach(function(z0){
+   var sh=new THREE.Shape();
+   sh.moveTo(uA,FWS/2);sh.lineTo(uB,0.009);sh.lineTo(uB,-0.009);
+   sh.lineTo(uA,-FWS/2);sh.closePath();
+   var g2=new THREE.ExtrudeGeometry(sh,{depth:T,bevelEnabled:false});
+   var mm=new THREE.Mesh(g2,mK);mm.position.z=z0;mm.userData.p=PIECE;g.add(mm)});}
+ // RAMPA suave (4 fatias interpoladas — sem degrau seco na emenda)
+ function rampa(ua,ub,inv){for(var i2=0;i2<4;i2++){
+  var fr=(i2+0.5)/4;if(inv)fr=1-fr;
+  fat2(ua+(ub-ua)*i2/4,ua+(ub-ua)*(i2+1)/4,SWD+(H-SWD)*fr,FWS+(FW-FWS)*fr)}}
+ chK(u0+CH,u0);
+ fat2(u0+CH,u0+fl,SWD,FWS);
+ rampa(u0+fl,u0+fl+RAMP,false);
+ fat2(u0+fl+RAMP,u1-fl-RAMP,H,FW);
+ rampa(u1-fl-RAMP,u1-fl,true);
+ fat2(u1-fl,u1,SWD,FWS);
+ chK(u1,uTip);                       // chanfro avança até a linha da fixação
+ // CORRUGADO na ALMA (chapa do topo na boca-pra-baixo): 2 longitudinais
+ // junto às mesas — 8mm de cada borda da alma conificada (regra galpão)
+ [[u0+CH,u0+fl],[u1-fl,u1-CH]].forEach(function(F){
+  [RED+0.008,H-RED-0.008].forEach(function(zr){
+   box(mKC,(F[0]+F[1])/2,FWS/2-T/2,zr,Math.max(F[1]-F[0]-0.006,0.008),T+0.0008,0.006,g)});});
+ // DIMPLES da barra — na INTERSEÇÃO da linha central da SUA mesa com a
+ // linha central da mesa de CADA receptor (nó, cruzamentos, invertido)
+ var xrs=[KX+T/2+FW/2,COMP-(T/2+FW/2)];
+ MONT.slice(-3).forEach(function(xi){
+  if(xi>Math.min(E[0],E[2])+0.01&&xi<Math.max(E[0],E[2])-0.01)xrs.push(xi+T/2+FW/2)});
+ xrs.forEach(function(xr){var u=(xr-E[0])/co;if(u<u0+0.002||u>uTip-0.002)return;
+  screwZ(u,0,0,1,g);screwZ(u,0,H,-1,g);});
+ return g}
+KE.forEach(barK);
+// auditorGlobal: vem do lsf_core (R01/R35)
+// ══ BLOQUEADORES — segmentos por vão, alternados, tabs SÓ DE MESA ══
+function segBloq(b){PIECE++;
+ var xl=MONT[b],inv=(b===MONT.length-1),xr=inv?COMP:MONT[b+1],yb=bayY(b);
+ var dl=xl+T/2+FWS/2, dr=inv?(COMP-T/2-FWS/2):(xr+T/2+FWS/2);  // linhas dos dimples
+ var tab0=dl-0.018, tab1=dr+0.018;                              // tab passa 18mm do furo
+ var b0=xl+T/2+FW+0.010, b1=inv?(COMP-T/2-FW-0.010):(xr-0.010); // corpo (web+lips)
+ // MESAS contínuas nas duas faces (tab0→tab1) — a ligação é por elas
+ [T/2,H-T/2].forEach(function(zc){box(mBlo,(tab0+tab1)/2,yb,zc,tab1-tab0,FW,T)});
+ // WEB CUT: alma (topo) só no corpo · LIP CUT: lips (embaixo) só no corpo,
+ // recuando o alívio LIPR — cunhas preenchem (grau da ferramenta)
+ box(mBlo,(b0+b1)/2,yb+FW/2-T/2,H/2,b1-b0,T,H);
+ [T+LL/2,H-T-LL/2].forEach(function(zl){
+  box(mBlo,(b0+b1)/2+0,yb-FW/2+T/2,zl,(b1-LIPR)-(b0+LIPR),T,LL)});
+ [[b0,1],[b1,-1]].forEach(function(Ed){
+  [[T,T+LL],[H-T,H-T-LL]].forEach(function(F){
+   var sh=new THREE.Shape();
+   sh.moveTo(Ed[0]+Ed[1]*LIPR,F[0]);sh.lineTo(Ed[0],F[0]);
+   sh.lineTo(Ed[0]+Ed[1]*LIPR,F[1]);sh.closePath();
+   var g2=new THREE.ExtrudeGeometry(sh,{depth:T,bevelEnabled:false});
+   var mm=new THREE.Mesh(g2,mBlo);mm.rotation.x=Math.PI/2;
+   mm.position.y=yb-FW/2+T;mm.userData.p=PIECE;scene.add(mm)})});
+ // DIMPLES por interseção: tab (2 chapas × 2 faces) + RECEPTOR (mesa
+ // swagejada do montante) — furos alinhados, parafuso único
+ [dl,dr].forEach(function(xD){
+  screwZ(xD,yb,0,1);screwZ(xD,yb,H,-1);});
+}
+var nBloq=0,nSkip=0;
+for(var bb=0;bb<MONT.length;bb++){
+ if(MONT[bb]>=COMP-0.05)continue;
+ if(bayOK(bb)){segBloq(bb);nBloq++}else nSkip++}
+console.log('BLOQUEADORES: '+nBloq+' segmentos alternados ±'+(OFFB*1000)+'mm · '+nSkip+' vãos do K pulados');
+auditorGlobal();   // fiscal roda DEPOIS de tudo construído
+
+// ── camera ──
+var target=new THREE.Vector3(COMP/2,ALT/2,0),camT=0.4,camP=1.25,camR=4.2;
+function camUpdate(){camera.position.set(target.x+camR*Math.sin(camP)*Math.sin(camT),
+ target.y+camR*Math.cos(camP),target.z+camR*Math.sin(camP)*Math.cos(camT));camera.lookAt(target)}
+var xq=MONT[MONT.length-2];                       // montante cruzado pelo K
+var yq=ALT/2+0.075+((ALT-0.110-(ALT/2+0.075))/(XC-KX))*(xq-KX);
+var views=[
+ {tx:COMP/2,ty:ALT/2,tz:0,r:4.2,t:0.4,p:1.25},           //  0 GERAL
+ {tx:COMP/2,ty:ALT/2,tz:0,r:3.4,t:0.0,p:1.45},           //  1 FRENTE
+ {tx:COMP/2,ty:ALT/2,tz:0.14,r:3.4,t:Math.PI,p:1.45},    //  2 FUNDOS
+ {tx:COMP/2,ty:ALT,tz:0.07,r:3.0,t:0.4,p:0.20},          //  3 DE CIMA
+ {tx:MONT[2]+0.02,ty:0.05,tz:0.07,r:0.30,t:0.6,p:1.30},  //  4 NÓ M×G INF
+ {tx:MONT[2]+0.02,ty:ALT-0.05,tz:0.07,r:0.30,t:0.6,p:1.85}, // 5 NÓ M×G SUP
+ {tx:COMP-0.05,ty:ALT/2,tz:0.06,r:0.50,t:-0.5,p:1.30},   //  6 FECHAMENTO
+ {tx:KX+0.05,ty:ALT/2,tz:0.05,r:0.40,t:0.6,p:1.30},      //  7 NÓ DO K
+ {tx:COMP-0.06,ty:ALT-0.16,tz:0.06,r:0.35,t:0.7,p:1.20}, //  8 PONTA K SUP
+ {tx:COMP-0.06,ty:0.16,tz:0.06,r:0.35,t:0.7,p:1.45},     //  9 PONTA K INF
+ {tx:xq+0.02,ty:yq,tz:0.06,r:0.32,t:0.7,p:1.30},         // 10 K × MONTANTE
+ {tx:MONT[1]+0.20,ty:ALT/2-0.03,tz:0.07,r:0.42,t:0.4,p:1.30}, // 11 BLOQ VÃO
+ {tx:MONT[2]+0.02,ty:ALT/2,tz:0.04,r:0.20,t:0.5,p:1.35}, // 12 BLOQ TAB/DIMPLE
+ {tx:MONT[3]+0.40,ty:ALT/2,tz:0.05,r:1.40,t:0.3,p:1.40}];// 13 ALTERNÂNCIA
+function sv(i){var v=views[i];target.set(v.tx,v.ty,v.tz);camR=v.r;camT=v.t;camP=v.p;camUpdate()}
+sv(0);
+var drag=false,px,py;
+renderer.domElement.addEventListener('mousedown',function(e){drag=true;px=e.clientX;py=e.clientY});
+addEventListener('mouseup',function(){drag=false});
+addEventListener('mousemove',function(e){if(!drag)return;camT-=(e.clientX-px)*0.006;
+ camP=Math.max(0.1,Math.min(2.9,camP-(e.clientY-py)*0.006));px=e.clientX;py=e.clientY;camUpdate()});
+renderer.domElement.addEventListener('wheel',function(e){camR=Math.max(0.08,Math.min(15,camR*(e.deltaY>0?1.1:0.9)));camUpdate()});
+addEventListener('resize',function(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+(function an(){requestAnimationFrame(an);renderer.render(scene,camera)})();
+</script></body></html>
