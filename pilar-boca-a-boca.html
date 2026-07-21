@@ -185,12 +185,12 @@ function furo(x,y,z,axis){ // furo piloto Ø3,6 (só marcação visual escura)
  c.position.set(x,y,z);c.renderOrder=1;scene.add(c)}
 
 // ══════════════════════════════════════════════════════════════════════
-//  BANDAS DE LIP CUT — onde cada bloqueador cruza os lips do pilar (no
-//  plano da costura Z=0). O bloqueador ocupa Y ∈ [yb-BLK_H/2, yb+BLK_H/2];
-//  abrimos o lip com folga p/ o bloqueador atravessar SEM interferência.
+//  BANDAS DE LIP CUT — como o MINI ROSA recebe a terça: o lip do C300 é
+//  aberto p/ o bloqueador ENTRAR no canal. O bloqueador pendura de yb até
+//  yb-BLK_H; abrimos o lip nessa faixa (com folga) p/ liberar a entrada.
 // ══════════════════════════════════════════════════════════════════════
 var LCUT=[];
-LEVELS.forEach(function(yb){LCUT.push([yb-BLK_H/2-0.008,yb+BLK_H/2+0.008])});
+LEVELS.forEach(function(yb){LCUT.push([yb-BLK_H-0.010,yb+0.010])});
 LCUT=mergeB(LCUT,0.001);
 
 // ══════════════════════════════════════════════════════════════════════
@@ -213,40 +213,39 @@ function perfilC(sz){PIECE++;
 perfilC(-1);if(NPERFIS>=2)perfilC(+1);   // 2º perfil só no pilar completo
 
 // ══════════════════════════════════════════════════════════════════════
-//  BLOQUEADOR — perfil menor transversal (eixo Z, alma-a-alma). SWAGE
-//  CONTÍNUO: a seção (largura X e altura Y) é levemente conificada do
-//  centro p/ as 2 pontas, garantindo encaixe entre os dois C sem
-//  interferência com mesas/lips. Nas pontas: aba de topo (lap na alma do
-//  pilar) + 2 dimples + autobrocante 4,8×19 (furo piloto Ø3,6). Sem A325.
+//  BLOQUEADOR — MESMA LIGAÇÃO da TERÇA no MINI ROSA (Cassiano 21/07):
+//  o bloqueador ENTRA no canal do C300; suas MESAS LATERAIS (X=±xF) lapam
+//  as MESAS do C300 (contato chapa-chapa REAL) e a costura 4,8×19 passa
+//  PELAS MESAS (eixo X) — NUNCA na alma. SWAGE: a PROFUNDIDADE da mesa
+//  conifica p/ as pontas (região de encaixe reduzida). LIP CUT no C300
+//  libera a entrada. Dimples nas mesas dos dois lados. Sem A325, sem solda.
 // ══════════════════════════════════════════════════════════════════════
 function bloqueador(yb){PIECE++;
- var N=14, half=BLK_LZ/2;                                   // 14 fatias no comprimento
- // conificação: no centro (fr=0) largura/altura CHEIAS; nas pontas (fr=1)
- // reduzidas de RED — swage suave ao longo de TODO o comprimento
+ var xF=WEB/2-T-0.0002;                                     // face ext. da mesa do bloq. ENCOSTA
+                                                            //   na face int. da mesa do C300
+ var N=14, half=BLK_LZ/2, HD=0.026;                         // HD = profundidade da mesa na PONTA
  for(var i=0;i<N;i++){
   var za=-half+BLK_LZ*i/N, zb=-half+BLK_LZ*(i+1)/N, zc=(za+zb)/2, dz=zb-za;
-  var fr=Math.abs((za+zb)/2)/half;                          // 0 centro → 1 ponta
-  var w=BLK_W-2*RED*fr, h=BLK_H-2*RED*fr, fl=BLK_FL-RED*fr;
-  box(mB,0,yb+h/2-BLK_H/2,zc,w,T,dz);                       // ALMA do bloqueador (topo, face -Y)
-  [-1,1].forEach(function(sx){                              // 2 mesas (descem em -Y)
-   box(mB,sx*(w/2-T/2),yb-BLK_H/2+fl/2,zc,T,fl,dz);         // mesa
-   box(mB,sx*(w/2-LIP/2),yb-BLK_H/2+fl-T/2,zc,LIP,T,dz);    // lip do bloqueador
+  var fr=Math.abs(zc)/half;                                 // 0 centro → 1 ponta
+  var hh=BLK_H-(BLK_H-HD)*fr;                               // SWAGE: mesa afina p/ a ponta
+  box(mB,0,yb-T/2,zc,2*xF,T,dz);                            // ALMA do bloqueador (topo)
+  [-1,1].forEach(function(sx){                              // 2 MESAS LATERAIS (lapam o C300)
+   box(mB,sx*(xF-T/2),yb-hh/2,zc,T,hh,dz);                  // mesa lateral
+   box(mB,sx*(xF-LIP/2),yb-hh+T/2,zc,LIP,T,dz);             // lip do bloqueador (volta p/ dentro)
   });
  }
- // ── PONTAS: aba dobrada 90° lapando a face INTERNA da alma do pilar +
- //   dimples + autobrocante 4,8×19 (Ø3,6). A aba fica encostada na alma
- //   (contato chapa-chapa REAL) e o parafuso atravessa alma + aba. ──
- [-1,1].forEach(function(sz){
-  var wEnd=BLK_W-2*RED-0.020;                               // largura da aba
-  var zTab=sz*(ZIN-T/2);                                    // lapa a face interna da alma
-  var yTab=yb-0.015;                                        // desce a partir da alma do bloq.
-  box(mB,0,yTab,zTab,wEnd,0.030,T);                         // ABA de topo (dobra 90°) — sempre
-  if(sz<0||NPERFIS>=2)                                      // parafuso só onde HÁ perfil
-   [-0.060,0.060].forEach(function(xo){                     // 2 dimples + 4,8×19 por ponta
-    screwZ(xo,yTab,sz*(DEPTH/2),-sz);                       // cabeça na face EXTERNA da alma
-    furo(xo,yTab,zTab,'z');                                 // furo piloto Ø3,6
-   });
- });
+ // ── COSTURA 4,8×19 NAS MESAS LATERAIS (eixo X): atravessa mesa-bloqueador
+ //   + mesa-C300 ENCOSTADAS. DENTRO do canal (Z<0 = perfil #1; Z>0 só no
+ //   pilar completo). Cabeça na face externa da mesa do C300; furo piloto
+ //   Ø3,6 na mesa do bloqueador (dimple). ──
+ var yS=yb-0.018;
+ var zc1=[-0.050,-0.018];                                   // canal do perfil #1 (Z<0)
+ var zc2=[0.050,0.018];                                     // canal do perfil #2 (Z>0)
+ var zlist=zc1.concat(NPERFIS>=2?zc2:[]);
+ [-1,1].forEach(function(sx){zlist.forEach(function(zz){
+  screwV(sx*(WEB/2),yS,zz,'x',-sx,scene);                   // 4,8×19 pela MESA (nunca na alma)
+  furo(sx*(xF-T/2),yS,zz,'x');                              // furo piloto Ø3,6 (dimple do bloq.)
+ });});
 }
 LEVELS.forEach(bloqueador);
 
@@ -269,9 +268,9 @@ var views=[
  {tx:0,ty:ALT/2,tz:0,r:9.0,t:0.7,p:1.25},        // GERAL
  {tx:0,ty:ALT/2,tz:0,r:0.55,t:0.0,p:0.06},       // SEÇÃO de cima
  {tx:0,ty:yb1,tz:0,r:0.55,t:0.8,p:1.15},          // BLOQUEADOR nó
- {tx:WEB/2-0.02,ty:yb1,tz:0,r:0.28,t:1.3,p:1.30}, // LIP CUT
+ {tx:WEB/2-0.02,ty:yb1-BLK_H/2,tz:0,r:0.26,t:1.25,p:1.28}, // LIP CUT
  {tx:0,ty:yb1,tz:0,r:0.30,t:0.35,p:0.55},         // SWAGE (de cima, ponta)
- {tx:0.060,ty:yb1+BLK_H/2,tz:DEPTH/2,r:0.16,t:0.15,p:1.30}, // DIMPLE+4,8
+ {tx:WEB/2,ty:yb1-0.02,tz:-0.035,r:0.14,t:1.45,p:1.34}, // DIMPLE+4,8 (mesa lateral)
  {tx:0,ty:0.15,tz:0,r:0.70,t:0.7,p:1.20},         // BASE
  {tx:0,ty:ALT-0.15,tz:0,r:0.70,t:0.7,p:1.20}];    // TOPO
 function sv(i){var v=views[i];target.set(v.tx,v.ty,v.tz);camR=v.r;camT=v.t;camP=v.p;camUpdate()}
