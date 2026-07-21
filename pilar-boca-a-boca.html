@@ -23,7 +23,7 @@
 <script>
 var T=0.002500,WEB=0.300000,FLG=0.075000,LIP=0.020000,DEPTH=0.150000,ALT=7.00;
 var RED=0.002900,ZIN=0.072500,BLK_LZ=0.137000,BLK_W=0.270000,BLK_H=0.050000,BLK_FL=0.030000;
-var LEVELS=[0.1500,1.2667,2.3833,3.5000,4.6167,5.7333,6.8500],NPERFIS=1;
+var LEVELS=[3.5000],NPERFIS=1;
 var scene=new THREE.Scene();scene.background=new THREE.Color(0x060a10);
 var camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,0.01,60);
 var renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);
@@ -177,8 +177,11 @@ function auditorGlobal(){
  document.getElementById('hud').textContent+=' — '+msg;}
 
 PIECE=0;
+// LINHAS DE CONTORNO (leitura CAD): só arestas REAIS (>18°) — sem gominhos.
+var edgeMat=new THREE.LineBasicMaterial({color:0x0a1c2c});
+function edg(mesh){mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry,18),edgeMat));}
 function box(m,x,y,z,w,h,d,par){var b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
- b.position.set(x,y,z);b.userData.p=PIECE;(par||scene).add(b);return b}
+ b.position.set(x,y,z);b.userData.p=PIECE;(par||scene).add(b);edg(b);return b}
 function furo(x,y,z,axis){ // furo piloto Ø3,6 (só marcação visual escura)
  var c=new THREE.Mesh(new THREE.CylinderGeometry(0.0018,0.0018,T+0.004,10),mHole);
  if(axis==='z')c.rotation.x=Math.PI/2;else if(axis==='x')c.rotation.z=Math.PI/2;
@@ -221,31 +224,33 @@ perfilC(-1);if(NPERFIS>=2)perfilC(+1);   // 2º perfil só no pilar completo
 //  libera a entrada. Dimples nas mesas dos dois lados. Sem A325, sem solda.
 // ══════════════════════════════════════════════════════════════════════
 function bloqueador(yb){PIECE++;
- var xF=WEB/2-T-0.0002;                                     // face ext. da mesa do bloq. ENCOSTA
-                                                            //   na face int. da mesa do C300
- var N=14, half=BLK_LZ/2, HD=0.026;                         // HD = profundidade da mesa na PONTA
- for(var i=0;i<N;i++){
-  var za=-half+BLK_LZ*i/N, zb=-half+BLK_LZ*(i+1)/N, zc=(za+zb)/2, dz=zb-za;
-  var fr=Math.abs(zc)/half;                                 // 0 centro → 1 ponta
-  var hh=BLK_H-(BLK_H-HD)*fr;                               // SWAGE: mesa afina p/ a ponta
-  box(mB,0,yb-T/2,zc,2*xF,T,dz);                            // ALMA do bloqueador (topo)
-  [-1,1].forEach(function(sx){                              // 2 MESAS LATERAIS (lapam o C300)
-   box(mB,sx*(xF-T/2),yb-hh/2,zc,T,hh,dz);                  // mesa lateral
-   box(mB,sx*(xF-LIP/2),yb-hh+T/2,zc,LIP,T,dz);             // lip do bloqueador (volta p/ dentro)
-  });
- }
- // ── COSTURA 4,8×19 NAS MESAS LATERAIS (eixo X): atravessa mesa-bloqueador
- //   + mesa-C300 ENCOSTADAS. DENTRO do canal (Z<0 = perfil #1; Z>0 só no
- //   pilar completo). Cabeça na face externa da mesa do C300; furo piloto
- //   Ø3,6 na mesa do bloqueador (dimple). ──
- var yS=yb-0.018;
- var zc1=[-0.050,-0.018];                                   // canal do perfil #1 (Z<0)
- var zc2=[0.050,0.018];                                     // canal do perfil #2 (Z>0)
- var zlist=zc1.concat(NPERFIS>=2?zc2:[]);
- [-1,1].forEach(function(sx){zlist.forEach(function(zz){
-  screwV(sx*(WEB/2),yS,zz,'x',-sx,scene);                   // 4,8×19 pela MESA (nunca na alma)
-  furo(sx*(xF-T/2),yS,zz,'x');                              // furo piloto Ø3,6 (dimple do bloq.)
- });});
+ var xF=WEB/2-T-0.0002;                     // face ext. da mesa do bloq. ENCOSTA na mesa do C300
+ var half=BLK_LZ/2, BH=BLK_H, HD=0.030, RL=0.030; // BH=prof. cheia · HD=ponta · RL=rampa (swage)
+ // ── ALMA (topo) — chapa CONTÍNUA (uma peça só) ──
+ box(mB,0,yb-T/2,0,2*xF,T,2*half);
+ // ── 2 MESAS LATERAIS — perfil CONTÍNUO (ExtrudeGeometry, SEM degraus):
+ //    full-depth BH no meio; rampa de SWAGE p/ HD nas 2 pontas = o pequeno
+ //    ângulo de entrada. As mesas lapam as mesas do C300 (contato real). ──
+ [-1,1].forEach(function(sx){
+  var s=new THREE.Shape();
+  s.moveTo(-half,yb); s.lineTo(half,yb);
+  s.lineTo(half,yb-HD); s.lineTo(half-RL,yb-BH);
+  s.lineTo(-half+RL,yb-BH); s.lineTo(-half,yb-HD); s.closePath();
+  var g=new THREE.ExtrudeGeometry(s,{depth:T,bevelEnabled:false});
+  var m=new THREE.Mesh(g,mB);m.userData.p=PIECE;
+  m.rotation.y=(sx>0)?-Math.PI/2:Math.PI/2; m.position.x=sx*xF;
+  scene.add(m); edg(m);
+  // LIP do bloqueador (região full-depth, volta p/ dentro)
+  box(mB,sx*(xF-LIP/2),yb-BH+T/2,0,LIP,T,2*(half-RL));
+ });
+ // ── UM ÚNICO 4,8×19 por lado, na LINHA DE CENTRO da mesa, alinhado ao
+ //    dimple, na região de contato real dentro do canal. Cabeça na face
+ //    externa da mesa do C300; furo piloto Ø3,6 na mesa do bloqueador. ──
+ var yC=yb-BH/2;                            // linha de centro da mesa (meia-profundidade)
+ [-1,1].forEach(function(sx){
+  screwV(sx*(WEB/2),yC,-0.020,'x',-sx,scene); furo(sx*(xF-T/2),yC,-0.020,'x');   // perfil #1
+  if(NPERFIS>=2){screwV(sx*(WEB/2),yC,0.020,'x',-sx,scene); furo(sx*(xF-T/2),yC,0.020,'x');}
+ });
 }
 LEVELS.forEach(bloqueador);
 
