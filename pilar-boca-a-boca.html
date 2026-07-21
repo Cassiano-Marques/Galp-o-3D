@@ -23,7 +23,7 @@
 <script>
 var T=0.002500,WEB=0.300000,FLG=0.075000,LIP=0.020000,DEPTH=0.150000,ALT=7.00;
 var RED=0.002900,ZIN=0.072500,BLK_LZ=0.137000,BLK_W=0.270000,BLK_H=0.050000,BLK_FL=0.030000;
-var LEVELS=[0.0450,1.2042,2.3633,3.5225,4.6817,5.8408,7.0000],NPERFIS=1;
+var LEVELS=[{y:0.0000,flip:1},{y:1.1667,flip:0},{y:2.3333,flip:0},{y:3.5000,flip:0},{y:4.6667,flip:0},{y:5.8333,flip:0},{y:7.0000,flip:0}],NPERFIS=1;
 var scene=new THREE.Scene();scene.background=new THREE.Color(0x060a10);
 var camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,0.01,60);
 var renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);
@@ -280,7 +280,9 @@ function latDimple(gp,w,zd){
 //  yb-BLK_H; abrimos o lip nessa faixa (com folga) p/ liberar a entrada.
 // ══════════════════════════════════════════════════════════════════════
 var LCUT=[];
-LEVELS.forEach(function(yb){LCUT.push([yb-Fm-0.012,yb+0.012])});   // Fm = prof. da mesa do bloq.
+LEVELS.forEach(function(L){var yb=L.y;
+ if(L.flip)LCUT.push([yb-0.012,yb+Fm+0.012]);      // base invertida: flanges SOBEM
+ else LCUT.push([yb-Fm-0.012,yb+0.012]);});         // normal: flanges DESCEM
 LCUT=mergeB(LCUT,0.001);
 
 // ══════════════════════════════════════════════════════════════════════
@@ -305,6 +307,7 @@ function perfilC(sz){PIECE++;
   LCUT.forEach(function(C){
    [[C[0],-1],[C[1],1]].forEach(function(E){
     var yE=E[0],dr=E[1],xd=sx*(WEB/2);                            // xd = DOBRA (mesa↔lip)
+    if(yE<=1e-4||yE>=ALT-1e-4)return;    // NÃO desenhar cunha FORA do perfil (as "orelhinhas")
     var sh=new THREE.Shape();
     sh.moveTo(xd,yE+dr*LIPR);sh.lineTo(xd,yE);sh.lineTo(xd-sx*LIP,yE+dr*LIPR);sh.closePath();
     var mm=new THREE.Mesh(new THREE.ExtrudeGeometry(sh,{depth:T,bevelEnabled:false}),mC);
@@ -321,20 +324,21 @@ perfilC(-1);if(NPERFIS>=2)perfilC(+1);   // 2º perfil só no pilar completo
 //  Z (alma-a-alma). latDimple = 1 autobrocante 4,8×19 por mesa (um por
 //  lado), na linha de centro da mesa. NÃO há geometria de ligação nova.
 // ══════════════════════════════════════════════════════════════════════
-function bloqueador(yb){
- var L_b=BLK_LZ;
+function bloqueador(L){
+ var yb=L.y, L_b=BLK_LZ;
  var swZ_b=[[-L_b/2,L_b/2]];   // SWAGE em TODA a peça (conificada inteira)
  var grp=CL([0,yb,0],0,L_b,{color:0x28c08a,nseg:60,swZ:swZ_b});   // SEM chamfer (ligação RETA, não em grau)
+ if(L.flip)grp.rotation.x=Math.PI;   // ALMA P/ BAIXO (base rente ao end face): flanges SOBEM
  // NÃO edgear cada fatia do CL (viraria listra/gominho na alma). O CL é
  // fatiado internamente; contorno limpo vem do sombreado + da silhueta.
  grp.traverse(function(o){if(o.isMesh){o.material.polygonOffset=true;o.material.polygonOffsetFactor=1;o.material.polygonOffsetUnits=1;}});
  // 1 autobrocante 4,8×19 POR MESA (= um por lado). FURO SEMPRE NA LINHA
- // CENTRAL DAS DUAS MESAS: Y=yb-Fm/2 (centro da mesa do bloqueador) e
- // Z=±FLG/2 (centro da mesa do C300, meia-profundidade da aba). Cabeça na
- // face externa da mesa do C300 (acesso de obra).
+ // CENTRAL DAS DUAS MESAS: Y no centro da mesa do bloqueador (acima se
+ // invertido) e Z=±FLG/2 (centro da mesa do C300). Cabeça na face externa.
+ var yC=L.flip?(yb+Fm/2):(yb-Fm/2);
  [-1,1].forEach(function(sx){
-  screwV(sx*(WEB/2),yb-Fm/2,-FLG/2,'x',-sx,scene); furo(sx*(WEB/2-T),yb-Fm/2,-FLG/2,'x');
-  if(NPERFIS>=2){screwV(sx*(WEB/2),yb-Fm/2,FLG/2,'x',-sx,scene); furo(sx*(WEB/2-T),yb-Fm/2,FLG/2,'x');}
+  screwV(sx*(WEB/2),yC,-FLG/2,'x',-sx,scene); furo(sx*(WEB/2-T),yC,-FLG/2,'x');
+  if(NPERFIS>=2){screwV(sx*(WEB/2),yC,FLG/2,'x',-sx,scene); furo(sx*(WEB/2-T),yC,FLG/2,'x');}
  });
 }
 LEVELS.forEach(bloqueador);
@@ -353,7 +357,7 @@ if(location.search.indexOf('audit')>=0)setTimeout(auditorGlobal,300);
 var target=new THREE.Vector3(0,ALT/2,0),camR=9,camT=0.7,camP=1.25;
 function camUpdate(){camera.position.set(target.x+camR*Math.sin(camP)*Math.sin(camT),
  target.y+camR*Math.cos(camP),target.z+camR*Math.sin(camP)*Math.cos(camT));camera.lookAt(target)}
-var yb1=LEVELS.length>2?LEVELS[Math.floor(LEVELS.length/2)]:ALT/2;
+var yb1=LEVELS.length>2?LEVELS[Math.floor(LEVELS.length/2)].y:ALT/2;
 var views=[
  {tx:0,ty:ALT/2,tz:0,r:9.0,t:0.7,p:1.25},        // GERAL
  {tx:0,ty:ALT/2,tz:0,r:0.55,t:0.0,p:0.06},       // SEÇÃO de cima
