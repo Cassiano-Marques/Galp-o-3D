@@ -294,10 +294,21 @@ function perfilC(sz){PIECE++;
  [-1,1].forEach(function(sx){                               // 2 MESAS (X=±0.150)
   var xF=sx*(WEB/2-T/2);
   box(mC,xF,ALT/2,sz*(FLG/2),T,ALT,FLG);                    // mesa: da alma à costura
-  // LIP na ponta da mesa (na costura Z≈0), volta p/ dentro (−sx em X)
-  var xL=sx*(WEB/2-LIP/2), zL=sz*(T/2);
-  segs(0,ALT,LCUT).forEach(function(s){
+  // LIP na ponta da mesa (na costura Z≈0), volta p/ dentro (−sx em X).
+  // LIP CUT COM GRAU (ferramenta lipcut, não é reto): abertura ALARGADA
+  // de alívio (±LIPR) + CUNHAS triangulares — cheias na DOBRA, zero na
+  // borda livre. Idêntico ao mpWedge do galpão (o "grau" da ferramenta).
+  var xL=sx*(WEB/2-LIP/2), zL=sz*(T/2), LIPR=0.0115;
+  var LEXP=LCUT.map(function(C){return [C[0]-LIPR,C[1]+LIPR];});   // alívio da ferramenta
+  segs(0,ALT,LEXP).forEach(function(s){
    box(mC,xL,(s[0]+s[1])/2,zL,LIP,s[1]-s[0],T)});
+  LCUT.forEach(function(C){
+   [[C[0],-1],[C[1],1]].forEach(function(E){
+    var yE=E[0],dr=E[1],xd=sx*(WEB/2);                            // xd = DOBRA (mesa↔lip)
+    var sh=new THREE.Shape();
+    sh.moveTo(xd,yE+dr*LIPR);sh.lineTo(xd,yE);sh.lineTo(xd-sx*LIP,yE+dr*LIPR);sh.closePath();
+    var mm=new THREE.Mesh(new THREE.ExtrudeGeometry(sh,{depth:T,bevelEnabled:false}),mC);
+    mm.position.z=zL-T/2;mm.userData.p=PIECE;scene.add(mm);edg(mm);});});
  });
 }
 perfilC(-1);if(NPERFIS>=2)perfilC(+1);   // 2º perfil só no pilar completo
