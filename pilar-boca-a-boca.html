@@ -1,0 +1,285 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Pilar Boca com Boca — 7.00m · 300×150</title>
+<style>body{margin:0;background:#060a10;color:#dce8f4;font-family:'Courier New',monospace;overflow:hidden}
+#hud{position:fixed;top:10px;left:12px;font-size:11px;z-index:5;line-height:1.5;text-shadow:0 0 3px #000}
+#vp{position:fixed;bottom:14px;right:14px;z-index:6}
+#vp button{display:block;width:210px;margin:3px 0;padding:6px;background:#0e1722;color:#dce8f4;border:1px solid #1a2a3a;border-radius:6px;font-family:inherit;font-size:10px;cursor:pointer}
+#vp button:hover{background:#16283a}
+#tip{position:fixed;bottom:14px;left:14px;font-size:10px;color:#5a6b7a;z-index:5}</style>
+</head><body>
+<div id="hud">PILAR BOCA COM BOCA · 7.00m · seção 300×150mm (2× C300)<br>almas p/ FORA · bocas frente-a-frente · seção fechada</div>
+<div id="vp">
+<button onclick="sv(0)">GERAL</button>
+<button onclick="sv(1)">SEÇÃO (DE CIMA)</button>
+<button onclick="sv(2)">BLOQUEADOR — NÓ</button>
+<button onclick="sv(3)">LIP CUT DO PILAR</button>
+<button onclick="sv(4)">SWAGE DO BLOQUEADOR</button>
+<button onclick="sv(5)">DIMPLE + 4,8×19</button>
+<button onclick="sv(6)">BASE</button>
+<button onclick="sv(7)">TOPO</button></div>
+<div id="tip">arrastar = orbitar · roda = zoom</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+var T=0.002500,WEB=0.300000,FLG=0.075000,LIP=0.020000,DEPTH=0.150000,ALT=7.00;
+var RED=0.002900,ZIN=0.072500,BLK_LZ=0.137000,BLK_W=0.270000,BLK_H=0.050000,BLK_FL=0.030000;
+var LEVELS=[0.1500,1.2667,2.3833,3.5000,4.6167,5.7333,6.8500];
+var scene=new THREE.Scene();scene.background=new THREE.Color(0x060a10);
+var camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,0.01,60);
+var renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));document.body.appendChild(renderer.domElement);
+scene.add(new THREE.AmbientLight(0x9ba1a7,1.05));
+var dl=new THREE.DirectionalLight(0xfff4e0,0.55);dl.position.set(6,14,9);scene.add(dl);
+var dl2=new THREE.DirectionalLight(0xbfd0e0,0.30);dl2.position.set(-5,4,-6);scene.add(dl2);
+var mC =new THREE.MeshLambertMaterial({color:0x4a9ad8});                                   // perfil principal
+var mCc=new THREE.MeshLambertMaterial({color:new THREE.Color(0x4a9ad8).multiplyScalar(0.72)});
+var mB =new THREE.MeshLambertMaterial({color:0x28c08a});                                   // bloqueador
+var mBc=new THREE.MeshLambertMaterial({color:new THREE.Color(0x28c08a).multiplyScalar(0.70)});
+var mHole=new THREE.MeshLambertMaterial({color:0x050810});
+[mC,mCc,mB,mBc].forEach(function(m){m.polygonOffset=true;m.polygonOffsetFactor=1;m.polygonOffsetUnits=1;});
+var PIECE=0;
+// ── MOTOR COMPARTILHADO (lsf_core.js — parafuso 4,8×19, segs, mergeB, auditor) ──
+// ══════════════════════════════════════════════════════════════════════
+// LSF_CORE — MOTOR COMPARTILHADO (Global Design Standards executável)
+// Regras GRAVADAS como FUNÇÕES: todo gerador injeta este arquivo.
+// Mudou aqui, mudou em TODOS os modelos. Copiar este código = PROIBIDO.
+// Requer no escopo: THREE, scene, T (espessura), PIECE (id de peça).
+// Índice: 05-Skills/00-INDICE-REGRAS.md · Lei: módulos 01-04.
+// ══════════════════════════════════════════════════════════════════════
+
+// R33 — materiais do parafuso (zincado + fenda)
+var mScrew=new THREE.MeshLambertMaterial({color:0xc9ccd2,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
+var mCross=new THREE.MeshLambertMaterial({color:0x1a2026,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+
+// R21 — segmentos com cortes; ml=0.006 p/ ABERTURAS de fabricação (sliver),
+// 0.0005 p/ fatias de CONSTRUÇÃO (rampas etc.)
+function segs(a,b,cuts,ml){var v=[[a,b]];cuts.forEach(function(c){var nv=[];
+ v.forEach(function(s){if(c[1]<=s[0]||c[0]>=s[1]){nv.push(s);return}
+  if(c[0]>s[0])nv.push([s[0],c[0]]);if(c[1]<s[1])nv.push([c[1],s[1]])});v=nv});
+ return v.filter(function(s){return s[1]-s[0]>(ml||0.006)})}
+
+// R22 — funde bandas sobrepostas/próximas (tol em metros)
+function mergeB(arr,tol){arr.sort(function(a,b){return a[0]-b[0]});var m=[];
+ arr.forEach(function(c){if(m.length&&c[0]<=m[m.length-1][1]+(tol||0.024))
+  m[m.length-1][1]=Math.max(m[m.length-1][1],c[1]);else m.push([c[0],c[1]])});return m}
+
+// R33 — PARAFUSO AUTO BROCANTE 4,8×19 (só visual; din = p/ dentro da montagem)
+// cabeça Philips Ø8,5 FACEADA (ultrafina ≤0,1mm — cabe na folga de 0,2mm)
+// + corpo passante Ø4,8 + rosca (anéis) + ponta cônica saindo do lado interno
+function screwZ(x,y,zF,din,par){var P=par||scene;
+ var hd=new THREE.Mesh(new THREE.CylinderGeometry(0.00425,0.00425,0.00006,18),mScrew);
+ hd.rotation.x=Math.PI/2;hd.position.set(x,y,zF-din*0.00003);hd.renderOrder=1;P.add(hd);
+ [0,Math.PI/2].forEach(function(rz){
+  var c=new THREE.Mesh(new THREE.BoxGeometry(0.0062,0.0013,0.00005),mCross);
+  c.position.set(x,y,zF-din*0.00008);c.rotation.z=rz;c.renderOrder=2;
+  c.userData.p=-1;P.add(c)});
+ var sh=new THREE.Mesh(new THREE.CylinderGeometry(0.0024,0.0024,0.0125,12),mScrew);
+ sh.rotation.x=din*Math.PI/2;sh.position.set(x,y,zF+din*0.00625);P.add(sh);
+ for(var i5=0;i5<4;i5++){
+  var rg=new THREE.Mesh(new THREE.CylinderGeometry(0.0030,0.0030,0.0007,12),mScrew);
+  rg.rotation.x=Math.PI/2;rg.position.set(x,y,zF+din*(0.0045+0.0019*i5));P.add(rg)}
+ var tp=new THREE.Mesh(new THREE.CylinderGeometry(0.0001,0.0024,0.0065,12),mScrew);
+ tp.rotation.x=din*Math.PI/2;tp.position.set(x,y,zF+din*0.01575);P.add(tp)}
+
+// R33b — PARAFUSO ORIENTÁVEL: mesmo 4,8×19 do screwZ, mas em qualquer eixo.
+// Cabeça assenta em (x,y,z); broca/corpo segue din·axis (axis 'x'|'y'|'z').
+// Reusa screwZ dentro de um Group rotacionado (não duplica geometria).
+// Uso típico: onde há DIMPLE há este parafuso (costura de chapa).
+function screwV(x,y,z,axis,din,par){
+ var g=new THREE.Group();g.position.set(x,y,z);
+ if(axis==='x')g.rotation.y=(din>0)?Math.PI/2:-Math.PI/2;
+ else if(axis==='y')g.rotation.x=(din>0)?-Math.PI/2:Math.PI/2;
+ else if(din<0)g.rotation.x=Math.PI;
+ (par||scene).add(g);
+ screwZ(0,0,0,1,g);g.userData.fastener=true;return g}
+
+// R33c — CABEÇA do parafuso (Philips faceada) SEM corpo: representação visual
+// do DIMPLE de costura (chapa costurada — o que se vê de frente é a cabeça).
+// Mesma cabeça do screwZ, orientável como screwV. Leve (cabeça+cruz) para nós
+// com MUITOS dimples (cobertura/juntas do galpão). din = lado da face.
+function screwHeadV(x,y,z,axis,din,par){
+ var g=new THREE.Group();g.position.set(x,y,z);
+ if(axis==='x')g.rotation.y=(din>0)?Math.PI/2:-Math.PI/2;
+ else if(axis==='y')g.rotation.x=(din>0)?-Math.PI/2:Math.PI/2;
+ else if(din<0)g.rotation.x=Math.PI;
+ (par||scene).add(g);
+ var hd=new THREE.Mesh(new THREE.CylinderGeometry(0.00425,0.00425,0.00006,18),mScrew);
+ hd.rotation.x=Math.PI/2;hd.position.set(0,0,-0.00003);hd.renderOrder=1;g.add(hd);
+ [0,Math.PI/2].forEach(function(rz){
+  var c=new THREE.Mesh(new THREE.BoxGeometry(0.0062,0.0013,0.00005),mCross);
+  c.position.set(0,0,-0.00008);c.rotation.z=rz;c.renderOrder=2;c.userData.p=-1;g.add(c)});
+ g.userData.fastener=true;return g}
+
+// R44 — PARAFUSO ESTRUTURAL 1/2" A325: cabeça SEXTAVADA + 2 arruelas + porca
+// TRAVANTE (anel de nylon azul) + rosca. Galvanizado (mesma cor do 4,8×19, mScrew).
+// grip = espessura presa (chapas, ≈ comprimento do cilindro antigo). A ferragem
+// (cabeça+arruela de um lado; arruela+porca+sobra de rosca do outro) fica PRA FORA
+// do grip — robusto pra qualquer espessura. axis 'x'|'y'|'z'.
+// Fonte ÚNICA — substitui as ~10 cópias do galpão.
+// NOTA 10/07: parafuso FLANGEADO foi avaliado (padrão Stratco) e REJEITADO
+// pelo Cassiano — flangeado é muito CARO no Brasil. Não re-sugerir.
+var mNylon=new THREE.MeshLambertMaterial({color:0x2746b8});
+function bolt12(x,y,z,axis,grip,par){
+ var g=new THREE.Group();g.position.set(x,y,z);
+ if(axis==='x')g.rotation.y=Math.PI/2;
+ else if(axis==='y')g.rotation.x=Math.PI/2;
+ (par||scene).add(g);
+ var sR=0.00635,hR=0.0110,hH=0.0080,wR=0.0135,wT=0.0030,nH=0.0120,tail=0.008;
+ var zb=-grip/2, ze=grip/2;                         // faces das chapas (arruelas encostam)
+ function cyl(r,h,zc,seg,m){var c=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg),m||mScrew);
+  c.rotation.x=Math.PI/2;c.position.z=zc;g.add(c);return c;}
+ cyl(hR,hH,zb-wT-hH/2,6);                           // CABEÇA sextavada (lado -)
+ cyl(wR,wT,zb-wT/2,20);                             // arruela sob a cabeça
+ cyl(wR,wT,ze+wT/2,20);                             // arruela sob a porca
+ cyl(hR,nH,ze+wT+nH/2,6);                           // PORCA travante sextavada (lado +)
+ cyl(0.0083,0.0020,ze+wT+nH-0.0009,16,mNylon);     // anel de nylon azul (travante)
+ var zc2=ze+wT+nH+tail;
+ cyl(sR,zc2-(zb-wT),((zb-wT)+zc2)/2,14);           // núcleo da haste (atravessa tudo)
+ for(var zr=ze+wT+nH+0.0012;zr<zc2-0.0004;zr+=0.002)cyl(0.0072,0.0014,zr,12);  // rosca da sobra
+ g.userData.fastener2=true;return g;}
+
+// R01/R35/R36 — AUDITOR GLOBAL DE COLISÃO (AABB rápido + OBB/SAT 15 eixos).
+// Contato (folga 0) permitido; sobreposição > 0,05mm = violação.
+// 100% dos sólidos BoxGeometry; pares da MESMA peça (userData.p) ignorados.
+function auditorGlobal(){
+ var TOL=0.00005,it=[],viol=[];
+ scene.updateMatrixWorld(true);
+ scene.traverse(function(o){if(!o.isMesh||o.geometry.type!=='BoxGeometry')return;
+  o.geometry.computeBoundingBox();var bb=o.geometry.boundingBox;
+  var c=new THREE.Vector3();bb.getCenter(c);c.applyMatrix4(o.matrixWorld);
+  var e=new THREE.Vector3();bb.getSize(e).multiplyScalar(0.5);
+  var m=o.matrixWorld.elements;
+  it.push({p:o.userData.p,aabb:new THREE.Box3().setFromObject(o),c:c,
+   e:[e.x,e.y,e.z],a:[new THREE.Vector3(m[0],m[1],m[2]).normalize(),
+    new THREE.Vector3(m[4],m[5],m[6]).normalize(),
+    new THREE.Vector3(m[8],m[9],m[10]).normalize()]})});
+ function sep(A,B){var axes=A.a.concat(B.a);
+  for(var i=0;i<3;i++)for(var j2=0;j2<3;j2++){
+   var cr=new THREE.Vector3().crossVectors(A.a[i],B.a[j2]);
+   if(cr.lengthSq()>1e-8)axes.push(cr.normalize())}
+  var d=new THREE.Vector3().subVectors(B.c,A.c);
+  for(var k=0;k<axes.length;k++){var ax=axes[k];
+   var ra=A.e[0]*Math.abs(ax.dot(A.a[0]))+A.e[1]*Math.abs(ax.dot(A.a[1]))+A.e[2]*Math.abs(ax.dot(A.a[2]));
+   var rb=B.e[0]*Math.abs(ax.dot(B.a[0]))+B.e[1]*Math.abs(ax.dot(B.a[1]))+B.e[2]*Math.abs(ax.dot(B.a[2]));
+   if(Math.abs(d.dot(ax))>=ra+rb-TOL)return true}
+  return false}
+ var pares=0,sat=0;
+ for(var i=0;i<it.length;i++)for(var j3=i+1;j3<it.length;j3++){
+  if(it[i].p===it[j3].p)continue;pares++;
+  var a=it[i].aabb,b=it[j3].aabb;
+  if(Math.min(a.max.x,b.max.x)-Math.max(a.min.x,b.min.x)<=TOL)continue;
+  if(Math.min(a.max.y,b.max.y)-Math.max(a.min.y,b.min.y)<=TOL)continue;
+  if(Math.min(a.max.z,b.max.z)-Math.max(a.min.z,b.min.z)<=TOL)continue;
+  sat++;if(!sep(it[i],it[j3]))viol.push([it[i].p,it[j3].p])}
+ var msg='AUDITOR: '+PIECE+' peças · '+it.length+' sólidos (100%) · '+pares+
+  ' pares · '+sat+' SAT · '+(viol.length===0?'0 VIOLAÇÕES ✓':viol.length+' VIOLAÇÕES ⚠');
+ console.log(msg);viol.slice(0,12).forEach(function(v){console.log('  ⚠ peça '+v[0]+' × peça '+v[1])});
+ document.getElementById('hud').textContent+=' — '+msg;}
+
+PIECE=0;
+function box(m,x,y,z,w,h,d,par){var b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
+ b.position.set(x,y,z);b.userData.p=PIECE;(par||scene).add(b);return b}
+function furo(x,y,z,axis){ // furo piloto Ø3,6 (só marcação visual escura)
+ var c=new THREE.Mesh(new THREE.CylinderGeometry(0.0018,0.0018,T+0.004,10),mHole);
+ if(axis==='z')c.rotation.x=Math.PI/2;else if(axis==='x')c.rotation.z=Math.PI/2;
+ c.position.set(x,y,z);c.renderOrder=1;scene.add(c)}
+
+// ══════════════════════════════════════════════════════════════════════
+//  BANDAS DE LIP CUT — onde cada bloqueador cruza os lips do pilar (no
+//  plano da costura Z=0). O bloqueador ocupa Y ∈ [yb-BLK_H/2, yb+BLK_H/2];
+//  abrimos o lip com folga p/ o bloqueador atravessar SEM interferência.
+// ══════════════════════════════════════════════════════════════════════
+var LCUT=[];
+LEVELS.forEach(function(yb){LCUT.push([yb-BLK_H/2-0.008,yb+BLK_H/2+0.008])});
+LCUT=mergeB(LCUT,0.001);
+
+// ══════════════════════════════════════════════════════════════════════
+//  PERFIL C300 PRINCIPAL — sz=-1 (alma em Z-) / sz=+1 (alma em Z+).
+//  Alma p/ FORA; mesas correm da alma até a costura (Z=0); lips voltam p/
+//  DENTRO (em X) na ponta da mesa. Lips SECCIONADOS pelas bandas de lip cut.
+// ══════════════════════════════════════════════════════════════════════
+function perfilC(sz){PIECE++;
+ var zW=sz*(DEPTH/2-T/2);                                   // alma (face externa em sz*0.075)
+ box(mC,0,ALT/2,zW,WEB,ALT,T);                              // ALMA 300
+ [-1,1].forEach(function(sx){                               // 2 MESAS (X=±0.150)
+  var xF=sx*(WEB/2-T/2);
+  box(mC,xF,ALT/2,sz*(FLG/2),T,ALT,FLG);                    // mesa: da alma à costura
+  // LIP na ponta da mesa (na costura Z≈0), volta p/ dentro (−sx em X)
+  var xL=sx*(WEB/2-LIP/2), zL=sz*(T/2);
+  segs(0,ALT,LCUT).forEach(function(s){
+   box(mC,xL,(s[0]+s[1])/2,zL,LIP,s[1]-s[0],T)});
+ });
+}
+perfilC(-1);perfilC(+1);
+
+// ══════════════════════════════════════════════════════════════════════
+//  BLOQUEADOR — perfil menor transversal (eixo Z, alma-a-alma). SWAGE
+//  CONTÍNUO: a seção (largura X e altura Y) é levemente conificada do
+//  centro p/ as 2 pontas, garantindo encaixe entre os dois C sem
+//  interferência com mesas/lips. Nas pontas: aba de topo (lap na alma do
+//  pilar) + 2 dimples + autobrocante 4,8×19 (furo piloto Ø3,6). Sem A325.
+// ══════════════════════════════════════════════════════════════════════
+function bloqueador(yb){PIECE++;
+ var N=14, half=BLK_LZ/2;                                   // 14 fatias no comprimento
+ // conificação: no centro (fr=0) largura/altura CHEIAS; nas pontas (fr=1)
+ // reduzidas de RED — swage suave ao longo de TODO o comprimento
+ for(var i=0;i<N;i++){
+  var za=-half+BLK_LZ*i/N, zb=-half+BLK_LZ*(i+1)/N, zc=(za+zb)/2, dz=zb-za;
+  var fr=Math.abs((za+zb)/2)/half;                          // 0 centro → 1 ponta
+  var w=BLK_W-2*RED*fr, h=BLK_H-2*RED*fr, fl=BLK_FL-RED*fr;
+  box(mB,0,yb+h/2-BLK_H/2,zc,w,T,dz);                       // ALMA do bloqueador (topo, face -Y)
+  [-1,1].forEach(function(sx){                              // 2 mesas (descem em -Y)
+   box(mB,sx*(w/2-T/2),yb-BLK_H/2+fl/2,zc,T,fl,dz);         // mesa
+   box(mB,sx*(w/2-LIP/2),yb-BLK_H/2+fl-T/2,zc,LIP,T,dz);    // lip do bloqueador
+  });
+ }
+ // ── PONTAS: aba dobrada 90° lapando a face INTERNA da alma do pilar +
+ //   dimples + autobrocante 4,8×19 (Ø3,6). A aba fica encostada na alma
+ //   (contato chapa-chapa REAL) e o parafuso atravessa alma + aba. ──
+ [-1,1].forEach(function(sz){
+  var wEnd=BLK_W-2*RED-0.020;                               // largura da aba
+  var zTab=sz*(ZIN-T/2);                                    // lapa a face interna da alma
+  var yTab=yb-0.015;                                        // desce a partir da alma do bloq.
+  box(mB,0,yTab,zTab,wEnd,0.030,T);                         // ABA de topo (dobra 90°)
+  [-0.060,0.060].forEach(function(xo){                      // 2 dimples + 4,8×19 por ponta
+   screwZ(xo,yTab,sz*(DEPTH/2),-sz);                        // cabeça na face EXTERNA da alma
+   furo(xo,yTab,zTab,'z');                                  // furo piloto Ø3,6
+  });
+ });
+}
+LEVELS.forEach(bloqueador);
+
+console.log('PILAR BOCA COM BOCA: 2 perfis C300 + '+LEVELS.length+' bloqueadores');
+document.getElementById('hud').innerHTML+='<br>'+LEVELS.length+' bloqueadores · swage contínuo · 4,8×19 (sem A325)';
+
+// ── AUDITOR DE INTERFERÊNCIA (lsf_core R01/R35) ──
+auditorGlobal();
+
+// ══ CÂMERA / VISTAS / ÓRBITA ══
+var target=new THREE.Vector3(0,ALT/2,0),camR=9,camT=0.7,camP=1.25;
+function camUpdate(){camera.position.set(target.x+camR*Math.sin(camP)*Math.sin(camT),
+ target.y+camR*Math.cos(camP),target.z+camR*Math.sin(camP)*Math.cos(camT));camera.lookAt(target)}
+var yb1=LEVELS.length>2?LEVELS[Math.floor(LEVELS.length/2)]:ALT/2;
+var views=[
+ {tx:0,ty:ALT/2,tz:0,r:9.0,t:0.7,p:1.25},        // GERAL
+ {tx:0,ty:ALT/2,tz:0,r:0.55,t:0.0,p:0.06},       // SEÇÃO de cima
+ {tx:0,ty:yb1,tz:0,r:0.55,t:0.8,p:1.15},          // BLOQUEADOR nó
+ {tx:WEB/2-0.02,ty:yb1,tz:0,r:0.28,t:1.3,p:1.30}, // LIP CUT
+ {tx:0,ty:yb1,tz:0,r:0.30,t:0.35,p:0.55},         // SWAGE (de cima, ponta)
+ {tx:0.060,ty:yb1+BLK_H/2,tz:DEPTH/2,r:0.16,t:0.15,p:1.30}, // DIMPLE+4,8
+ {tx:0,ty:0.15,tz:0,r:0.70,t:0.7,p:1.20},         // BASE
+ {tx:0,ty:ALT-0.15,tz:0,r:0.70,t:0.7,p:1.20}];    // TOPO
+function sv(i){var v=views[i];target.set(v.tx,v.ty,v.tz);camR=v.r;camT=v.t;camP=v.p;camUpdate()}
+sv(0);
+var drag=false,px,py;
+renderer.domElement.addEventListener('mousedown',function(e){drag=true;px=e.clientX;py=e.clientY});
+addEventListener('mouseup',function(){drag=false});
+addEventListener('mousemove',function(e){if(!drag)return;camT-=(e.clientX-px)*0.006;
+ camP=Math.max(0.05,Math.min(3.08,camP-(e.clientY-py)*0.006));px=e.clientX;py=e.clientY;camUpdate()});
+renderer.domElement.addEventListener('wheel',function(e){camR=Math.max(0.08,Math.min(30,camR*(e.deltaY>0?1.1:0.9)));camUpdate();e.preventDefault()},{passive:false});
+addEventListener('resize',function(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+// hook de screenshot p/ verificação (dev): shot() renderiza e envia à porta 8124
+window.shot=function(cx,cy,cz,tx,ty,tz){if(cx!==undefined){camera.position.set(cx,cy,cz);camera.lookAt(tx,ty,tz);}
+ renderer.render(scene,camera);return fetch('http://localhost:8124/',{method:'POST',body:renderer.domElement.toDataURL('image/jpeg',0.95)}).then(function(){return 'ok'}).catch(function(e){return ''+e})};
+(function an(){requestAnimationFrame(an);renderer.render(scene,camera)})();
+</script></body></html>
