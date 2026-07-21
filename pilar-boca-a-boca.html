@@ -253,8 +253,12 @@ LEVELS.forEach(bloqueador);
 console.log('PILAR BOCA COM BOCA: '+NPERFIS+' perfil(is) C300 + '+LEVELS.length+' bloqueadores');
 document.getElementById('hud').innerHTML+='<br>'+(NPERFIS<2?'MODO DETALHE: 1 perfil + ':'')+LEVELS.length+' bloqueadores · swage contínuo · 4,8×19 (sem A325)';
 
-// ── AUDITOR DE INTERFERÊNCIA (lsf_core R01/R35) ──
-auditorGlobal();
+// ── AUDITOR DE INTERFERÊNCIA (lsf_core R01/R35) — SÓ SOB DEMANDA ──
+// 133k pares na thread principal TRAVA o navegador (armadilha conhecida:
+// "nunca auditorGlobal completo na página"). Roda só com ?audit na URL
+// (dev). window.audit() também disponível no console.
+window.audit=auditorGlobal;
+if(location.search.indexOf('audit')>=0)setTimeout(auditorGlobal,300);
 
 // ══ CÂMERA / VISTAS / ÓRBITA ══
 var target=new THREE.Vector3(0,ALT/2,0),camR=9,camT=0.7,camP=1.25;
