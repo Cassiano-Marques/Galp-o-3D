@@ -199,11 +199,13 @@ function locBox(mat,cx,cy,cz,sx,sy,sz){var m=new THREE.Mesh(new THREE.BoxGeometr
 // full-width nesta DENTRO do canal do C300 (mesas lapam as do pilar);
 // swage afina +1 chapa/lado (mesma conificação da terça: t + "um centavo").
 var _FOLGA=0.0002;
-// mesa do CL é CENTRADA em Hm/2 → face externa = Hm/2+T/2. P/ ela ENCOSTAR
-// (sem invadir) na face interna da mesa do C300 (WEB/2-T): Hm = WEB-3T-2·folga.
-var Hm=WEB-3*T-2*_FOLGA;              // largura cheia do bloq. (~0.2921) — lapa as mesas do C300
-var SWD_lat=Hm-2*(T+_FOLGA);          // largura swaged (~0.2867)
-var Fm=0.045, Lm=0.020, tm=T, SW_lat=0.045;   // mesa/lip/espessura/flat do swage
+// SWAGE EM TODA A PEÇA (Cassiano 21/07): o bloqueador é conificado no
+// comprimento INTEIRO — o 2º C300 encosta boca-com-boca e não há espaço p/
+// trecho cheio. A largura conificada (SWD) é tal que a mesa (centrada em
+// SWD/2, face externa SWD/2+T/2) ENCOSTA na face interna da mesa do C300.
+var SWD_lat=WEB-3*T-2*_FOLGA;         // largura CONIFICADA (~0.2921) — usada em TODA a peça
+var Hm=WEB;                           // largura nominal (antes do swage; a peça é toda swaged)
+var Fm=0.045, Lm=0.020, tm=T, SW_lat=0.045;   // mesa/lip/espessura
 function dAtL(zc,swZ){if(!swZ)return Hm;var rv=0.005;
  var regs=(swZ.length>0&&Array.isArray(swZ[0]))?swZ:[swZ];
  for(var i=0;i<regs.length;i++){var z0=regs[i][0],z1=regs[i][1];
@@ -310,17 +312,18 @@ perfilC(-1);if(NPERFIS>=2)perfilC(+1);   // 2º perfil só no pilar completo
 // ══════════════════════════════════════════════════════════════════════
 function bloqueador(yb){
  var L_b=BLK_LZ;
- var swZ_b=[[-L_b/2,-L_b/2+SW_lat],[L_b/2-SW_lat,L_b/2]];   // swage nas 2 pontas
- var grp=CL([0,yb,0],0,L_b,{color:0x28c08a,nseg:60,swZ:swZ_b,chamfer:1});
+ var swZ_b=[[-L_b/2,L_b/2]];   // SWAGE em TODA a peça (conificada inteira)
+ var grp=CL([0,yb,0],0,L_b,{color:0x28c08a,nseg:60,swZ:swZ_b});   // SEM chamfer (ligação RETA, não em grau)
  // NÃO edgear cada fatia do CL (viraria listra/gominho na alma). O CL é
  // fatiado internamente; contorno limpo vem do sombreado + da silhueta.
  grp.traverse(function(o){if(o.isMesh){o.material.polygonOffset=true;o.material.polygonOffsetFactor=1;o.material.polygonOffsetUnits=1;}});
- // 1 autobrocante 4,8×19 POR MESA (= um por lado), na LINHA DE CENTRO da
- // mesa (Y=yb-Fm/2), atravessando as 2 mesas encostadas. Mesma lógica do
- // latDimple; cabeça na face EXTERNA da mesa do C300 (acesso de obra).
+ // 1 autobrocante 4,8×19 POR MESA (= um por lado). FURO SEMPRE NA LINHA
+ // CENTRAL DAS DUAS MESAS: Y=yb-Fm/2 (centro da mesa do bloqueador) e
+ // Z=±FLG/2 (centro da mesa do C300, meia-profundidade da aba). Cabeça na
+ // face externa da mesa do C300 (acesso de obra).
  [-1,1].forEach(function(sx){
-  screwV(sx*(WEB/2),yb-Fm/2,-0.010,'x',-sx,scene); furo(sx*(WEB/2-T),yb-Fm/2,-0.010,'x');
-  if(NPERFIS>=2){screwV(sx*(WEB/2),yb-Fm/2,0.010,'x',-sx,scene); furo(sx*(WEB/2-T),yb-Fm/2,0.010,'x');}
+  screwV(sx*(WEB/2),yb-Fm/2,-FLG/2,'x',-sx,scene); furo(sx*(WEB/2-T),yb-Fm/2,-FLG/2,'x');
+  if(NPERFIS>=2){screwV(sx*(WEB/2),yb-Fm/2,FLG/2,'x',-sx,scene); furo(sx*(WEB/2-T),yb-Fm/2,FLG/2,'x');}
  });
 }
 LEVELS.forEach(bloqueador);
