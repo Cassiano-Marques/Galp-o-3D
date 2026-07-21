@@ -23,7 +23,7 @@
 <script>
 var T=0.002500,WEB=0.300000,FLG=0.075000,LIP=0.020000,DEPTH=0.150000,ALT=7.00;
 var RED=0.002900,ZIN=0.072500,BLK_LZ=0.137000,BLK_W=0.270000,BLK_H=0.050000,BLK_FL=0.030000;
-var LEVELS=[0.1500,1.2667,2.3833,3.5000,4.6167,5.7333,6.8500];
+var LEVELS=[0.1500,1.2667,2.3833,3.5000,4.6167,5.7333,6.8500],NPERFIS=1;
 var scene=new THREE.Scene();scene.background=new THREE.Color(0x060a10);
 var camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,0.01,60);
 var renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);
@@ -210,7 +210,7 @@ function perfilC(sz){PIECE++;
    box(mC,xL,(s[0]+s[1])/2,zL,LIP,s[1]-s[0],T)});
  });
 }
-perfilC(-1);perfilC(+1);
+perfilC(-1);if(NPERFIS>=2)perfilC(+1);   // 2º perfil só no pilar completo
 
 // ══════════════════════════════════════════════════════════════════════
 //  BLOQUEADOR — perfil menor transversal (eixo Z, alma-a-alma). SWAGE
@@ -240,17 +240,18 @@ function bloqueador(yb){PIECE++;
   var wEnd=BLK_W-2*RED-0.020;                               // largura da aba
   var zTab=sz*(ZIN-T/2);                                    // lapa a face interna da alma
   var yTab=yb-0.015;                                        // desce a partir da alma do bloq.
-  box(mB,0,yTab,zTab,wEnd,0.030,T);                         // ABA de topo (dobra 90°)
-  [-0.060,0.060].forEach(function(xo){                      // 2 dimples + 4,8×19 por ponta
-   screwZ(xo,yTab,sz*(DEPTH/2),-sz);                        // cabeça na face EXTERNA da alma
-   furo(xo,yTab,zTab,'z');                                  // furo piloto Ø3,6
-  });
+  box(mB,0,yTab,zTab,wEnd,0.030,T);                         // ABA de topo (dobra 90°) — sempre
+  if(sz<0||NPERFIS>=2)                                      // parafuso só onde HÁ perfil
+   [-0.060,0.060].forEach(function(xo){                     // 2 dimples + 4,8×19 por ponta
+    screwZ(xo,yTab,sz*(DEPTH/2),-sz);                       // cabeça na face EXTERNA da alma
+    furo(xo,yTab,zTab,'z');                                 // furo piloto Ø3,6
+   });
  });
 }
 LEVELS.forEach(bloqueador);
 
-console.log('PILAR BOCA COM BOCA: 2 perfis C300 + '+LEVELS.length+' bloqueadores');
-document.getElementById('hud').innerHTML+='<br>'+LEVELS.length+' bloqueadores · swage contínuo · 4,8×19 (sem A325)';
+console.log('PILAR BOCA COM BOCA: '+NPERFIS+' perfil(is) C300 + '+LEVELS.length+' bloqueadores');
+document.getElementById('hud').innerHTML+='<br>'+(NPERFIS<2?'MODO DETALHE: 1 perfil + ':'')+LEVELS.length+' bloqueadores · swage contínuo · 4,8×19 (sem A325)';
 
 // ── AUDITOR DE INTERFERÊNCIA (lsf_core R01/R35) ──
 auditorGlobal();
