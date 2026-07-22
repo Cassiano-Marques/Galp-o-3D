@@ -1,0 +1,3174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Galpão Clássico — LSF · 10×20m</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
+#title { position:absolute; top:14px; left:18px; color:#dce8f4; pointer-events:none; font-family:'Courier New',monospace; }
+#title h1 { font-size:13px; font-weight:bold; letter-spacing:3px; text-transform:uppercase; }
+#title p  { font-size:9px; color:#3a5a7a; margin-top:3px; letter-spacing:1px; }
+#legend { position:absolute; top:14px; right:18px; background:rgba(6,10,16,0.92);
+  border:1px solid #1a2a3a; padding:10px 14px; border-radius:4px; color:#a0b8d0;
+  font-size:9px; pointer-events:none; min-width:200px; font-family:'Courier New',monospace; }
+#legend h3 { font-size:8px; letter-spacing:3px; color:#2a4a6a; margin-bottom:8px; text-transform:uppercase; }
+.li { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+.lc { width:16px; height:5px; border-radius:1px; flex-shrink:0; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="title">
+  <h1>Galpão Clássico · LSF · 10×20m</h1>
+  <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
+  <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD 02e25be · 22/07/2026 08:44</p>
+</div>
+<div id="legend">
+  <h3>Elementos</h3>
+  <div class="li"><div class="lc" style="background:#4a9ad8"></div><span>Perfis</span></div>
+  <div class="li"><div class="lc" style="background:#c89030"></div><span>Raio de dobra</span></div>
+  <div class="li"><div class="lc" style="background:#c9ccd2"></div><span>Parafuso 1/2" A325 sextavado (estrutural)</span></div>
+  <div class="li"><div class="lc" style="background:#c9ccd2"></div><span>Auto brocante 4,8×19 Philips (costura)</span></div>
+  <div class="li"><div class="lc" style="background:#5a8ab8"></div><span>Sapata</span></div>
+  
+</div>
+<div id="hud" style="display:none;position:absolute;top:66px;left:18px;color:#8fbf6f;font-family:'Courier New',monospace;font-size:10px;background:rgba(6,10,16,0.85);padding:5px 10px;border-radius:4px;border:1px solid #1a3a1a;pointer-events:none;max-width:62vw;">R01 (dois corpos no mesmo lugar):</div>
+
+<!-- PAINEL DE VISTAS — retrátil, não cobre o desenho -->
+<style>
+#vistaBtn{
+  position:fixed; bottom:18px; right:18px; z-index:100;
+  background:#468a3d; color:#fff; border:none;
+  width:52px; height:52px; border-radius:50%;
+  font-size:10px; font-family:monospace; font-weight:bold;
+  cursor:pointer; letter-spacing:1px;
+  box-shadow:0 2px 12px rgba(0,0,0,0.5);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  line-height:1.3;
+}
+#vistaBtn:hover{background:#3a7a30;}
+#vistaPanel{
+  position:fixed; bottom:80px; right:18px; z-index:99;
+  background:rgba(6,10,16,0.96); border:1px solid #1a3a1a;
+  border-radius:10px; padding:10px 12px;
+  display:none; flex-direction:column; gap:4px;
+  max-height:80vh; overflow-y:auto;
+  box-shadow:0 4px 20px rgba(0,0,0,0.6);
+  min-width:180px;
+}
+#vistaPanel.open{display:flex;}
+.vGrp{color:#468a3d; font-size:7px; letter-spacing:2px; margin:4px 0 2px; font-family:monospace;}
+.vBtn{
+  background:rgba(20,40,20,0.6); color:#c8e0a8;
+  border:1px solid #2a4a2a; padding:6px 10px; border-radius:6px;
+  font-size:9px; letter-spacing:0.5px; cursor:pointer;
+  font-family:monospace; text-align:left;
+  transition:background 0.15s;
+}
+.vBtn:hover{background:rgba(70,138,61,0.4); color:#fff;}
+.vBtn.active{background:#468a3d; color:#fff; border-color:#468a3d;}
+</style>
+
+<button id="vistaBtn" onclick="togglePanel()">👁<br>VISTAS</button>
+
+<div id="vistaPanel">
+  <div class="vGrp">── GERAL ──</div>
+  <button class="vBtn active" onclick="sv(0,this)">🌐 Geral</button>
+  <div class="vGrp">── PÓRTICO ──</div>
+  <button class="vBtn" onclick="sv(1,this)">⬛ Sapata</button>
+  <button class="vBtn" onclick="sv(3,this)">│ Nó Pilar</button>
+  <button class="vBtn" onclick="sv(5,this)">╱ MF + Pilar</button>
+  <button class="vBtn" onclick="sv(7,this)">╱ MF + Rafter</button>
+  <button class="vBtn" onclick="sv(9,this)">△ Cumeeira</button>
+  <button class="vBtn" onclick="sv(10,this)">━ Travessa</button>
+  
+  
+  <div class="vGrp">── PAREDE LATERAL ──</div>
+  <button class="vBtn" onclick="sv(21,this)">▦ Lateral geral (de fora)</button>
+  <button class="vBtn" onclick="sv(22,this)">│ Terça base × pilar</button>
+  <button class="vBtn" onclick="sv(23,this)">╲ Diagonal × pilar</button>
+  <button class="vBtn" onclick="sv(24,this)">▤ Mini-pilar dentro</button>
+  <button class="vBtn" onclick="sv(25,this)">∧ Apex V</button>
+  <div class="vGrp">── COBERTURA ──</div>
+  <button class="vBtn" onclick="sv(26,this)">⛺ Cobertura geral</button>
+  <button class="vBtn" onclick="sv(27,this)">✚ Nó terça × rafter</button>
+  <button class="vBtn" onclick="sv(28,this)">▣ Mini-rafter + parafusos</button>
+  <button class="vBtn" onclick="sv(29,this)">∧ Apex V cobertura</button>
+  <button class="vBtn" onclick="sv(30,this)">△ Cumeeira + terças</button>
+  <button class="vBtn" onclick="sv(31,this)">▁ Cantoneira de arranque</button>
+  <div class="vGrp">── EMPENA ──</div>
+  <button class="vBtn" onclick="sv(32,this)">▲ Empena geral (de fora)</button>
+  <button class="vBtn" onclick="sv(33,this)">△ Apex guias + placa</button>
+  <button class="vBtn" onclick="sv(34,this)">╱ Guia da MF</button>
+  <button class="vBtn" onclick="sv(35,this)">▤ Mini da empena</button>
+</div>
+
+<div id="infoBar" style="position:fixed;bottom:18px;left:18px;background:rgba(6,10,16,0.75);padding:5px 12px;border-radius:16px;color:#2a4a2a;font-size:8px;border:1px solid #1a3a1a;letter-spacing:1px;pointer-events:none;">⬡ ARRASTAR · ZOOM · 2× RESET</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+function togglePanel(){
+  var p=document.getElementById('vistaPanel');
+  p.classList.toggle('open');
+}
+function sv(i,el){
+  // marcar botão ativo (pelo elemento clicado — índice do botão !=
+  // índice da vista desde o menu enxuto de 13/07)
+  document.querySelectorAll('.vBtn').forEach(function(b){b.classList.remove('active');});
+  if(el) el.classList.add('active');
+  setView(i);
+  // fechar painel no celular
+  if(window.innerWidth<600) document.getElementById('vistaPanel').classList.remove('open');
+}
+// fechar painel clicando fora
+document.addEventListener('click',function(e){
+  var p=document.getElementById('vistaPanel');
+  var btn=document.getElementById('vistaBtn');
+  if(!p.contains(e.target)&&e.target!==btn&&!btn.contains(e.target)){
+    p.classList.remove('open');
+  }
+});
+var cv=document.getElementById('c');
+var W=window.innerWidth||1280,H=window.innerHeight||720;
+var renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+renderer.setSize(W,H);renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5)); // cap 1.5: em 4K era 4x mais pixels (PC do Cassiano quase travava)
+renderer.setClearColor(0x060a10);
+// SOMBRAS DESLIGADAS (Cassiano 13/07). LICAO 14/07: NAO religar p/ os
+// spots do prisma — no r128 o Lambert aplica a MASCARA de sombra sobre
+// TODAS as luzes (sol+ambiente juntos): parede externa ganhava faixa
+// escura e a calcada escurecia ate com prisma OFF (77->51 medido).
+// A luz do prisma fica interna por GEOMETRIA (calcada com cor assada).
+renderer.shadowMap.enabled=false;
+var scene=new THREE.Scene();
+// near=0.05 (era 0.001): razao near/far de 300000:1 destruia a precisao
+// do depth buffer — a ~28m o erro chegava a ~90mm e a ESTRUTURA (50-76mm
+// atras da telha) vazava atraves dela (diagonais verdes na cobertura,
+// Cassiano 13/07). Com 0.05 o erro cai p/ ~2mm; telha = solida (CAD).
+var camera=new THREE.PerspectiveCamera(38,W/H,0.05,300);
+// luz NEUTRA (Cassiano 13/07: galpao "muito branco" — a ambient azulada
+// 0x7090c0 lavava a cor da telha; cinza neutro mostra o galvalume real)
+var amb=new THREE.AmbientLight(0x9ba1a7,1.15);scene.add(amb);
+var sun=new THREE.DirectionalLight(0xfff4e0,0.5);
+sun.position.set(8,20,10);scene.add(sun);
+
+var matPilar =new THREE.MeshLambertMaterial({color:0x4a9ad8});
+var matRafter=new THREE.MeshLambertMaterial({color:0x4a9ad8});
+var matMF    =new THREE.MeshLambertMaterial({color:0x4a9ad8});
+var matTrav  =new THREE.MeshLambertMaterial({color:0x4a9ad8});
+var matSapata=new THREE.MeshLambertMaterial({color:0x4a9ad8});
+var matRad   =new THREE.MeshLambertMaterial({color:0xc89030});
+var matBolt  =new THREE.MeshLambertMaterial({color:0xe04040});
+var matHole  =new THREE.MeshLambertMaterial({color:0x050810});
+var matBase  =matSapata; var matAlma=matSapata;
+var matAba   =new THREE.MeshLambertMaterial({color:0x4a7aaa});
+var matWeld  =new THREE.MeshLambertMaterial({color:0xc07818});
+var matGnd   =new THREE.MeshLambertMaterial({color:0x070d07});
+// VISUAL CAD: faces recuam 1 unidade de depth (polygonOffset) para as
+// LINHAS (arestas + tracejadas na superfície) vencerem sem z-fighting.
+[matPilar,matRafter,matMF,matTrav,matSapata,matRad,matAba,matWeld].forEach(
+ function(m){m.polygonOffset=true;m.polygonOffsetFactor=1;m.polygonOffsetUnits=1;});
+
+// ── Variáveis calculadas pelos módulos Python ──
+var t=0.0025,r=0.0025,wH=0.3,fW=0.075,lL=0.02,refX=0.1;
+var pz1=0.00375,pz2=-0.00375;
+var theta=0.2260683879938839,cosT=0.9745551866148996,sinT=0.2241476929214269,tanT=0.22999999999999998;
+var cx=-0.11665803067793774,cy=-0.14496508400896632;
+var connZone=0.24966883835591658,ghostZone=0.30783274679604833;
+var connZoneCum=0.07975641431738992,ghostZoneCum=0.3335128286347798;
+var rafLen=5.130833279934139,cumX=4.85,cumY=1.1512826364449835;
+var mfAng=0.7853981633974483,cosMF=0.7071067811865476,sinMF=0.7071067811865476;
+var mfPillarY=-0.8449650840089663,mfLen=1.3349282448888262;
+var almaA_mf=-0.055,almaB_mf=1.3749282448888263;
+var fSupStartMF=0.37127416997969515,fSupEndMF=0.8176287348488688;
+var fInfStartMF=0.07127416997969518,fInfEndMF=1.276849514069648;
+var fInfStartMF_aba=0.08627416997969518,fInfEndMF_aba=1.256849514069648;
+var travBx=3.044114967960483,travCy=0.5373662630469592;
+var travBolt1=3.478897576656135,travBolt2=3.4902493836069297;
+var travWX=2.8499999999999996,travDirX=6.85;
+var travComp=4.0,travCx=4.85;
+var fTravLen=3.891,fLipLen=3.811;
+var fTravSupLen=1.2940584522414351,fTravSupCx=4.85;
+var BW=0.256,BD=0.16,BT=0.0095,AH=0.22,AW=0.25,AT=0.0095,ABD=0.06,ABT=0.0095;
+var pH=6.0,pBase=0.025,pilTopo=6.025;
+var nPorticos=5,modulo=5.0;
+var mezAtivo=0,mezH=3.0000;
+var nMezPilares=1;   // pilares intermediários da viga do mezanino
+var mezPorticos=[4, 5];
+var cy_viga=-0.148750,vigaLen=10.000000;
+var flgStartMez=0.305000,flgEndMez=9.695000,flgLenMez=9.390000;
+var mfAngMez=0.000000,cosMFM=1.000000,sinMFM=0.000000;
+var mfLenMez=0.000000,mfPillarY_mez=0.000000;
+var almaA_mez=0.000000,almaB_mez=0.000000;
+var fSupStartM=0.000000,fSupEndM=0.000000;
+var fInfStartM=0.000000,fInfEndM=0.000000;
+var fInfStartAbaM=0.000000,fInfEndAbaM=0.000000;
+
+// ── Cortes do lip do pilar (parede lateral) — calculado pelo modulo ──
+var LAT_CUTS=[[0.242, 0.307], [0.2567, 0.4423], [2.1503, 2.2153], [2.165, 2.3506], [4.0586, 4.1236], [4.0733, 4.2589], [5.9669, 6.0319]];
+// Parede lateral ativa? Se sim, o mini-pilar solidariza as almas (nos niveis
+// de terca/diagonal) e os pontos fixos 2000/4000 do pilar saem.
+var latAtivo=1;
+// ── Cobertura: bandas de corte do lip SUPERIOR do rafter ──
+var RAF_CUTS_T=[[0.3777, 0.4427], [1.8437, 1.9087], [3.3098, 3.3748], [4.7758, 4.8408]];
+var RAF_CUTS_D=[[0.4096, 0.5631], [1.8757, 2.0292], [3.3417, 3.4952]];
+var COB_BRACED=[1, 0, 0, 1];
+var RAF_CUT_BEIRAL=0.0845;   // R51b: lip sup do rafter cortado na ponta do beiral
+
+// ── Helpers ──
+var V3=THREE.Vector3;
+var PIECE=0;   // id da peça corrente (R01: auditor ignora pares da MESMA peça)
+// ── LISTA DE PEÇAS (Cassiano 13/07): a peça é cidadã de 1ª classe. Todo
+// box da cena carrega userData.p; PECAS registra id+tipo. Esqueleto da
+// arquitetura de LISTA ÚNICA: quantitativo, CSV e etiquetas derivarão da
+// lista paramétrica, nunca da cena. LIMITAÇÃO CONHECIDA: os clones
+// espelhados da água direita reusam o p do original (contar 2x no
+// quantitativo dos elementos de pórtico espelhados).
+var PECAS=[];
+function novaPeca(tipo){PIECE++;PECAS.push({id:PIECE,tipo:tipo||'peca'});return PIECE;}
+function mkBox(p,x,y,z,w,h,d,m){var mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);mesh.position.set(x,y,z);mesh.userData.p=PIECE;mesh.castShadow=mesh.receiveShadow=true;p.add(mesh);}
+function mkCyl(p,x,y,z,r2,h,axis,m){var mesh=new THREE.Mesh(new THREE.CylinderGeometry(r2,r2,h,20),m);mesh.position.set(x,y,z);if(axis==='x')mesh.rotation.z=Math.PI/2;if(axis==='z')mesh.rotation.x=Math.PI/2;mesh.castShadow=true;p.add(mesh);}
+// VISUAL CAD (Cassiano 12/07): tracejada COM depth test — a linha oculta
+// aparece sobre a peça hospedeira (as faces sólidas recuam via
+// polygonOffset), mas peça independente NA FRENTE a esconde. Antes
+// (depthTest:false + renderOrder 10) atravessava o galpão inteiro.
+function mkDash(parent,pts,color,op){var geo=new THREE.BufferGeometry().setFromPoints(pts);var mat=new THREE.LineDashedMaterial({color:color,dashSize:0.020,gapSize:0.008,transparent:true,opacity:op||0.90,depthTest:true});var ln=new THREE.Line(geo,mat);ln.computeLineDistances();ln.renderOrder=2;parent.add(ln);}
+var refMat=new THREE.LineDashedMaterial({color:0xffffff,dashSize:0.030,gapSize:0.010,transparent:true,opacity:0.55,depthTest:true});
+function mkRef(parent,pts){var geo=new THREE.BufferGeometry().setFromPoints(pts);var ln=new THREE.Line(geo,refMat);ln.computeLineDistances();parent.add(ln);}
+
+// ── MOTOR COMPARTILHADO (lsf_core) — parafuso 4,8×19 via screwZ ──
+// ══════════════════════════════════════════════════════════════════════
+// LSF_CORE — MOTOR COMPARTILHADO (Global Design Standards executável)
+// Regras GRAVADAS como FUNÇÕES: todo gerador injeta este arquivo.
+// Mudou aqui, mudou em TODOS os modelos. Copiar este código = PROIBIDO.
+// Requer no escopo: THREE, scene, T (espessura), PIECE (id de peça).
+// Índice: 05-Skills/00-INDICE-REGRAS.md · Lei: módulos 01-04.
+// ══════════════════════════════════════════════════════════════════════
+
+// R33 — materiais do parafuso (zincado + fenda)
+var mScrew=new THREE.MeshLambertMaterial({color:0xc9ccd2,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
+var mCross=new THREE.MeshLambertMaterial({color:0x1a2026,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+
+// R21 — segmentos com cortes; ml=0.006 p/ ABERTURAS de fabricação (sliver),
+// 0.0005 p/ fatias de CONSTRUÇÃO (rampas etc.)
+function segs(a,b,cuts,ml){var v=[[a,b]];cuts.forEach(function(c){var nv=[];
+ v.forEach(function(s){if(c[1]<=s[0]||c[0]>=s[1]){nv.push(s);return}
+  if(c[0]>s[0])nv.push([s[0],c[0]]);if(c[1]<s[1])nv.push([c[1],s[1]])});v=nv});
+ return v.filter(function(s){return s[1]-s[0]>(ml||0.006)})}
+
+// R22 — funde bandas sobrepostas/próximas (tol em metros)
+function mergeB(arr,tol){arr.sort(function(a,b){return a[0]-b[0]});var m=[];
+ arr.forEach(function(c){if(m.length&&c[0]<=m[m.length-1][1]+(tol||0.024))
+  m[m.length-1][1]=Math.max(m[m.length-1][1],c[1]);else m.push([c[0],c[1]])});return m}
+
+// R33 — PARAFUSO AUTO BROCANTE 4,8×19 (só visual; din = p/ dentro da montagem)
+// cabeça Philips Ø8,5 FACEADA (ultrafina ≤0,1mm — cabe na folga de 0,2mm)
+// + corpo passante Ø4,8 + rosca (anéis) + ponta cônica saindo do lado interno
+function screwZ(x,y,zF,din,par){var P=par||scene;
+ var hd=new THREE.Mesh(new THREE.CylinderGeometry(0.00425,0.00425,0.00006,18),mScrew);
+ hd.rotation.x=Math.PI/2;hd.position.set(x,y,zF-din*0.00003);hd.renderOrder=1;P.add(hd);
+ [0,Math.PI/2].forEach(function(rz){
+  var c=new THREE.Mesh(new THREE.BoxGeometry(0.0062,0.0013,0.00005),mCross);
+  c.position.set(x,y,zF-din*0.00008);c.rotation.z=rz;c.renderOrder=2;
+  c.userData.p=-1;P.add(c)});
+ var sh=new THREE.Mesh(new THREE.CylinderGeometry(0.0024,0.0024,0.0125,12),mScrew);
+ sh.rotation.x=din*Math.PI/2;sh.position.set(x,y,zF+din*0.00625);P.add(sh);
+ for(var i5=0;i5<4;i5++){
+  var rg=new THREE.Mesh(new THREE.CylinderGeometry(0.0030,0.0030,0.0007,12),mScrew);
+  rg.rotation.x=Math.PI/2;rg.position.set(x,y,zF+din*(0.0045+0.0019*i5));P.add(rg)}
+ var tp=new THREE.Mesh(new THREE.CylinderGeometry(0.0001,0.0024,0.0065,12),mScrew);
+ tp.rotation.x=din*Math.PI/2;tp.position.set(x,y,zF+din*0.01575);P.add(tp)}
+
+// R33b — PARAFUSO ORIENTÁVEL: mesmo 4,8×19 do screwZ, mas em qualquer eixo.
+// Cabeça assenta em (x,y,z); broca/corpo segue din·axis (axis 'x'|'y'|'z').
+// Reusa screwZ dentro de um Group rotacionado (não duplica geometria).
+// Uso típico: onde há DIMPLE há este parafuso (costura de chapa).
+function screwV(x,y,z,axis,din,par){
+ var g=new THREE.Group();g.position.set(x,y,z);
+ if(axis==='x')g.rotation.y=(din>0)?Math.PI/2:-Math.PI/2;
+ else if(axis==='y')g.rotation.x=(din>0)?-Math.PI/2:Math.PI/2;
+ else if(din<0)g.rotation.x=Math.PI;
+ (par||scene).add(g);
+ screwZ(0,0,0,1,g);g.userData.fastener=true;return g}
+
+// R33c — CABEÇA do parafuso (Philips faceada) SEM corpo: representação visual
+// do DIMPLE de costura (chapa costurada — o que se vê de frente é a cabeça).
+// Mesma cabeça do screwZ, orientável como screwV. Leve (cabeça+cruz) para nós
+// com MUITOS dimples (cobertura/juntas do galpão). din = lado da face.
+function screwHeadV(x,y,z,axis,din,par){
+ var g=new THREE.Group();g.position.set(x,y,z);
+ if(axis==='x')g.rotation.y=(din>0)?Math.PI/2:-Math.PI/2;
+ else if(axis==='y')g.rotation.x=(din>0)?-Math.PI/2:Math.PI/2;
+ else if(din<0)g.rotation.x=Math.PI;
+ (par||scene).add(g);
+ var hd=new THREE.Mesh(new THREE.CylinderGeometry(0.00425,0.00425,0.00006,18),mScrew);
+ hd.rotation.x=Math.PI/2;hd.position.set(0,0,-0.00003);hd.renderOrder=1;g.add(hd);
+ [0,Math.PI/2].forEach(function(rz){
+  var c=new THREE.Mesh(new THREE.BoxGeometry(0.0062,0.0013,0.00005),mCross);
+  c.position.set(0,0,-0.00008);c.rotation.z=rz;c.renderOrder=2;c.userData.p=-1;g.add(c)});
+ g.userData.fastener=true;return g}
+
+// R44 — PARAFUSO ESTRUTURAL 1/2" A325: cabeça SEXTAVADA + 2 arruelas + porca
+// TRAVANTE (anel de nylon azul) + rosca. Galvanizado (mesma cor do 4,8×19, mScrew).
+// grip = espessura presa (chapas, ≈ comprimento do cilindro antigo). A ferragem
+// (cabeça+arruela de um lado; arruela+porca+sobra de rosca do outro) fica PRA FORA
+// do grip — robusto pra qualquer espessura. axis 'x'|'y'|'z'.
+// Fonte ÚNICA — substitui as ~10 cópias do galpão.
+// NOTA 10/07: parafuso FLANGEADO foi avaliado (padrão Stratco) e REJEITADO
+// pelo Cassiano — flangeado é muito CARO no Brasil. Não re-sugerir.
+var mNylon=new THREE.MeshLambertMaterial({color:0x2746b8});
+function bolt12(x,y,z,axis,grip,par){
+ var g=new THREE.Group();g.position.set(x,y,z);
+ if(axis==='x')g.rotation.y=Math.PI/2;
+ else if(axis==='y')g.rotation.x=Math.PI/2;
+ (par||scene).add(g);
+ var sR=0.00635,hR=0.0110,hH=0.0080,wR=0.0135,wT=0.0030,nH=0.0120,tail=0.008;
+ var zb=-grip/2, ze=grip/2;                         // faces das chapas (arruelas encostam)
+ function cyl(r,h,zc,seg,m){var c=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg),m||mScrew);
+  c.rotation.x=Math.PI/2;c.position.z=zc;g.add(c);return c;}
+ cyl(hR,hH,zb-wT-hH/2,6);                           // CABEÇA sextavada (lado -)
+ cyl(wR,wT,zb-wT/2,20);                             // arruela sob a cabeça
+ cyl(wR,wT,ze+wT/2,20);                             // arruela sob a porca
+ cyl(hR,nH,ze+wT+nH/2,6);                           // PORCA travante sextavada (lado +)
+ cyl(0.0083,0.0020,ze+wT+nH-0.0009,16,mNylon);     // anel de nylon azul (travante)
+ var zc2=ze+wT+nH+tail;
+ cyl(sR,zc2-(zb-wT),((zb-wT)+zc2)/2,14);           // núcleo da haste (atravessa tudo)
+ for(var zr=ze+wT+nH+0.0012;zr<zc2-0.0004;zr+=0.002)cyl(0.0072,0.0014,zr,12);  // rosca da sobra
+ g.userData.fastener2=true;return g;}
+
+// R01/R35/R36 — AUDITOR GLOBAL DE COLISÃO (AABB rápido + OBB/SAT 15 eixos).
+// Contato (folga 0) permitido; sobreposição > 0,05mm = violação.
+// 100% dos sólidos BoxGeometry; pares da MESMA peça (userData.p) ignorados.
+function auditorGlobal(){
+ var TOL=0.00005,it=[],viol=[];
+ scene.updateMatrixWorld(true);
+ scene.traverse(function(o){if(!o.isMesh||o.geometry.type!=='BoxGeometry')return;
+  o.geometry.computeBoundingBox();var bb=o.geometry.boundingBox;
+  var c=new THREE.Vector3();bb.getCenter(c);c.applyMatrix4(o.matrixWorld);
+  var e=new THREE.Vector3();bb.getSize(e).multiplyScalar(0.5);
+  var m=o.matrixWorld.elements;
+  it.push({p:o.userData.p,aabb:new THREE.Box3().setFromObject(o),c:c,
+   e:[e.x,e.y,e.z],a:[new THREE.Vector3(m[0],m[1],m[2]).normalize(),
+    new THREE.Vector3(m[4],m[5],m[6]).normalize(),
+    new THREE.Vector3(m[8],m[9],m[10]).normalize()]})});
+ function sep(A,B){var axes=A.a.concat(B.a);
+  for(var i=0;i<3;i++)for(var j2=0;j2<3;j2++){
+   var cr=new THREE.Vector3().crossVectors(A.a[i],B.a[j2]);
+   if(cr.lengthSq()>1e-8)axes.push(cr.normalize())}
+  var d=new THREE.Vector3().subVectors(B.c,A.c);
+  for(var k=0;k<axes.length;k++){var ax=axes[k];
+   var ra=A.e[0]*Math.abs(ax.dot(A.a[0]))+A.e[1]*Math.abs(ax.dot(A.a[1]))+A.e[2]*Math.abs(ax.dot(A.a[2]));
+   var rb=B.e[0]*Math.abs(ax.dot(B.a[0]))+B.e[1]*Math.abs(ax.dot(B.a[1]))+B.e[2]*Math.abs(ax.dot(B.a[2]));
+   if(Math.abs(d.dot(ax))>=ra+rb-TOL)return true}
+  return false}
+ var pares=0,sat=0;
+ for(var i=0;i<it.length;i++)for(var j3=i+1;j3<it.length;j3++){
+  if(it[i].p===it[j3].p)continue;pares++;
+  var a=it[i].aabb,b=it[j3].aabb;
+  if(Math.min(a.max.x,b.max.x)-Math.max(a.min.x,b.min.x)<=TOL)continue;
+  if(Math.min(a.max.y,b.max.y)-Math.max(a.min.y,b.min.y)<=TOL)continue;
+  if(Math.min(a.max.z,b.max.z)-Math.max(a.min.z,b.min.z)<=TOL)continue;
+  sat++;if(!sep(it[i],it[j3]))viol.push([it[i].p,it[j3].p])}
+ var msg='AUDITOR: '+PIECE+' peças · '+it.length+' sólidos (100%) · '+pares+
+  ' pares · '+sat+' SAT · '+(viol.length===0?'0 VIOLAÇÕES ✓':viol.length+' VIOLAÇÕES ⚠');
+ console.log(msg);viol.slice(0,12).forEach(function(v){console.log('  ⚠ peça '+v[0]+' × peça '+v[1])});
+ document.getElementById('hud').textContent+=' — '+msg;}
+
+function pf(par,x,y,zFace,din){ screwZ(x,y,zFace,din,par); }
+
+
+// ── Elementos estruturais (cada um isolado em seu módulo) ──
+
+function buildSapata(ox,oz){novaPeca('sapata');
+  mkBox(scene,ox,-BT/2,oz,BW,BT,BD,matBase);
+  mkBox(scene,ox,AH/2,oz+AT/2,AW,AH,AT,matAlma);
+  var xL=ox-(AW/2-ABT/2),xR=ox+(AW/2-ABT/2);
+  mkBox(scene,xL,AH/2,oz+AT+ABD/2,ABT,AH,ABD,matAba);
+  mkBox(scene,xR,AH/2,oz+AT+ABD/2,ABT,AH,ABD,matAba);
+  mkBox(scene,ox,-BT+0.002,oz+AT/2,AW+0.004,0.004,AT+0.008,matWeld);
+  mkBox(scene,xL,-BT+0.002,oz+AT+ABD/2,ABT+0.006,0.004,ABD,matWeld);
+  mkBox(scene,xR,-BT+0.002,oz+AT+ABD/2,ABT+0.006,0.004,ABD,matWeld);
+  [[ox+BW/2-0.040,BD/2-0.040],[ox-BW/2+0.040,BD/2-0.040],
+   [ox+BW/2-0.040,-BD/2+0.040],[ox-BW/2+0.040,-BD/2+0.040]].forEach(function(p){
+    mkCyl(scene,p[0],-BT/2,oz+p[1],0.010,BT+0.003,'y',matHole);});
+  [0.060,0.120,0.180].forEach(function(hy){[-refX,0,refX].forEach(function(hx){
+    mkCyl(scene,ox+hx,hy,oz+AT/2,0.0065,AT+0.006,'z',matHole);});});
+}
+
+
+// Corte do lip: segmentos que SOBRAM apos remover as faixas de conexao
+// (parede lateral). LAT_CUTS vazio = lip inteiro (comportamento original).
+function lipSegsP(cuts,yBot,yTop){
+  var v=[[yBot,yTop]];
+  for(var c=0;c<cuts.length;c++){var nv=[],a=cuts[c][0],e=cuts[c][1];
+   for(var i=0;i<v.length;i++){var s=v[i][0],tt=v[i][1];
+    if(e<=s||a>=tt){nv.push([s,tt]);}
+    else{if(a>s)nv.push([s,a]);if(e<tt)nv.push([e,tt]);}}
+   v=nv;}
+  return v;}
+// REGRA MESTRA (colisao): faixas de corte sobrepostas (ou mais proximas que
+// tol) viram UMA abertura unica e limpa — um vao livre, 2 cunhas, sem
+// rebarba nem pedaco de lip dentro do vao de outro perfil.
+function mergeBands(cuts,tol){
+  if(!cuts||!cuts.length)return [];
+  var s=cuts.map(function(c){return c.slice();}).sort(function(a,b){return a[0]-b[0];});
+  var out=[s[0]];
+  for(var i=1;i<s.length;i++){
+    var Lz=out[out.length-1];
+    if(s[i][0]<=Lz[1]+tol){if(s[i][1]>Lz[1])Lz[1]=s[i][1];}
+    else out.push(s[i]);}
+  return out;}
+function buildPilar(ox,oz,hh,emp,lados){novaPeca('pilar');
+  // lados (13/07, print do Cassiano): cortes de lip da parede lateral
+  // SO na(s) metade(s) com VAO adjacente — nos pilares de PONTA o lip
+  // externo (lado da empena) ficava cortado SEM nada passando ali
+  // (a terca penetra a boca ate ~107mm do eixo: so cruza o lip da
+  // metade interna). {pos,neg}; default ambos (intermediarios).
+  var lad=lados||{pos:true,neg:true};
+  // hh (opcional) = altura do pilar (flanges). Default pH — chamadas
+  // existentes IDENTICAS. emp (opcional, EMPENA 13/07): reusa no rafter
+  // a MESMA ligacao do pilar do mezanino na viga — {webTop: alma sobe
+  // e ATRAVESSA a secao da rafter; ctr: centro da secao p/ os parafusos
+  // diagonais nas linhas de maquina}. Com emp, os LAT_CUTS da parede
+  // lateral NAO se aplicam (pilar INTEGRO — os cortes eram das tercas
+  // da lateral, sem funcao na empena; Cassiano 13/07).
+  var PH=(hh||pH);
+  var WEBH=(emp&&emp.webTop)?(emp.webTop-pBase):PH;   // alma pode subir alem
+  // EMPENA (13/07): corte de mesa/lip RENTE a face inferior da rafter,
+  // POR LADO — a rafter e inclinada, entao cada flange (x=+-147mm)
+  // corta na altura da rafter NO SEU x, com FOLGA PADRAO de 8mm
+  // (faixa 5-10 do Cassiano). O conjunto dos cortes acompanha o grau.
+  var hPos=(emp&&emp.fTopPos)?(emp.fTopPos-pBase):PH;
+  var hNeg=(emp&&emp.fTopNeg)?(emp.fTopNeg-pBase):PH;
+  var cPos=pBase+hPos/2,cNeg=pBase+hNeg/2;
+  var pg=new THREE.Group();
+  pg.position.set(ox,0,oz);
+  scene.add(pg);
+  var pYc=pBase+PH/2;
+  var LC=emp?[]:((typeof LAT_CUTS!=='undefined')?LAT_CUTS:[]);
+  // topY (PLATIBANDA 15/07): perfil da EXTREMIDADE e UMA UNIDADE SO da
+  // sapata ate o topo da platibanda — alma, mesas e lips CONTINUOS
+  // (o rafter e que recebe a janela de corte p/ ele passar).
+  function bPC(pz,sign,mat,topY){
+    var hP2=topY?(topY-pBase):hPos, hN2=topY?(topY-pBase):hNeg;
+    var cP2=pBase+hP2/2, cN2=pBase+hN2/2;
+    var WB2=topY?Math.max(WEBH,topY-pBase):WEBH;
+    mkBox(pg,0,pBase+WB2/2,pz,wH,WB2,t,mat);
+    mkBox(pg,+(wH/2-t/2),cP2,pz+sign*(t/2+fW/2),t,hP2,fW,mat);
+    mkBox(pg,-(wH/2-t/2),cN2,pz+sign*(t/2+fW/2),t,hN2,fW,mat);
+    mkBox(pg,+(wH/2-lL/2),cP2,pz+sign*(t/2+fW-t/2),lL,hP2,t,mat);
+    // Lip -X: seccionado nas faixas de conexao da parede lateral.
+    // Corte funcional EXPANDIDO pelo alivio (83-60)/2; pontas em CUNHA
+    // (cheia na DOBRA em -wH/2, zero na borda livre) — regra do lip cut.
+    var LIPR=0.0115;
+    var LCh=(pz>0?lad.pos:lad.neg)?LC:[];  // corte so na metade com vao
+    var LCm=mergeBands(LCh,2*LIPR+0.001);  // aberturas unicas (regra mestra)
+    var LCe=LCm.map(function(C){return [C[0]-LIPR,C[1]+LIPR];});
+    var zlip=pz+sign*(t/2+fW-t/2);
+    var segs=lipSegsP(LCe,pBase,pBase+hN2);
+    for(var si=0;si<segs.length;si++){var a=segs[si][0],e=segs[si][1];
+      if(e-a<0.006)continue;               // sem rebarba (sliver)
+      mkBox(pg,-(wH/2-lL/2),(a+e)/2,zlip,lL,e-a,t,mat);}
+    LCm.forEach(function(C){
+      [[C[0],-1],[C[1],1]].forEach(function(E){
+        var yE=E[0],dr=E[1];
+        if(yE<pBase||yE>pBase+hN2)return;
+        var sh=new THREE.Shape();
+        sh.moveTo(-wH/2,yE+dr*LIPR);sh.lineTo(-wH/2,yE);
+        sh.lineTo(-wH/2+lL,yE+dr*LIPR);sh.closePath();
+        var g2=new THREE.ExtrudeGeometry(sh,{depth:t,bevelEnabled:false});
+        var mm=new THREE.Mesh(g2,mat);mm.position.z=zlip-t/2;pg.add(mm);});});
+    mkCyl(pg,+(wH/2),cP2,pz+sign*(t/2+r),r,hP2,'y',matRad);
+    mkCyl(pg,-(wH/2),cN2,pz+sign*(t/2+r),r,hN2,'y',matRad);
+    mkCyl(pg,+(wH/2-r),cP2,pz+sign*(t/2+fW),r,hP2,'y',matRad);
+    mkCyl(pg,-(wH/2-r),cN2,pz+sign*(t/2+fW),r,hN2,'y',matRad);}
+  // PLATIBANDA v2 (Cassiano 15/07): pilares no tamanho do modelo A —
+  // quem sobe e o MINI C140 (bloco no fim). bPC(topY) fica disponivel.
+  bPC(pz1,+1,matPilar);bPC(pz2,-1,matPilar);
+  [0.060,0.120,0.180].forEach(function(hy){[-refX,0,refX].forEach(function(hx){
+    bolt12(hx,hy,AT/2,'z',AT+t*4,pg);});});
+  // Solidarizacao 2000/4000: SO quando NAO ha parede lateral. Com parede,
+  // o mini-pilar segmentado solidariza nos niveis de terca/diagonal.
+  var _semParede=(typeof latAtivo==='undefined')||!latAtivo;
+  if(_semParede){[2.000,4.000].forEach(function(by){if(by<PH){[-refX,0,refX].forEach(function(bx){
+    bolt12(bx,by,0,'z',t*2,pg);});}});}
+  if(emp&&emp.ctr){
+    // LIGACAO NO RAFTER (REGRA PERMANENTE, Cassiano 13/07): 1/2" EXATO
+    // na INTERSECAO das linhas de maquina do pilar (verticais, x=bx)
+    // com as do rafter INCLINADO — a linha +-refX do rafter (offset
+    // perpendicular ao eixo) cruza a vertical x=bx em
+    //   y = ctr + slp*bx + bx/cosT   (slp = +-tanT conforme a agua).
+    // Pareamento diagonal INVERTIDO (-refX,+refX)-(0,0)-(+refX,-refX):
+    // contra o grau do rafter (Cassiano 13/07: no mesmo sentido o furo
+    // de cima saia do pilar). No mezanino a viga e horizontal (slp=0,
+    // cosT->1) — o 'ctr+bx' antigo ficava deslocado no rafter.
+    var slpE=emp.slp||0;
+    [-refX,0,refX].forEach(function(bx){
+      bolt12(bx,emp.ctr+slpE*bx-bx/cosT,0,'z',t*4,pg);});
+    var topW=pBase+WEBH;
+    mkDash(pg,[new V3(+wH/2,topW,pz1),new V3(-wH/2,topW,pz1)],0x4a9ad8,0.85);
+    mkDash(pg,[new V3(+wH/2,topW,pz2),new V3(-wH/2,topW,pz2)],0x4a9ad8,0.75);
+    mkDash(pg,[new V3(+wH/2,pBase+PH,pz1+t/2+0.001),new V3(+wH/2,topW,pz1+t/2+0.001)],0x4a9ad8,0.70);
+    mkDash(pg,[new V3(-wH/2,pBase+PH,pz1+t/2+0.001),new V3(-wH/2,topW,pz1+t/2+0.001)],0x4a9ad8,0.70);
+  }
+  // Linhas brancas — dentro do group → mirror as clona junto
+  [-refX,0,refX].forEach(function(lx){
+    mkRef(pg,[new V3(lx,pBase,pz1+t/2+0.001),new V3(lx,pBase+WEBH,pz1+t/2+0.001)]);
+    mkRef(pg,[new V3(lx,pBase,pz2-t/2-0.001),new V3(lx,pBase+WEBH,pz2-t/2-0.001)]);
+  });
+  // ── PLATIBANDA v2 (Cassiano 15/07, "muito mais economica"): quem sobe
+  // e um MINI-PILAR C140 rosa no PRUMO do pilar, SOBREPOSTO POR FORA da
+  // alma do perfil da extremidade, com TRANSPASSE de 450mm costurado de
+  // 1/2" nas linhas de maquina do C140 (binario engasta o balanco;
+  // + cabeca travada em pontos, na obra). A parede da platibanda nasce
+  // engenheirada: terca/diagonal C140 entram nele com swage (proxima
+  // etapa). O rafter ganha janela de SO 150mm na mesa superior.
+  // Empena: estrutura da extensao na etapa propria (parede de
+  // fechamento) — aqui so os porticos.
+  // PLATIBANDA (Cassiano 15/07): nos PORTICOS o montante duplo e o
+  // ultimo segmento ESTENDIDO do mini da lateral (mpL em
+  // parede_lateral). Na EMPENA (frente/fundo) o montante duplo nasce
+  // AQUI — MESMA pilha do mini da lateral (R70 alma-com-alma):
+  // par C140 costas-costas com as almas coladas POR FORA das almas do
+  // pilar (4 chapas encostadas), 1/2" nas linhas +-47,5 do C140 no
+  // transpasse ABAIXO do rafter (material dos 2 lados + acesso).
+  // O rafter de ponta ganha janela nas mesas no prumo deste pilar.
+  if(typeof PLATIBANDA!=='undefined'&&emp){
+    novaPeca('mini-pilar');
+    var mMPe=new THREE.MeshLambertMaterial({color:0xc75b7f});
+    var tm2=0.00155,Hm2=0.140,Fm2=0.045,Lm2=0.020;
+    var zA2=0.005+tm2/2,zM2=0.005+tm2+Fm2/2,zL2=zM2+Fm2/2-tm2/2;
+    // DESCE SO 300mm (Cassiano 15/07): o montante ENCOSTA no TOPO da
+    // mesa inferior do rafter (calculado pela geometria — minF errava
+    // 40mm) e sobe; transpasse = altura da alma do rafter (~300mm). Nao
+    // atravessa a mesa inferior (que fica inteira); so a mesa SUPERIOR
+    // e cortada (buildRafter).
+    var xEff=(ox<=cumXworld)?ox:(2*cumXworld-ox);
+    var _yLoInf=-(wH/2-t/2);                   // linha da mesa inferior
+    function _yMesaI(xx){var s=(xx-cx+_yLoInf*sinT)/cosT;
+      return pilTopo+cy+s*sinT+_yLoInf*cosT;}
+    // BASE ACIMA DA MESA EM TODA A LARGURA (Cassiano 103): a mesa e
+    // INCLINADA e o montante RETO — a ponta do lado ALTO (borda da
+    // cumeeira) tocava. Pegar a borda mais alta (+-70mm = meia largura).
+    var yMesaInf=Math.max(_yMesaI(xEff-0.070),_yMesaI(xEff+0.070));
+    var ybE=yMesaInf+t/2+0.003,ytE=PLAT_TOPO-0.014;  // 3mm acima (encosta)
+    var hE2=ytE-ybE,cE2=ybE+hE2/2;
+    [-1,1].forEach(function(sz){
+      mkBox(pg,0,cE2,sz*zA2,Hm2,hE2,tm2,mMPe);                 // almas
+      [-1,1].forEach(function(sx){
+        mkBox(pg,sx*Hm2/2,cE2,sz*zM2,tm2,hE2,Fm2,mMPe);        // mesas
+        mkBox(pg,sx*(Hm2/2-Lm2/2),cE2,sz*zL2,Lm2,hE2,tm2,mMPe);}); // lips
+    });
+    // 3 PARAFUSOS (Cassiano 15/07): na linha central do montante, nas
+    // alturas onde ela cruza as 3 LINHAS DE MAQUINA DO RAFTER (inferior
+    // -refX / central 0 / superior +refX). O rafter e inclinado: cada
+    // linha cruza a coluna do montante numa altura y propria. Agua
+    // direita e simetrica (xEff rebate p/ a esquerda).
+    [-refX,0,refX].forEach(function(yl){
+      var sE=(xEff-cx+yl*sinT)/cosT;
+      var yb2=pilTopo+cy+sE*sinT+yl*cosT;
+      bolt12(0,yb2,0,'z',0.018,pg);});
+  }
+}
+
+
+function buildMF(ox,oz){novaPeca('mao-francesa');
+  var mg=new THREE.Group();
+  mg.rotation.z=mfAng;
+  mg.position.set(ox,pilTopo+mfPillarY,oz);
+  scene.add(mg);
+  function buildMFprofile(parent,sign,mat){
+    var L=almaB_mf-almaA_mf;
+    mkBox(parent,almaA_mf+L/2,0,sign*t/2,L,wH,t,mat);
+    if(fSupEndMF>fSupStartMF){var fsL=fSupEndMF-fSupStartMF,fsCx=fSupStartMF+fsL/2;
+      mkBox(parent,fsCx,+(wH/2-t/2),sign*(t+fW/2),fsL,t,fW,mat);
+      mkBox(parent,fsCx,+(wH/2-lL/2),sign*(t+fW-t/2),fsL,lL,t,mat);
+      mkCyl(parent,fsCx,+(wH/2),sign*(t+r),r,fsL,'x',matRad);
+      mkCyl(parent,fsCx,+(wH/2-r),sign*(t+fW),r,fsL,'x',matRad);}
+    if(fInfEndMF>fInfStartMF){var fiL=fInfEndMF-fInfStartMF,fiCx=fInfStartMF+fiL/2;
+      mkBox(parent,fiCx,-(wH/2-t/2),sign*(t+fW/2),fiL,t,fW,mat);
+      mkCyl(parent,fiCx,-(wH/2),sign*(t+r),r,fiL,'x',matRad);
+      mkCyl(parent,fiCx,-(wH/2-r),sign*(t+fW),r,fiL,'x',matRad);}
+    if(fInfEndMF_aba>fInfStartMF_aba){var _LR=0.0115,faA=fInfStartMF_aba,faB=fInfEndMF_aba;
+      var faA2=faA+_LR,faB2=faB-_LR;                 // lip reto recuado pelo alivio (o GRAU preenche)
+      if(faB2>faA2){mkBox(parent,(faA2+faB2)/2,-(wH/2-lL/2),sign*(t+fW-t/2),faB2-faA2,lL,t,mat);}
+      // GRAU do corte do lip (cunha): cheia na DOBRA (-wH/2), zero na borda livre — R03
+      [[faA,1],[faB,-1]].forEach(function(E){
+        var sh=new THREE.Shape();
+        sh.moveTo(E[0]+E[1]*_LR,-wH/2);sh.lineTo(E[0],-wH/2);
+        sh.lineTo(E[0]+E[1]*_LR,-wH/2+lL);sh.closePath();
+        var g2=new THREE.ExtrudeGeometry(sh,{depth:t,bevelEnabled:false});
+        var mm=new THREE.Mesh(g2,mat);mm.position.z=sign*(t+fW-t/2)-t/2;parent.add(mm);});}
+  }
+  buildMFprofile(mg,+1,matMF);
+  buildMFprofile(mg,-1,matMF);
+  // R31/R08 (Cassiano 03/07): parafuso SO nas INTERSECOES das linhas de
+  // calibracao das DUAS pecas (a maquina calibrada nao anda transversal —
+  // so longitudinal no perfil). A MF e INCLINADA: as linhas +-refX dela em
+  // x=0/mfLen NAO caem nas linhas do receptor. 2 parafusos por ponta:
+  //   PILAR:  centro MF x centro pilar  +  linha SUP da MF x linha INTERNA do pilar
+  //   RAFTER: centro MF x centro rafter +  centro do rafter x linha SUP da MF
+  // (mezanino FORA desta regra — buildMFviga segue como esta)
+  bolt12(0,0,0,'z',t*4,mg);
+  bolt12(refX*(1+Math.sin(mfAng))/Math.cos(mfAng),refX,0,'z',t*4,mg);
+  bolt12(mfLen,0,0,'z',t*4,mg);
+  bolt12(mfLen-refX/Math.tan(mfAng-theta),refX,0,'z',t*4,mg);
+  // Costura CENTRAL da MF (Cassiano 11/07): 1/2" no CENTRO geometrico —
+  // meio do comprimento, linha 0 — unindo as duas almas do par de C
+  // (mesma logica da solidarizacao do pilar; so atravessa as 2 chapas)
+  bolt12(mfLen/2,0,0,'z',t*2,mg);
+  mkDash(mg,[new V3(almaA_mf,+wH/2,pz1),new V3(almaA_mf,-wH/2,pz1)],0x4a9ad8,0.85);
+  mkDash(mg,[new V3(almaA_mf,+wH/2,pz1),new V3(fSupStartMF,+wH/2,pz1)],0x4a9ad8,0.85);
+  mkDash(mg,[new V3(almaA_mf,-wH/2,pz1),new V3(fInfStartMF,-wH/2,pz1)],0x4a9ad8,0.85);
+  mkDash(mg,[new V3(almaA_mf,+wH/2,pz2),new V3(almaA_mf,-wH/2,pz2)],0x4a9ad8,0.75);
+  mkDash(mg,[new V3(almaA_mf,+wH/2,pz2),new V3(fSupStartMF,+wH/2,pz2)],0x4a9ad8,0.75);
+  mkDash(mg,[new V3(almaA_mf,-wH/2,pz2),new V3(fInfStartMF,-wH/2,pz2)],0x4a9ad8,0.75);
+  mkDash(mg,[new V3(almaB_mf,+wH/2,pz1),new V3(almaB_mf,-wH/2,pz1)],0x4a9ad8,0.85);
+  mkDash(mg,[new V3(fSupEndMF,+wH/2,pz1),new V3(almaB_mf,+wH/2,pz1)],0x4a9ad8,0.85);
+  mkDash(mg,[new V3(fInfEndMF,-wH/2,pz1),new V3(almaB_mf,-wH/2,pz1)],0x4a9ad8,0.85);
+  mkDash(mg,[new V3(almaB_mf,+wH/2,pz2),new V3(almaB_mf,-wH/2,pz2)],0x4a9ad8,0.75);
+  mkDash(mg,[new V3(fSupEndMF,+wH/2,pz2),new V3(almaB_mf,+wH/2,pz2)],0x4a9ad8,0.75);
+  mkDash(mg,[new V3(fInfEndMF,-wH/2,pz2),new V3(almaB_mf,-wH/2,pz2)],0x4a9ad8,0.75);
+  [-refX,0,refX].forEach(function(ly){
+    mkRef(mg,[new V3(almaA_mf,ly,t/2+0.001),new V3(almaB_mf,ly,t/2+0.001)]);
+    mkRef(mg,[new V3(almaA_mf,ly,-t/2-0.001),new V3(almaB_mf,ly,-t/2-0.001)]);
+  });
+}
+
+
+function buildRafter(ox,oz,mirrorSwap,semTrav){novaPeca('rafter');
+  var rg=new THREE.Group();
+  rg.rotation.z=theta;
+  rg.position.set(ox+cx,pilTopo+cy,oz);
+  rg.userData.noMirror=true;   // espelhado explicitamente (cortes por lado)
+  scene.add(rg);
+  function bRC(sign,mat){
+    mkBox(rg,rafLen/2,0,sign*t/2,rafLen,wH,t,mat);
+    // PLATIBANDA v2 (Cassiano 15/07): quem passa pelo rafter e o MINI
+    // C140 no prumo do pilar — a MESA SUPERIOR + LIP do C do rafter
+    // desse lado ganham JANELA de SO 150mm (secao 140 do mini +5mm de
+    // folga por lado, projetada no grau). Mesa inferior ja nao existe
+    // no no (connZone). Validacao estrutural: calculista.
+    // PLATIBANDA v4 (Cassiano 15/07): o ULTIMO MINI da lateral sobe no
+    // prumo do pilar (metade EXTERNA, xc +-0,076) — "obviamente vai ter
+    // que tirar uma faixa da mesa da rafter ali na pontinha pra ele
+    // subir". FAIXA na MESA SUPERIOR + LIP dos DOIS C (o mini de 140
+    // cruza as mesas dos dois lados), largura do mini +3,5mm/lado,
+    // projetada no grau. Mesa inferior ja nao existe no no (connZone).
+    // PLATIBANDA (R70): o montante DUPLO cruza as mesas dos DOIS C —
+    // janela (140 do mini +3,5mm/lado, projetada no grau) no prumo do
+    // pilar do portico em TODO rafter; nos rafters de PONTA (semTrav)
+    // tambem no prumo do PILAR DA EMPENA (R58: 30/70% do vao).
+    // PLATIBANDA (Cassiano 15/07): corta SO a mesa SUPERIOR do rafter —
+    // o montante desce 300mm (a altura da alma) e ENCOSTA na mesa
+    // inferior sem atravessa-la, entao a mesa inferior fica INTEIRA.
+    // A janela usa a altura y_local=+wH/2 (mesa superior).
+    var _winSup=[];
+    if(typeof PLATIBANDA!=='undefined'){
+      var _winAt=function(xr,yl){
+        var a=Math.max(0,(xr-0.0735-cx+yl*sinT)/cosT);
+        var b=(xr+0.0735-cx+yl*sinT)/cosT;
+        return (b>0.01&&b>a)?[a,b]:null;};
+      // -0.0765 = montante do portico; travCx-travComp/2 = pilar da
+      // EMPENA no prumo REAL (agua dir e espelhada -> P1 acerta os 2)
+      var _xs=[-0.0765]; if(semTrav)_xs.push(travCx-travComp/2);
+      _xs.forEach(function(xr){var s=_winAt(xr,wH/2);if(s)_winSup.push(s);});
+    }
+    if(_winSup.length){
+      var _ms=lipSegsP(_winSup,0,rafLen);
+      for(var _mi=0;_mi<_ms.length;_mi++){var _a2=_ms[_mi][0],_b2=_ms[_mi][1];
+        if(_b2-_a2<0.01)continue;
+        mkBox(rg,(_a2+_b2)/2,+(wH/2-t/2),sign*(t+fW/2),_b2-_a2,t,fW,mat);
+        mkCyl(rg,(_a2+_b2)/2,+(wH/2),sign*(t+r),r,_b2-_a2,'x',matRad);}
+    } else {
+    mkBox(rg,rafLen/2,+(wH/2-t/2),sign*(t+fW/2),rafLen,t,fW,mat);
+    mkCyl(rg,rafLen/2,+(wH/2),sign*(t+r),r,rafLen,'x',matRad);
+    }
+    // Lip SUPERIOR + raio mesa-lip: cortados SO no lado onde o C140 da
+    // COBERTURA chega (cada peca e unica no CSV). Sem cobertura: inteiros.
+    // mirrorSwap: o rafter espelhado (agua direita) troca os lados apos
+    // o rotY(PI) do espelhamento — os cortes ja nascem trocados.
+    var _cobCuts=[];
+    if(typeof RAF_CUTS_T!=='undefined'){
+      var _p=Math.round(oz/modulo);
+      var _bay=(sign>0)?_p:_p-1;             // C que olha +z atende o vao p
+      if(mirrorSwap)_bay=(sign>0)?_p-1:_p;   // espelhado: lados trocados
+      if(_bay>=0&&_bay<nPorticos-1){
+        _cobCuts=RAF_CUTS_T.slice();
+        if(COB_BRACED[_bay])_cobCuts=_cobCuts.concat(RAF_CUTS_D);
+      }
+    }
+    // R51b (aprovado 11/07): lip SUPERIOR cortado na PONTA do beiral — a
+    // ÚLTIMA TERÇA lateral sobe até 2mm da mesa e o lip (que desce 20mm)
+    // atravessava a alma dela (3,4mm de penetração, medido por SAT).
+    // CORTE MÍNIMO (Cassiano 11/07): como o lip sobe com a água, corta-se
+    // só até ele livrar a alma por cima (+3mm) — o gerador calcula o fim.
+    // Mesma família de operação dos RAF_CUTS_T. Vale p/ os DOIS C do
+    // rafter e também p/ os rafters de ponta (que não atendem vão).
+    if(typeof RAF_CUT_BEIRAL!=='undefined'&&RAF_CUT_BEIRAL>0)
+      _cobCuts.push([-0.02,RAF_CUT_BEIRAL]);
+    // janelas da platibanda tambem cortam o LIP superior (mesma maquina
+    // de cortes/cunhas das tercas da cobertura) — usa _winSup
+    _winSup.forEach(function(w){_cobCuts.push(w);});
+    if(_cobCuts.length===0){
+      mkBox(rg,rafLen/2,+(wH/2-lL/2),sign*(t+fW-t/2),rafLen,lL,t,mat);
+      mkCyl(rg,rafLen/2,+(wH/2-r),sign*(t+fW),r,rafLen,'x',matRad);
+    }else{
+      // lips: corte funcional EXPANDIDO pelo alivio; rod do raio: funcional;
+      // pontas em CUNHA (cheia na dobra em +wH/2, zero na borda livre)
+      var _LIPR=0.0115,_zl=sign*(t+fW-t/2);
+      var _cm=mergeBands(_cobCuts,2*_LIPR+0.001);  // aberturas unicas
+      var _ce=_cm.map(function(C){return [C[0]-_LIPR,C[1]+_LIPR];});
+      var _ls=lipSegsP(_ce,0,rafLen);
+      for(var _i=0;_i<_ls.length;_i++){var _a=_ls[_i][0],_b=_ls[_i][1];
+        if(_b-_a<0.006)continue;
+        mkBox(rg,(_a+_b)/2,+(wH/2-lL/2),_zl,_b-_a,lL,t,mat);}
+      var _lr=lipSegsP(_cm,0,rafLen);
+      for(var _i=0;_i<_lr.length;_i++){var _a=_lr[_i][0],_b=_lr[_i][1];
+        if(_b-_a<0.006)continue;
+        mkCyl(rg,(_a+_b)/2,+(wH/2-r),sign*(t+fW),r,_b-_a,'x',matRad);}
+      _cm.forEach(function(C){
+        [[C[0],-1],[C[1],1]].forEach(function(E){
+          if(E[0]<0||E[0]>rafLen)return;
+          var sh=new THREE.Shape();
+          sh.moveTo(E[0]+E[1]*_LIPR,wH/2);sh.lineTo(E[0],wH/2);
+          sh.lineTo(E[0]+E[1]*_LIPR,wH/2-lL);sh.closePath();
+          var g2=new THREE.ExtrudeGeometry(sh,{depth:t,bevelEnabled:false});
+          var mm=new THREE.Mesh(g2,mat);mm.position.z=_zl-t/2;rg.add(mm);});});
+    }
+    // MESA INFERIOR do rafter: CONTINUA (Cassiano 15/07 — NAO cortar).
+    // O montante da empena desce so 300mm (altura da alma) e ENCOSTA na
+    // mesa inferior sem atravessa-la. No portico a mesa inf nem existe
+    // no no (connZone). So a mesa SUPERIOR recebe janela.
+    var fi0=connZone,fi1=rafLen-connZoneCum,fiL=fi1-fi0;
+    if(fiL>0.010){var fiCx=fi0+fiL/2;
+      mkBox(rg,fiCx,-(wH/2-t/2),sign*(t+fW/2),fiL,t,fW,mat);
+      mkBox(rg,fiCx,-(wH/2-lL/2),sign*(t+fW-t/2),fiL,lL,t,mat);
+      mkCyl(rg,fiCx,-(wH/2),sign*(t+r),r,fiL,'x',matRad);
+      mkCyl(rg,fiCx,-(wH/2-r),sign*(t+fW),r,fiL,'x',matRad);}
+  }
+  bRC(+1,matRafter);bRC(-1,matRafter);
+  if(typeof PLATIBANDA!=='undefined'){
+    // NO REPROJETADO (Cassiano 15/07): com o montante da platibanda, o
+    // 1/2" CENTRAL (eixo do pilar x eixo do rafter) ficava ENCAVALADO
+    // com a nova ligacao — SAI. Ficam 4 parafusos nos CANTOS do
+    // cruzamento das linhas de maquina (linhas interna/externa do
+    // pilar x inferior/superior do rafter): distribuicao uniforme,
+    // sem sobreposicao, acesso livre — "projetada desde o inicio".
+    [[+refX,-refX],[-refX,-refX],[+refX,+refX],[-refX,+refX]].forEach(function(pr){
+      var bx=(pr[0]-cx+pr[1]*sinT)/cosT;
+      bolt12(bx,pr[1],0,'z',t*4,rg);});
+  } else {
+  var cB=[{bx:(+refX-cx+(-refX)*sinT)/cosT,by:-refX},{bx:(0-cx)/cosT,by:0},{bx:(-refX-cx+(+refX)*sinT)/cosT,by:+refX}];
+  cB.forEach(function(b){bolt12(b.bx,b.by,0,'z',t*4,rg);});
+  }
+  var zF1=pz1+t/2+0.001,zF2=pz2-t/2-0.001;
+  mkDash(rg,[new V3(0,+wH/2,zF1),new V3(0,-wH/2,zF1),new V3(ghostZone,-wH/2,zF1)],0x4a9ad8,0.85);
+  mkDash(rg,[new V3(0,+wH/2,zF2),new V3(0,-wH/2,zF2),new V3(ghostZone,-wH/2,zF2)],0x4a9ad8,0.75);
+  mkDash(rg,[new V3(rafLen,+wH/2,zF1),new V3(rafLen,-wH/2,zF1),new V3(rafLen-ghostZoneCum,-wH/2,zF1)],0x4a9ad8,0.85);
+  mkDash(rg,[new V3(rafLen,+wH/2,zF2),new V3(rafLen,-wH/2,zF2),new V3(rafLen-ghostZoneCum,-wH/2,zF2)],0x4a9ad8,0.75);
+  var cumLocX=cumX-ox-cx;
+  var cumBolts=[{bx:(cumLocX+(-refX)*sinT)/cosT,by:-refX},{bx:(cumLocX+0*sinT)/cosT,by:0},{bx:(cumLocX+(+refX)*sinT)/cosT,by:+refX}];
+  cumBolts.forEach(function(b){bolt12(b.bx,b.by,0,'z',pz1*4,rg);});
+  // R58: portico de PONTA nao tem travessa -> os 2 furos dela SAEM do
+  // rafter (Cassiano 13/07: 'dois parafusos sobrando' no no da empena)
+  if(!semTrav){bolt12(travBolt1,-refX,0,'z',pz1*4,rg);
+   bolt12(travBolt2,0,0,'z',pz1*4,rg);}
+  [-refX,0,refX].forEach(function(ly){mkRef(rg,[new V3(0,ly,t/2+0.001),new V3(rafLen,ly,t/2+0.001)]);mkRef(rg,[new V3(0,ly,-t/2-0.001),new V3(rafLen,ly,-t/2-0.001)]);});
+  return rg;
+}
+
+
+function buildTravessa(oz){novaPeca('travessa');
+  var tcy=pilTopo+travCy;
+  mkBox(scene,travCx,tcy,oz+pz1,travComp,wH,t,matTrav);
+  mkBox(scene,travCx,tcy,oz+pz2,travComp,wH,t,matTrav);
+  if(fTravSupLen>0.010){
+    mkBox(scene,fTravSupCx,tcy+(wH/2-t/2),oz+pz1+t/2+fW/2,fTravSupLen,t,fW,matTrav);
+    mkBox(scene,fTravSupCx,tcy+(wH/2-lL/2),oz+pz1+t/2+fW-t/2,fTravSupLen,lL,t,matTrav);
+    mkCyl(scene,fTravSupCx,tcy+(wH/2),oz+pz1+t/2+r,r,fTravSupLen,'x',matRad);
+    mkCyl(scene,fTravSupCx,tcy+(wH/2-r),oz+pz1+t/2+fW,r,fTravSupLen,'x',matRad);
+    mkBox(scene,fTravSupCx,tcy+(wH/2-t/2),oz+pz2-t/2-fW/2,fTravSupLen,t,fW,matTrav);
+    mkBox(scene,fTravSupCx,tcy+(wH/2-lL/2),oz+pz2-t/2-fW+t/2,fTravSupLen,lL,t,matTrav);
+    mkCyl(scene,fTravSupCx,tcy+(wH/2),oz+pz2-t/2-r,r,fTravSupLen,'x',matRad);
+    mkCyl(scene,fTravSupCx,tcy+(wH/2-r),oz+pz2-t/2-fW,r,fTravSupLen,'x',matRad);
+  }
+  mkBox(scene,travCx,tcy-(wH/2-t/2),oz+pz1+t/2+fW/2,fTravLen,t,fW,matTrav);
+  mkBox(scene,travCx,tcy-(wH/2-t/2),oz+pz2-t/2-fW/2,fTravLen,t,fW,matTrav);
+  mkCyl(scene,travCx,tcy-(wH/2),oz+pz1+t/2+r,r,fTravLen,'x',matRad);
+  mkCyl(scene,travCx,tcy-(wH/2),oz+pz2-t/2-r,r,fTravLen,'x',matRad);
+  mkCyl(scene,travCx,tcy-(wH/2-r),oz+pz1+t/2+fW,r,fLipLen,'x',matRad);
+  mkCyl(scene,travCx,tcy-(wH/2-r),oz+pz2-t/2-fW,r,fLipLen,'x',matRad);
+  var _LRtr=0.0115,lipA=travCx-fLipLen/2,lipB=travCx+fLipLen/2,lipA2=lipA+_LRtr,lipB2=lipB-_LRtr;
+  [oz+pz1+t/2+fW-t/2, oz+pz2-t/2-fW+t/2].forEach(function(zL){
+    if(lipB2>lipA2)mkBox(scene,(lipA2+lipB2)/2,tcy-(wH/2-lL/2),zL,lipB2-lipA2,lL,t,matTrav);
+    // GRAU do corte do lip (cunha): cheia na DOBRA (tcy-wH/2), zero na borda livre — R03
+    [[lipA,1],[lipB,-1]].forEach(function(E){
+      var sh=new THREE.Shape();
+      sh.moveTo(E[0]+E[1]*_LRtr,tcy-wH/2);sh.lineTo(E[0],tcy-wH/2);
+      sh.lineTo(E[0]+E[1]*_LRtr,tcy-wH/2+lL);sh.closePath();
+      var g2=new THREE.ExtrudeGeometry(sh,{depth:t,bevelEnabled:false});
+      var mm=new THREE.Mesh(g2,matTrav);mm.position.z=zL-t/2;scene.add(mm);});});
+  var tx0=travCx-travComp/2,tx1=travCx+travComp/2,tg=wH/2;
+  var zT1=oz+pz1+t/2+0.001,zT2=oz+pz2-t/2-0.001;
+  mkDash(scene,[new V3(tx0,tcy+wH/2,zT1),new V3(tx0,tcy-wH/2,zT1),new V3(tx0+tg,tcy-wH/2,zT1)],0x4a9ad8,0.85);
+  mkDash(scene,[new V3(tx0,tcy+wH/2,zT2),new V3(tx0,tcy-wH/2,zT2),new V3(tx0+tg,tcy-wH/2,zT2)],0x4a9ad8,0.75);
+  mkDash(scene,[new V3(tx1,tcy+wH/2,zT1),new V3(tx1,tcy-wH/2,zT1),new V3(tx1-tg,tcy-wH/2,zT1)],0x4a9ad8,0.85);
+  mkDash(scene,[new V3(tx1,tcy+wH/2,zT2),new V3(tx1,tcy-wH/2,zT2),new V3(tx1-tg,tcy-wH/2,zT2)],0x4a9ad8,0.75);
+  [-refX,0,refX].forEach(function(ly){
+    mkRef(scene,[new V3(tx0,tcy+ly,oz+pz1+t/2+0.001),new V3(tx1,tcy+ly,oz+pz1+t/2+0.001)]);
+    mkRef(scene,[new V3(tx0,tcy+ly,oz+pz2-t/2-0.001),new V3(tx1,tcy+ly,oz+pz2-t/2-0.001)]);
+  });
+}
+
+
+// Posições das travessas na viga (grid 400mm + fechamento) — FONTE ÚNICA:
+// viga (aberturas do lip) e buildTravessaMez (peças) usam a MESMA lista.
+// Todas as bocas viradas pro MESMO lado (+X, um programa só de fabricação).
+// 1ª travessa: ALMA alinha no endface da longarina (boca pra dentro).
+// TRAVESSA DE FECHAMENTO DE SÉRIE (R23, regra Cassiano 17/06): a ÚLTIMA travessa
+// é INVERTIDA — boca pra DENTRO, ALMA lisa (faceada) alinhada ao endface (face
+// +X da alma em flgEndMez) → acabamento liso pra fora, igual ao montante
+// invertido do painel. Retorna {x, inv} por travessa.
+function mezTravPos(){
+  var P=[]; var xi=flgStartMez;
+  while(xi<=flgEndMez+0.001){P.push({x:xi,inv:false}); xi+=0.400;}
+  var fInv=flgEndMez-t/2;            // alma (face +X) flush no endface
+  var startInv=fInv-(t/2+fW);        // borda interna do mesa do fechamento (boca p/ dentro)
+  // guarda anti-sobreposição: a grade não pode invadir o mesa do fechamento
+  while(P.length&&(P[P.length-1].x+t/2+fW)>startInv-0.001)P.pop();
+  P.push({x:fInv,inv:true});
+  return P;
+}
+function buildViga(oz,cutNeg,cutPos){novaPeca('viga-mezanino');
+  if(!mezAtivo) return;
+  var vigaGroupY = pBase + mezH + cy_viga;
+  var flgCx = flgStartMez + flgLenMez/2;
+  // grafismo de VIGA ESTRUTURAL (Cassiano 13/07): mesma cor do pilar/
+  // rafter/MF + linhas de calibracao + tracejado dos end faces — a cor
+  // clara antiga se confundia com terca
+  var matV = matPilar;
+  var vg = new THREE.Group();
+  vg.position.set(-wH/2, vigaGroupY, oz);
+  scene.add(vg);
+  [-refX,0,refX].forEach(function(ly){
+    mkRef(vg,[new V3(0,ly,t+0.001),new V3(vigaLen,ly,t+0.001)]);
+    mkRef(vg,[new V3(0,ly,-t-0.001),new V3(vigaLen,ly,-t-0.001)]);});
+  [0,vigaLen].forEach(function(ex){
+    mkDash(vg,[new V3(ex,+wH/2,t+0.001),new V3(ex,-wH/2,t+0.001)],0x4a9ad8,0.85);
+    mkDash(vg,[new V3(ex,+wH/2,-t-0.001),new V3(ex,-wH/2,-t-0.001)],0x4a9ad8,0.75);});
+
+  // bV: constrói 1 perfil C — SEM a aba enrijecida (renderizada separado)
+  function bV(sg){
+    mkBox(vg,vigaLen/2,0,sg*t/2,vigaLen,wH,t,matV);
+    // Flange SUP e INF (sem aba)
+    mkBox(vg,flgCx,+(wH/2-t/2), sg*(t+fW/2),  flgLenMez,t,fW,matV);
+    mkBox(vg,flgCx,-(wH/2-t/2), sg*(t+fW/2),  flgLenMez,t,fW,matV);
+    // Raios
+    mkCyl(vg,flgCx,+(wH/2),  sg*(t+r), r,flgLenMez,'x',matRad);
+    mkCyl(vg,flgCx,+(wH/2-r),sg*(t+fW),r,flgLenMez,'x',matRad);
+    mkCyl(vg,flgCx,-(wH/2),  sg*(t+r), r,flgLenMez,'x',matRad);
+    mkCyl(vg,flgCx,-(wH/2-r),sg*(t+fW),r,flgLenMez,'x',matRad);
+  }
+  bV(+1); bV(-1);
+
+  // ── ABA (lip) — KIT UNIVERSAL DE JUNÇÃO (regra gravada) ──
+  // Abertura funcional = faixa REAL ocupada pela travessa na linha do lip
+  // (alma+mesa = t+fW = 77.5mm) + 10mm de cada lado = 97.5mm. Pontas em
+  // CUNHA (LIPR=11.5mm, cheia na DOBRA). Aberturas próximas fundem em UMA
+  // (regra mestra). Corte SÓ no lado em que a travessa chega (cutNeg/cutPos).
+  // CSV: 97.5mm > janela útil de 60mm → DUAS batidas com sobreposição
+  // (decisão Cassiano 11/06/2026).
+  var LIPR = 0.0115;
+  // aba SO existe onde ha flange (lip e a dobra do flange — sem flange
+  // embaixo, lip aereo). Antes ia ate flgEndMez+fW e sobrava lip no ar
+  // de frente pro pilar (corrigido 12/06, apontado pelo Cassiano).
+  var abaA = flgStartMez, abaB = flgEndMez;
+  var FCT = mezTravPos().map(function(o){return o.inv
+    ? [o.x-t/2-fW-0.010, o.x+t/2+0.010]      // fechamento invertido: mesa p/ dentro (-X)
+    : [o.x-t/2-0.010, o.x+t/2+fW+0.010];});   // normal: mesa p/ fora (+X)
+  var MRG = mergeBands(FCT, 2*LIPR+0.001);
+  var EXP = MRG.map(function(C){return [C[0]-LIPR, C[1]+LIPR];});
+  function vSegs(a,b,cuts){
+    var v=[[a,b]];
+    cuts.forEach(function(c){var nv=[];v.forEach(function(s){
+      if(c[1]<=s[0]||c[0]>=s[1]){nv.push(s);return;}
+      if(c[0]>s[0])nv.push([s[0],c[0]]);
+      if(c[1]<s[1])nv.push([c[1],s[1]]);});v=nv;});
+    return v;
+  }
+  function buildAba(sg,corta){
+    var lipZ = sg*(t/2+fW);
+    var segs = corta ? vSegs(abaA,abaB,EXP) : [[abaA,abaB]];
+    segs.forEach(function(s){
+      if(s[1]-s[0] < 0.006) return;            // sliver <6mm não se fabrica
+      var sl=s[1]-s[0];
+      mkBox(vg, s[0]+sl/2, +(wH/2-lL/2), lipZ, sl, lL, t, matV);
+      mkBox(vg, s[0]+sl/2, -(wH/2-lL/2), lipZ, sl, lL, t, matV);
+    });
+    if(!corta) return;
+    // CUNHAS do alívio: cheias na DOBRA (Y=±wH/2), zero na borda livre
+    MRG.forEach(function(C){[[C[0],-1],[C[1],1]].forEach(function(E){
+      if(E[0]<abaA||E[0]>abaB) return;
+      [[+wH/2,-1],[-wH/2,1]].forEach(function(F){
+        var sh=new THREE.Shape();
+        sh.moveTo(E[0]+E[1]*LIPR,F[0]);sh.lineTo(E[0],F[0]);
+        sh.lineTo(E[0]+E[1]*LIPR,F[0]+F[1]*lL);sh.closePath();
+        var g2=new THREE.ExtrudeGeometry(sh,{depth:t,bevelEnabled:false});
+        var mm=new THREE.Mesh(g2,matV);mm.position.z=lipZ-t/2;vg.add(mm);
+      });});});
+  }
+  buildAba(+1, !!cutPos);
+  buildAba(-1, !!cutNeg);
+
+  // Parafusos de ligação viga-pilar (esquerda e direita)
+  [-refX,0,refX].forEach(function(lr){
+    var bx=-lr+wH/2;
+    bolt12(bx,lr,0,'z',t*4,vg);
+  });
+  [-refX,0,refX].forEach(function(lr){
+    var bx=vigaLen-(-lr+wH/2);
+    bolt12(bx,lr,0,'z',t*4,vg);
+  });
+
+  // Tracejados e linhas brancas
+  var gz=wH;
+  mkDash(vg,[new V3(0,+wH/2,pz1+t/2+0.001),new V3(0,-wH/2,pz1+t/2+0.001),new V3(gz,-wH/2,pz1+t/2+0.001)],0x66ccff,0.85);
+  mkDash(vg,[new V3(0,+wH/2,pz2-t/2-0.001),new V3(0,-wH/2,pz2-t/2-0.001),new V3(gz,-wH/2,pz2-t/2-0.001)],0x66ccff,0.75);
+  mkDash(vg,[new V3(vigaLen,+wH/2,pz1+t/2+0.001),new V3(vigaLen,-wH/2,pz1+t/2+0.001),new V3(vigaLen-gz,-wH/2,pz1+t/2+0.001)],0x66ccff,0.85);
+  mkDash(vg,[new V3(vigaLen,+wH/2,pz2-t/2-0.001),new V3(vigaLen,-wH/2,pz2-t/2-0.001),new V3(vigaLen-gz,-wH/2,pz2-t/2-0.001)],0x66ccff,0.75);
+  [-refX,0,refX].forEach(function(ly){
+    mkRef(vg,[new V3(0,ly,+t/2+0.001),new V3(vigaLen,ly,+t/2+0.001)]);
+    mkRef(vg,[new V3(0,ly,-t/2-0.001),new V3(vigaLen,ly,-t/2-0.001)]);
+  });
+}
+
+
+function buildMFviga(ox,oz){novaPeca('mf-mezanino');
+  if(!mezAtivo||mfAngMez<=0) return;
+  var vigaWorldCY = pBase + mezH;
+  var mg=new THREE.Group();
+  mg.rotation.z=mfAngMez;
+  mg.position.set(ox, vigaWorldCY + mfPillarY_mez, oz);
+  scene.add(mg);
+  function bMFv(sg){
+    var L=almaB_mez-almaA_mez;
+    mkBox(mg,almaA_mez+L/2,0,sg*t/2,L,wH,t,matMF);
+    if(fSupEndM>fSupStartM){var fsL=fSupEndM-fSupStartM,fsCx=fSupStartM+fsL/2;
+      mkBox(mg,fsCx,+(wH/2-t/2),sg*(t+fW/2),fsL,t,fW,matMF);
+      mkBox(mg,fsCx,+(wH/2-lL/2),sg*(t+fW-t/2),fsL,lL,t,matMF);
+      mkCyl(mg,fsCx,+(wH/2),sg*(t+r),r,fsL,'x',matRad);
+      mkCyl(mg,fsCx,+(wH/2-r),sg*(t+fW),r,fsL,'x',matRad);}
+    if(fInfEndM>fInfStartM){var fiL=fInfEndM-fInfStartM,fiCx=fInfStartM+fiL/2;
+      mkBox(mg,fiCx,-(wH/2-t/2),sg*(t+fW/2),fiL,t,fW,matMF);
+      mkCyl(mg,fiCx,-(wH/2),sg*(t+r),r,fiL,'x',matRad);
+      mkCyl(mg,fiCx,-(wH/2-r),sg*(t+fW),r,fiL,'x',matRad);}
+    if(fInfEndAbaM>fInfStartAbaM){var _LRmz=0.0115,faA=fInfStartAbaM,faB=fInfEndAbaM;
+      var faA2=faA+_LRmz,faB2=faB-_LRmz;                 // lip reto recuado (o GRAU preenche)
+      if(faB2>faA2){mkBox(mg,(faA2+faB2)/2,-(wH/2-lL/2),sg*(t+fW-t/2),faB2-faA2,lL,t,matMF);}
+      // GRAU do corte do lip (cunha): cheia na DOBRA (-wH/2), zero na borda livre — R03
+      [[faA,1],[faB,-1]].forEach(function(E){
+        var sh=new THREE.Shape();
+        sh.moveTo(E[0]+E[1]*_LRmz,-wH/2);sh.lineTo(E[0],-wH/2);
+        sh.lineTo(E[0]+E[1]*_LRmz,-wH/2+lL);sh.closePath();
+        var g2=new THREE.ExtrudeGeometry(sh,{depth:t,bevelEnabled:false});
+        var mm=new THREE.Mesh(g2,matMF);mm.position.z=sg*(t+fW-t/2)-t/2;mg.add(mm);});}
+  }
+  bMFv(+1); bMFv(-1);
+  // R54b (Cassiano 11/07): o furo da linha SUPERIOR da MF na chegada ao
+  // PILAR e removido — girado a 45 graus ele aterrissava a ~29mm do furo
+  // do mini (b_hi na linha externa): ferragens encavalavam e o pilar
+  // precisaria de furo fora das linhas de maquina. Centro + inferior
+  // bastam para a ligacao (decisao explicita dele).
+  [0,mfLenMez].forEach(function(bx){
+    [-refX,0,refX].forEach(function(ly){
+      if(bx===0&&ly===refX)return;
+      bolt12(bx,ly,0,'z',t*4,mg);});
+  });
+  // Costura CENTRAL da MF do mezanino (Cassiano 11/07): 1/2" no centro
+  // geometrico (meio do comprimento, linha 0) unindo as duas almas do par
+  bolt12(mfLenMez/2,0,0,'z',t*2,mg);
+  mkDash(mg,[new V3(almaA_mez,+wH/2,pz1),new V3(almaA_mez,-wH/2,pz1)],0x4a9ad8,0.85);
+  mkDash(mg,[new V3(almaA_mez,+wH/2,pz1),new V3(fSupStartM,+wH/2,pz1)],0x4a9ad8,0.85);
+  mkDash(mg,[new V3(almaA_mez,-wH/2,pz1),new V3(fInfStartM,-wH/2,pz1)],0x4a9ad8,0.85);
+  mkDash(mg,[new V3(almaA_mez,+wH/2,pz2),new V3(almaA_mez,-wH/2,pz2)],0x4a9ad8,0.75);
+  mkDash(mg,[new V3(almaA_mez,+wH/2,pz2),new V3(fSupStartM,+wH/2,pz2)],0x4a9ad8,0.75);
+  mkDash(mg,[new V3(almaA_mez,-wH/2,pz2),new V3(fInfStartM,-wH/2,pz2)],0x4a9ad8,0.75);
+  mkDash(mg,[new V3(almaB_mez,+wH/2,pz1),new V3(almaB_mez,-wH/2,pz1)],0x4a9ad8,0.85);
+  mkDash(mg,[new V3(fSupEndM,+wH/2,pz1),new V3(almaB_mez,+wH/2,pz1)],0x4a9ad8,0.85);
+  mkDash(mg,[new V3(fInfEndM,-wH/2,pz1),new V3(almaB_mez,-wH/2,pz1)],0x4a9ad8,0.85);
+  mkDash(mg,[new V3(almaB_mez,+wH/2,pz2),new V3(almaB_mez,-wH/2,pz2)],0x4a9ad8,0.75);
+  mkDash(mg,[new V3(fSupEndM,+wH/2,pz2),new V3(almaB_mez,+wH/2,pz2)],0x4a9ad8,0.75);
+  mkDash(mg,[new V3(fInfEndM,-wH/2,pz2),new V3(almaB_mez,-wH/2,pz2)],0x4a9ad8,0.75);
+  [-refX,0,refX].forEach(function(ly){
+    mkRef(mg,[new V3(almaA_mez,ly,t/2+0.001),new V3(almaB_mez,ly,t/2+0.001)]);
+    mkRef(mg,[new V3(almaA_mez,ly,-t/2-0.001),new V3(almaB_mez,ly,-t/2-0.001)]);
+  });
+}
+
+
+function buildPilarMez(ox,oz){novaPeca('pilar-mezanino');
+  if(!mezAtivo) return;
+  // Altura total: alma atravessa a viga inteira até o topo da alma
+  // topo da alma da viga = pBase + mezH + cy_viga + wH/2 = pBase + mezH + t/2
+  var pilMezH = mezH + t/2;
+  // Flanges cortados: connTop = wH + 5mm → flange para 5mm ABAIXO da face inferior da viga
+  var ghostTop = wH;
+  var connTop  = wH + 0.005;  // 305mm para C300 · flange NÃO entra na viga
+  var flangeH  = pilMezH - connTop;   // comprimento COM flanges (abaixo da viga)
+  var pYc      = pBase + pilMezH/2;
+  var flgCY    = pBase + flangeH/2;
+  // Centro da alma da viga (para posicionar parafusos diagonais)
+  var beamCtr  = pBase + mezH + cy_viga;
+
+  var pg=new THREE.Group();
+  pg.position.set(ox,0,oz);
+  scene.add(pg);
+
+  function bPC(pz,sign,mat){
+    // Alma completa — atravessa toda a viga
+    mkBox(pg,0,pYc,pz,wH,pilMezH,t,mat);
+    // Flanges apenas abaixo da viga
+    if(flangeH>0.010){
+      mkBox(pg,+(wH/2-t/2),flgCY,pz+sign*(t/2+fW/2),t,flangeH,fW,mat);
+      mkBox(pg,-(wH/2-t/2),flgCY,pz+sign*(t/2+fW/2),t,flangeH,fW,mat);
+      mkBox(pg,+(wH/2-lL/2),flgCY,pz+sign*(t/2+fW-t/2),lL,flangeH,t,mat);
+      mkBox(pg,-(wH/2-lL/2),flgCY,pz+sign*(t/2+fW-t/2),lL,flangeH,t,mat);
+      mkCyl(pg,+(wH/2),flgCY,pz+sign*(t/2+r),r,flangeH,'y',matRad);
+      mkCyl(pg,-(wH/2),flgCY,pz+sign*(t/2+r),r,flangeH,'y',matRad);
+      mkCyl(pg,+(wH/2-r),flgCY,pz+sign*(t/2+fW),r,flangeH,'y',matRad);
+      mkCyl(pg,-(wH/2-r),flgCY,pz+sign*(t/2+fW),r,flangeH,'y',matRad);
+    }
+  }
+  bPC(pz1,+1,matPilar); bPC(pz2,-1,matPilar);
+
+  // Parafusos de ligação à sapata — Y=60,120,180mm (base)
+  [0.060,0.120,0.180].forEach(function(hy){[-refX,0,refX].forEach(function(hx){
+    bolt12(hx,hy,AT/2,'z',AT+t*4,pg);});});
+
+  // Solidarização (a cada 1m se houver altura)
+  [1.000,2.000,3.000,4.000].forEach(function(by){if(by<flangeH-0.200){[-refX,0,refX].forEach(function(bx){
+    bolt12(bx,by,0,'z',t*2,pg);});}});
+
+  // Parafusos de ligação ao topo — DIAGONAL: (-refX,-refX)·(0,0)·(+refX,+refX)
+  // Cruzamento das linhas de máquina do pilar com as linhas da viga
+  [-refX,0,refX].forEach(function(bx){
+    var by = beamCtr + bx;   // diagonal: bx cresce junto com o offset Y
+    bolt12(bx,by,0,'z',pz1*4,pg);});
+
+  // Tracejado no topo — onde a alma entra na viga (end face e ghost zone)
+  var topY = pBase + pilMezH;
+  var botBeam = beamCtr - wH/2;
+  mkDash(pg,[new V3(+wH/2,topY,pz1),new V3(-wH/2,topY,pz1)],0x4a9ad8,0.85);
+  mkDash(pg,[new V3(+wH/2,topY,pz2),new V3(-wH/2,topY,pz2)],0x4a9ad8,0.75);
+  mkDash(pg,[new V3(+wH/2,botBeam,pz1+t/2+0.001),new V3(+wH/2,topY,pz1+t/2+0.001)],0x4a9ad8,0.70);
+  mkDash(pg,[new V3(-wH/2,botBeam,pz1+t/2+0.001),new V3(-wH/2,topY,pz1+t/2+0.001)],0x4a9ad8,0.70);
+
+  // Linhas brancas de máquina
+  [-refX,0,refX].forEach(function(lx){
+    mkRef(pg,[new V3(lx,pBase,pz1+t/2+0.001),new V3(lx,pBase+pilMezH,pz1+t/2+0.001)]);
+    mkRef(pg,[new V3(lx,pBase,pz2-t/2-0.001),new V3(lx,pBase+pilMezH,pz2-t/2-0.001)]);
+  });
+}
+
+
+function buildTravessaMez(oz){novaPeca('travessa-mezanino');
+  if(!mezAtivo) return;
+  // PORTANTE: alma encosta na alma da viga (folga 0 — padrão universal)
+  var tLen=modulo-2*t;
+  var vigaY  = pBase + mezH + cy_viga;
+  var vigaX0 = -wH/2;
+
+  // PARIDADE visual com parede/telhado: swage NA MESMA COR da peça (a
+  // conificação aparece pela geometria afinando) — só o CORRUGADO é mais
+  // escuro (0.72, como na parede). Cores de zona da época do chat removidas.
+  var matTrBody = new THREE.MeshLambertMaterial({color:0x4a9ad8});
+  var matTrSwag = matTrBody;
+  var matTrRamp = matTrBody;
+  var matTrCorr = new THREE.MeshLambertMaterial({color:new THREE.Color(0x4a9ad8).multiplyScalar(0.72)});
+
+  // REGRA DO COMPRIMENTO (gravada): alma do receptor -> sair da mesa +10mm
+  var swFlat=fW+0.010, swRamp=0.010;
+  // CONIFICAÇÃO (gravada): chapa + 0.2mm/lado — mesma fórmula da parede
+  var SWM=wH-2*(t+0.0002);   // 294.6mm nesta no canal de wH-2t=295mm
+  var fWs=fW-(t+0.0002);     // mesa conificada 72.3mm
+
+  var bodyLen=tLen-2*(swFlat+swRamp);
+
+  function buildTrav(item){
+    var xi=item.x, inv=item.inv;
+    var wx=vigaX0+xi;
+    var tg=new THREE.Group();
+    tg.position.set(wx, vigaY, oz+modulo/2);
+    // FECHAMENTO DE SÉRIE (R23): última travessa INVERTIDA — boca pra DENTRO,
+    // alma lisa no endface. rotation.y=π espelha em X (e Z, que é simétrico).
+    if(inv) tg.rotation.y=Math.PI;
+    scene.add(tg);
+
+    // CORPO CENTRAL C300 completo (alma + flange + aba enrijecida perpendicular)
+    mkBox(tg,0,0,0, t,wH,bodyLen, matTrBody);
+    mkBox(tg,+(t/2+fW/2),+(wH/2-t/2),0, fW,t,bodyLen, matTrBody);
+    mkBox(tg,+(t/2+fW/2),-(wH/2-t/2),0, fW,t,bodyLen, matTrBody);
+    mkBox(tg,+(t/2+fW-t/2),+(wH/2-t-lL/2),0, t,lL,bodyLen, matTrBody);
+    mkBox(tg,+(t/2+fW-t/2),-(wH/2-t-lL/2),0, t,lL,bodyLen, matTrBody);
+    mkCyl(tg,+(t/2+r),+(wH/2),0, r,bodyLen,'z',matRad);
+    mkCyl(tg,+(t/2+r),-(wH/2),0, r,bodyLen,'z',matRad);
+    mkCyl(tg,+(t/2+fW),+(wH/2-r),0, r,bodyLen,'z',matRad);
+    mkCyl(tg,+(t/2+fW),-(wH/2-r),0, r,bodyLen,'z',matRad);
+
+    // SWAGE + DIMPLES nas duas extremidades
+    [-tLen/2, tLen/2].forEach(function(ez){
+      var sgn=(ez<0)?-1:+1;
+      var zFlat = ez - sgn*(swFlat/2);
+      var zRamp = ez - sgn*(swFlat+swRamp/2);
+
+      // ZONA FLAT — TUDO puxado pra dentro (alma, mesas E abas em SWM)
+      mkBox(tg,0,0,zFlat, t,SWM,swFlat, matTrSwag);
+      mkBox(tg,+(t/2+fWs/2),+(SWM/2-t/2),zFlat, fWs,t,swFlat, matTrSwag);
+      mkBox(tg,+(t/2+fWs/2),-(SWM/2-t/2),zFlat, fWs,t,swFlat, matTrSwag);
+      mkBox(tg,+(t/2+fWs-t/2),+(SWM/2-t-lL/2),zFlat, t,lL,swFlat, matTrSwag);
+      mkBox(tg,+(t/2+fWs-t/2),-(SWM/2-t-lL/2),zFlat, t,lL,swFlat, matTrSwag);
+      mkCyl(tg,+(t/2+r),+(SWM/2),zFlat, r,swFlat,'z',matRad);
+      mkCyl(tg,+(t/2+r),-(SWM/2),zFlat, r,swFlat,'z',matRad);
+      mkCyl(tg,+(t/2+fWs),+(SWM/2-r),zFlat, r,swFlat,'z',matRad);
+      mkCyl(tg,+(t/2+fWs),-(SWM/2-r),zFlat, r,swFlat,'z',matRad);
+
+      // ZONA RAMPA transição cônica
+      var wHm=(wH+SWM)/2, fWm=(fW+fWs)/2;
+      mkBox(tg,0,0,zRamp, t,wHm,swRamp, matTrRamp);
+      mkBox(tg,+(t/2+fWm/2),+(wHm/2-t/2),zRamp, fWm,t,swRamp, matTrRamp);
+      mkBox(tg,+(t/2+fWm/2),-(wHm/2-t/2),zRamp, fWm,t,swRamp, matTrRamp);
+      // LIP + RAIOS na rampa: o lip é CONTÍNUO no swage (a peça NÃO se corta no
+      // ponto do swage — mesma regra do perfil 140). Sem isto sobra falha no lip.
+      mkBox(tg,+(t/2+fWm-t/2),+(wHm/2-t-lL/2),zRamp, t,lL,swRamp, matTrRamp);
+      mkBox(tg,+(t/2+fWm-t/2),-(wHm/2-t-lL/2),zRamp, t,lL,swRamp, matTrRamp);
+      mkCyl(tg,+(t/2+r),+(wHm/2),zRamp, r,swRamp,'z',matRad);
+      mkCyl(tg,+(t/2+r),-(wHm/2),zRamp, r,swRamp,'z',matRad);
+      mkCyl(tg,+(t/2+fWm),+(wHm/2-r),zRamp, r,swRamp,'z',matRad);
+      mkCyl(tg,+(t/2+fWm),-(wHm/2-r),zRamp, r,swRamp,'z',matRad);
+
+      // CORRUGADO: 2 longitudinais na alma, junto às mesas (foto peça real)
+      [-(SWM/2-0.008),(SWM/2-0.008)].forEach(function(yr){
+        mkBox(tg,0,yr,zFlat, t+0.0008,0.006,swFlat-0.004, matTrCorr);});
+
+      // DIMPLE no CENTRO DA MESA pelo End Face (padrão universal 12/06):
+      // fW/2=37.5mm da ponta = centro da mesa da viga (almas em contato →
+      // coincide com a interseção das linhas centrais, parafuso alinhado).
+      // Transversal: centro da mesa conificada.
+      var zDim=ez-sgn*(fW/2);
+      var xDim=t/2+fWs/2;
+      [+1,-1].forEach(function(sv){
+        // PARAFUSO 4,8x19 — a cabeca Philips (lsf_core) É a representacao do dimple.
+        // R33: SEM cratera ambar e SEM furo/pino escuro (matHole removido — o pino
+        // preto era a representacao antiga do furo). Atravessa viga+travessa.
+        screwV(xDim,sv*(wH/2),zDim,'y',-sv,tg);
+      });
+    });
+
+    // Linhas brancas de máquina
+    [-refX,0,refX].forEach(function(ly){
+      mkRef(tg,[new V3(t/2+0.001,ly,-tLen/2), new V3(t/2+0.001,ly,+tLen/2)]);
+    });
+  }
+
+  mezTravPos().forEach(buildTrav);
+}
+
+
+// ── Loop principal ──
+var cumXworld=cumX;
+var cumYworld=pilTopo+cy+rafLen*sinT+(wH/2)*cosT;
+
+for(var ip=0;ip<nPorticos;ip++){
+  var oz=ip*modulo;
+  var portNum=ip+1;
+  var temMez=mezAtivo && mezPorticos.indexOf(portNum)>=0;
+  // Aba da viga: corte do lip SO no lado em que ha vao com travessas
+  // (regra "corte pra quem chega naquele lado" — paridade c/ mini-rafter)
+  if(temMez){
+    var cutNeg = ip>0 && mezPorticos.indexOf(portNum-1)>=0;
+    var cutPos = ip<nPorticos-1 && mezPorticos.indexOf(portNum+1)>=0;
+    buildViga(oz,cutNeg,cutPos);
+  }
+  var antes=scene.children.slice();
+  buildSapata(0,oz);
+  buildPilar(0,oz,0,0,{pos:ip<nPorticos-1,neg:ip>0});
+  buildMF(0,oz);
+  if(temMez) buildMFviga(0,oz);
+  var semTrav=(ip===0||ip===nPorticos-1);
+  buildRafter(0,oz,false,semTrav);
+  // R58 opção A (Cassiano 13/07): PÓRTICO DE PONTA SEM TRAVESSA — os 2
+  // pilares de empena sobem até o rafter exatamente na PROJEÇÃO dos nós
+  // da travessa (0,3/0,7 do vão) e assumem a função dela (apoio real no
+  // lugar do tirante). Zero conflito de nó (a antiga "regra da travessa"
+  // fica sem objeto nas pontas). Reversível se o crivo estrutural pedir.
+  if(ip>0&&ip<nPorticos-1) buildTravessa(oz);
+  var novos=scene.children.filter(function(o){return antes.indexOf(o)<0;});
+  novos.forEach(function(obj){
+    if(obj.type==='Line'||obj.type==='LineSegments') return;
+    if(obj.userData&&obj.userData.noMirror) return;  // rafter: espelhado explicito
+    var clone=obj.clone();
+    clone.position.x-=cumXworld;clone.position.y-=cumYworld;
+    clone.position.x=-clone.position.x;clone.rotation.y+=Math.PI;
+    clone.position.x+=cumXworld;clone.position.y+=cumYworld;
+    scene.add(clone);
+  });
+  // Rafter da agua direita: construido (nao clonado) com os cortes de lip
+  // por lado ja trocados (mirrorSwap), e entao espelhado como os clones.
+  var rgM=buildRafter(0,oz,true,semTrav);
+  rgM.position.x-=cumXworld;rgM.position.x=-rgM.position.x;
+  rgM.rotation.y+=Math.PI;rgM.position.x+=cumXworld;
+  // ── Pilares intermediários do mezanino ──
+  // Posições: dividem o vão entre pilares principais em (nMezPilares+1) partes iguais
+  if(temMez && nMezPilares>0){
+    for(var mp=1;mp<=nMezPilares;mp++){
+      var ox_mez = cumXworld * 2 * mp / (nMezPilares+1);
+      buildSapata(ox_mez, oz);
+      buildPilarMez(ox_mez, oz);
+    }
+  }
+  // ── Travessas do mezanino (entre portal ip e ip+1) ──
+  if(temMez && ip < nPorticos-1){
+    var nextPortNum = ip+2;
+    var nextTemMez  = mezAtivo && mezPorticos.indexOf(nextPortNum)>=0;
+    if(nextTemMez) buildTravessaMez(oz);
+  }
+}
+
+
+// === PAREDES LATERAIS LSF (parametrico) ===
+function locBox(mat,cx,cy,cz,sx,sy,sz){var m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mat);m.position.set(cx,cy,cz);m.userData.p=PIECE;return m;}
+(function(){
+var Hm=0.14,Fm=0.045,Lm=0.012,tm=0.00155;
+var SW_lat=0.06,SWD_lat=0.1365;
+var zA_mp=0.005775,zM_mp=0.02905,Zb_lat=0.00655,dYb_lat=0.08,dYt_lat=0.001;
+var tercaY_lat=[0.297, 2.2053, 4.1136, 6.0219];
+var angD_lat=[0.65359909, 0.65359909, 0.65359909],LA_lat=[3.005192, 3.005192, 3.005192],ztip_lat=[2.392374, 2.392374, 2.392374],dimoff_lat=[0.068892, 0.068892, 0.068892];
+var YbD_lat=[0.377, 2.2853, 4.1936];   // base efetiva das diagonais (platibanda: elevada)
+var MP_CUTS=[[0.242, 0.307], [0.2775, 0.4215], [2.1503, 2.2153], [2.1858, 2.3298], [4.0586, 4.1236], [4.0941, 4.2381], [5.9669, 6.0319]];
+var MP_SEGS=[[0.345446, 0.240892], [2.228496, 0.291392], [4.136796, 0.291392], [5.958263, 0.117725]],MP_BOLTS=[[0.261, 0.415892], [2.1328, 2.324192], [4.0411, 4.232492], []],MP_CENTRAL=[1.25115, 3.15945],refX_lat=0.1;
+var T0G=0;  // 1 = terça 0 é a GUIA do painel de placa (não desenhar a deitada)
+var mBolt_l=new THREE.MeshLambertMaterial({color:0xe04040});
+var L_lat=modulo-2*Zb_lat;
+var swZ_lat=[[-L_lat/2,-L_lat/2+SW_lat],[L_lat/2-SW_lat,L_lat/2]];
+var miniYc=3.15945,miniL=5.8749;
+var mMP_l=new THREE.MeshLambertMaterial({color:0xe54983});
+var apexZ=0.1;
+function dAtL(zc,swZ){if(!swZ)return Hm;var rv=0.005;  // rampa 5mm cada lado (flat 60 + 2x5 = total 70)
+ var regs=(swZ.length>0&&Array.isArray(swZ[0]))?swZ:[swZ];
+ for(var i=0;i<regs.length;i++){var z0=regs[i][0],z1=regs[i][1];
+  if(zc>=z0&&zc<=z1)return SWD_lat;if(zc>z0-rv&&zc<z0)return Hm+(SWD_lat-Hm)*((zc-(z0-rv))/rv);
+  if(zc>z1&&zc<z1+rv)return SWD_lat+(Hm-SWD_lat)*((zc-z1)/rv);}return Hm;}
+// o.chamfer=1 (KIT de juncao — entrante EM GRAU): MESA com os dois cantos
+// recuando (R60 ~ diagonais 45) e tira reta de 18mm no MEIO DA MESA ate a
+// ponta (pag.9 anotada pelo Cassiano). ALMA INTACTA; lips recuam.
+// Sem o.chamfer o comportamento e IDENTICO ao original (mudanca neutra).
+function CL(C,ang,L,o){o=o||{};
+ // 1 CL = 1 peça física; terça também tem swage — separar pelo ÂNGULO
+ novaPeca(Math.abs(ang)>0.01?'diagonal-lateral':'terca-lateral');
+ var grp=new THREE.Group();grp.position.set(C[0],C[1],C[2]);grp.rotation.x=-ang;
+ var m=new THREE.MeshLambertMaterial({color:o.color});var nseg=o.nseg||50;
+ var CHc=o.chamfer?0.0135:0, zlo=-L/2+CHc, zhi=L/2-CHc;
+ var LIPR=0.0115;                                   // alivio do lip cut (83-60)/2
+ // FRONTEIRAS EXATAS (regra mestra): fatias quebram nos limites das zonas
+ // de swage (+rampas) e do lip cut — sem amostragem grossa, a largura cheia
+ // NUNCA invade a zona do receptor (antes a fatia de 48mm invadia ate 24mm).
+ var bps=[];
+ if(o.swZ){var rgS=(o.swZ.length>0&&Array.isArray(o.swZ[0]))?o.swZ:[o.swZ];
+  rgS.forEach(function(R){bps.push(R[0]-0.005,R[0],R[1],R[1]+0.005);});}
+ if(o.lipCutZ){bps.push(o.lipCutZ[0]-LIPR,o.lipCutZ[1]+LIPR);}
+ bps.sort(function(a,b){return a-b;});
+ for(var i=0;i<nseg;i++){var zc0=-L/2+i*L/nseg,zc1=zc0+L/nseg;
+  var pts=[zc0];
+  bps.forEach(function(b){if(b>zc0+1e-6&&b<zc1-1e-6)pts.push(b);});
+  pts.push(zc1);
+  for(var p2=0;p2<pts.length-1;p2++){
+   var s0=pts[p2],s1=pts[p2+1],zc=(s0+s1)/2;
+   var d=dAtL(zc,o.swZ);var lc=o.lipCutZ&&zc>o.lipCutZ[0]-LIPR&&zc<o.lipCutZ[1]+LIPR;
+   var a0=Math.max(s0,zlo),a1=Math.min(s1,zhi);
+   if(a1<=a0)continue;
+   var ac=(a0+a1)/2,ad=a1-a0;
+   grp.add(locBox(m,0,0,ac,d,tm,ad));                 // ALMA: recua junto c/ lip
+   grp.add(locBox(m,-d/2,-Fm/2,ac,tm,Fm,ad));grp.add(locBox(m,d/2,-Fm/2,ac,tm,Fm,ad));
+   if(!lc){grp.add(locBox(m,-d/2+Lm/2,-Fm,ac,Lm,tm,ad));grp.add(locBox(m,d/2-Lm/2,-Fm,ac,Lm,tm,ad));}}}
+ // CUNHAS do lip cut (alivio 60->83): cheia na DOBRA, zero na borda livre
+ if(o.lipCutZ){
+  [[o.lipCutZ[0],-1],[o.lipCutZ[1],1]].forEach(function(E){
+   var zE=E[0],dr=E[1];
+   [[Hm/2,-1],[-Hm/2,1]].forEach(function(F){
+    var sh=new THREE.Shape();
+    sh.moveTo(F[0],-(zE+dr*LIPR));sh.lineTo(F[0],-zE);
+    sh.lineTo(F[0]+F[1]*Lm,-(zE+dr*LIPR));sh.closePath();
+    var g2=new THREE.ExtrudeGeometry(sh,{depth:tm,bevelEnabled:false});
+    var mm=new THREE.Mesh(g2,m);
+    mm.rotation.x=-Math.PI/2;mm.position.y=-Fm-tm/2;grp.add(mm);});});}
+ // CORRUGADO DO SWAGE: DOIS corrugados LONGITUDINAIS na alma, um perto de
+ // cada canto junto a mesa (foto da peca real, corrigido pelo Cassiano)
+ if(o.swZ){var regsS=(o.swZ.length>0&&Array.isArray(o.swZ[0]))?o.swZ:[o.swZ];
+  var mCo=new THREE.MeshLambertMaterial({color:new THREE.Color(o.color).multiplyScalar(0.72)});
+  var bLo=-L/2+CHc+0.002,bHi=L/2-CHc-0.002;
+  regsS.forEach(function(R){
+   var c0=Math.max(R[0],bLo),c1=Math.min(R[1],bHi);
+   if(c1-c0<0.008)return;
+   var zc2=(c0+c1)/2,ld=c1-c0;
+   [-(SWD_lat/2-0.008),(SWD_lat/2-0.008)].forEach(function(xr){
+    grp.add(locBox(mCo,xr,0,zc2,0.006,tm+0.0008,ld));});});}
+ if(CHc>0){var dE=dAtL(-L/2+0.001,o.swZ);
+  var mkCh=function(tipZ,dir){
+   var zb=tipZ-dir*CHc;
+   var yA=-(Fm/2-0.009),yB=-(Fm/2+0.009);            // tira central de 18mm
+   var sh=new THREE.Shape();
+   sh.moveTo(-zb,0);sh.lineTo(-tipZ,yA);             // canto da alma recua
+   sh.lineTo(-tipZ,yB);                              // 18mm retos na ponta
+   sh.lineTo(-zb,-Fm);sh.closePath();                // canto do lip recua
+   var g2=new THREE.ExtrudeGeometry(sh,{depth:tm,bevelEnabled:false});
+   [-dE/2,dE/2].forEach(function(xm){
+    var mm=new THREE.Mesh(g2,m);
+    mm.rotation.y=Math.PI/2;mm.position.x=xm-tm/2;grp.add(mm);});};
+  mkCh(L/2,1);mkCh(-L/2,-1);}
+ scene.add(grp);return grp;}
+function mpSegs(yBot,yTop,cuts){var v=[[yBot,yTop]];for(var c=0;c<cuts.length;c++){var nv=[],a=cuts[c][0],e=cuts[c][1];for(var i=0;i<v.length;i++){var s=v[i][0],tt=v[i][1];if(e<=s||a>=tt){nv.push([s,tt]);}else{if(a>s)nv.push([s,a]);if(e<tt)nv.push([e,tt]);}}v=nv;}return v;}
+var LIPR_mp=0.0115;   // alivio do lip cut (83-60)/2
+// regra mestra: funde faixas sobrepostas/proximas em abertura unica
+function mpExp(cuts){return mergeBands(cuts,2*LIPR_mp+0.001).map(function(C){return [C[0]-LIPR_mp,C[1]+LIPR_mp];});}
+// cunha do lip do mini: cheia na DOBRA (xc+-Hm/2), zero na borda livre
+function mpWedge(xc,xF,fdir,yE,dr,zlip){
+ var sh=new THREE.Shape();
+ sh.moveTo(xF,yE+dr*LIPR_mp);sh.lineTo(xF,yE);
+ sh.lineTo(xF+fdir*Lm,yE+dr*LIPR_mp);sh.closePath();
+ var g2=new THREE.ExtrudeGeometry(sh,{depth:tm,bevelEnabled:false});
+ var mm=new THREE.Mesh(g2,mMP_l);mm.position.z=zlip-tm/2;scene.add(mm);}
+function mpWedges(xc,yBot,yTop,cuts,lipZs){
+ mergeBands(cuts,2*LIPR_mp+0.001).forEach(function(C){
+  [[C[0],-1],[C[1],1]].forEach(function(E){
+   if(E[0]<yBot||E[0]>yTop)return;
+   lipZs.forEach(function(zl){
+    mpWedge(xc,xc+Hm/2,-1,E[0],E[1],zl);
+    mpWedge(xc,xc-Hm/2,1,E[0],E[1],zl);});});});}
+// cutsNeg (R70/Cassiano 15/07): lip cut SO no lado onde a terca/diagonal
+// realmente chega — no lado sem vao (cantos da platibanda) o lip fica
+// INTEIRO (menos corte = fabricacao mais simples). Default: os 2 lados.
+function mpL(xc,yc,zc,L,cuts,cutsNeg){cuts=cuts||[];
+ if(cutsNeg===undefined)cutsNeg=cuts;
+ novaPeca('mini-pilar');
+ scene.add(locBox(mMP_l,xc,yc,zc+zA_mp,Hm,L,tm));
+ scene.add(locBox(mMP_l,xc,yc,zc-zA_mp,Hm,L,tm));
+ [+zM_mp,-zM_mp].forEach(function(zf){
+  scene.add(locBox(mMP_l,xc+Hm/2,yc,zc+zf,tm,L,Fm));
+  scene.add(locBox(mMP_l,xc-Hm/2,yc,zc+zf,tm,L,Fm));});
+ var lipZ=zM_mp+Fm/2;
+ var segsP=mpSegs(yc-L/2,yc+L/2,mpExp(cuts));
+ var segsN=mpSegs(yc-L/2,yc+L/2,mpExp(cutsNeg));
+ for(var i=0;i<segsP.length;i++){var a=segsP[i][0],e=segsP[i][1],sy=(a+e)/2,sh=e-a;
+  scene.add(locBox(mMP_l,xc+Hm/2-Lm/2,sy,zc+lipZ,Lm,sh,tm));
+  scene.add(locBox(mMP_l,xc-Hm/2+Lm/2,sy,zc+lipZ,Lm,sh,tm));}
+ for(var i=0;i<segsN.length;i++){var a=segsN[i][0],e=segsN[i][1],sy=(a+e)/2,sh=e-a;
+  scene.add(locBox(mMP_l,xc+Hm/2-Lm/2,sy,zc-lipZ,Lm,sh,tm));
+  scene.add(locBox(mMP_l,xc-Hm/2+Lm/2,sy,zc-lipZ,Lm,sh,tm));}
+ mpWedges(xc,yc-L/2,yc+L/2,cuts,[zc+lipZ]);
+ mpWedges(xc,yc-L/2,yc+L/2,cutsNeg,[zc-lipZ]);}
+function mpHalf(xc,yc,zc,sign,L,cuts){cuts=cuts||[];novaPeca('mini-pilar');
+ scene.add(locBox(mMP_l,xc,yc,zc+sign*zA_mp,Hm,L,tm));
+ scene.add(locBox(mMP_l,xc+Hm/2,yc,zc+sign*zM_mp,tm,L,Fm));
+ scene.add(locBox(mMP_l,xc-Hm/2,yc,zc+sign*zM_mp,tm,L,Fm));
+ var segs=mpSegs(yc-L/2,yc+L/2,mpExp(cuts));var lipZ=sign*(zM_mp+Fm/2);
+ for(var i=0;i<segs.length;i++){var a=segs[i][0],e=segs[i][1],sy=(a+e)/2,sh=e-a;
+  scene.add(locBox(mMP_l,xc+Hm/2-Lm/2,sy,zc+lipZ,Lm,sh,tm));
+  scene.add(locBox(mMP_l,xc-Hm/2+Lm/2,sy,zc+lipZ,Lm,sh,tm));}
+ mpWedges(xc,yc-L/2,yc+L/2,cuts,[zc+lipZ]);}
+// DIMPLE da junta = cabeca Philips do parafuso (lsf_core screwHeadV), eixo X.
+// din = direcao PARA DENTRO do perfil (broca); cabeca assenta na face externa. R33.
+function dimple3D(x,y,z,din){
+ screwHeadV(x,y,z,'x',din,scene);}
+function bL(x1,x2,y,z){var s=(x1<x2)?1:-1;dimple3D(x1,y,z,s);dimple3D(x2,y,z,-s);}
+// PARAFUSO DA JUNTA (Cassiano 02/07): cabeca SO nas 2 faces EXTERNAS do
+// pacote (parafuso COMPLETO: cabeca fora + corpo/ponta atravessando);
+// nas camadas internas NADA (cabeca "por dentro" nao faz sentido).
+function jFull(xOut,xIn,y,z){var s=(xOut<xIn)?1:-1;
+ screwV(xOut,y,z,'x',s);screwV(xIn,y,z,'x',-s);}
+// Dimple do ENTRANTE = PARAFUSO (cabeca Philips, lsf_core). 1 por mesa, cabeca
+// na face EXTERNA, broca rumo a dentro — paridade com o painel. R33, sem cratera ambar.
+function latDimple(gp,w,zd){
+ screwV(w/2+tm/2,-Fm/2,zd,'x',-1,gp);screwV(-(w/2+tm/2),-Fm/2,zd,'x',1,gp);}
+// Parafuso 1/2" da alma do mini-pilar/pilar. four=true -> 4 pecas (mini+pilar+pilar+mini),
+// four=false -> 2 almas do pilar. Eixo em Z (atravessa as almas).
+function segBolt(x,y,z,four){var h=four?0.008:0.005; bolt12(x,y,z,'z',h); }
+var cxR=cumXworld*2;
+// b5 = camada do MEIO do lado externo (mesa externa do mini-pilar, interface
+// pilar<->mini) — regra de juncao: furo em TODAS as camadas, dos dois lados.
+// b6 = mesa OPOSTA do pilar (lado de dentro do galpao): furo SIMETRICO de
+// calibracao (regra do rafter levada ao pilar — mesmo longitudinal da juncao)
+var sides=[
+ {xc:-0.076,b1:-0.15,b2:-0.1451,b5:-0.1468,b6:0.1503,b3:-0.0073,b4:-0.0056,a1:-0.14663,a2:-0.14198,a3:-0.00913,a4:-0.00448},
+ {xc:cxR+0.076,b1:cxR+0.15,b2:cxR+0.1451,b5:cxR+0.1468,b6:cxR-0.1503,b3:cxR+0.0073,b4:cxR+0.0056,a1:cxR+0.14663,a2:cxR+0.14198,a3:cxR+0.00913,a4:cxR+0.00448}];
+var NT=tercaY_lat.length;
+for(var si=0;si<sides.length;si++){
+ var S=sides[si],XC=S.xc;
+ // TERCAS horizontais
+ for(var vv=0;vv<nPorticos-1;vv++){var Zc=vv*modulo+modulo/2;
+  for(var ti=0;ti<NT;ti++){
+   if(T0G&&ti===0)continue;              // terça 0 = GUIA do painel (peça do parede_placa)
+   var opts={color:0x66ccff,nseg:50,swZ:swZ_lat};
+   if(ti>0)opts.lipCutZ=[-0.25,0.25];
+   var tgL=CL([XC,tercaY_lat[ti],Zc],0.0,L_lat,opts);}}
+   // (cabecas da terca: jFull b2/b4 nas mesas do MINI, no mesmo ponto — a
+   //  cabeca na mesa conificada da terca ficava ENTERRADA sob a mesa do mini)
+ // DIAGONAIS em V invertido
+ for(var vv=0;vv<nPorticos-1;vv++){var Z0=vv*modulo,Zv=Z0+modulo/2;
+  for(var ti=0;ti<NT-1;ti++){
+   var Yb=YbD_lat[ti],Yt=tercaY_lat[ti+1]-dYt_lat;
+   var Zt=Z0+ztip_lat[ti],Cy=(Yb+Yt)/2,Cz=(Z0+Zb_lat+Zt)/2;
+   // REGRA UNIVERSAL DO SWAGE nas DUAS pontas (sem swage suficiente, o
+   // entrante colide com o receptor — "tudo tudo tudo", Cassiano):
+   // BASE (pilar): alcance da mesa do C300 em Z / cos(ang) + margem
+   // TIP (terca superior): faixa da mesa da terca / sin(ang) + margem
+   // REGRA DO COMPRIMENTO (Cassiano): pelo angulo de entrada, da ALMA do
+   // receptor ate SAIR DA MESA, medido ao longo do entrante, + 10mm de folga
+   var mesaReach=fW+0.005;
+   var swBase=(mesaReach-Zb_lat)/Math.cos(angD_lat[ti])+0.010;
+   var swTip=(Fm-dYt_lat)/Math.sin(angD_lat[ti])+0.010;
+   var swD=[[-LA_lat[ti]/2,-LA_lat[ti]/2+swBase],[LA_lat[ti]/2-swTip,LA_lat[ti]/2]];
+   var dA=CL([XC,Cy,Cz],angD_lat[ti],LA_lat[ti],{color:0x28c08a,nseg:50,swZ:swD,chamfer:1});
+   // dimples do entrante na INTERSECAO das linhas centrais (regra do
+   // alinhamento): base cruza a mesa do mini (z=zM), tip cruza a mesa da
+   // terca superior (Y=terca-Fm/2)
+   var sA2=Math.sin(angD_lat[ti]),cA2=Math.cos(angD_lat[ti]);
+   var lzB=((Z0+zM_mp)-Cz-(Fm/2)*sA2)/cA2;
+   var lzT=((tercaY_lat[ti+1]-Fm/2)-Cy+(Fm/2)*cA2)/sA2;
+   var piv=new THREE.Group();piv.position.set(XC,0,Zv);piv.rotation.y=Math.PI;scene.add(piv);
+   var dB=dA.clone();dB.position.set(0,Cy,Cz-Zv);piv.add(dB);}}
+ // (cabecas das juncoes: nas MESAS DO MINI (receptor, b2/b4) — o entrante
+ //  conificado fica POR DENTRO delas; cabeca nele ficaria enterrada.
+ //  Verificado no navegador 03/07: b2/b4 sao as faces visiveis do no.)
+ // MINI-PILARES SEGMENTADOS (um segmento por terca, lips seccionados)
+ // + furacao 1/2" nos niveis de terca/diagonal: -refX 4 pecas, +refX 2 almas pilar
+ var outward=(si===0)?-1:1;          // lado externo da parede
+ var PC=XC-outward*0.076;            // centro do pilar
+ var outerX=PC+outward*refX_lat;     // linha externa (-refX, lado da telha)
+ var innerX=PC-outward*refX_lat;     // linha interna (+refX, perto do centro)
+ for(var pp=0;pp<nPorticos;pp++){var Zp=pp*modulo;
+  var hasPos=(pp<nPorticos-1),hasNeg=(pp>0);
+  // R54b (Cassiano 11/07, filosofia "cada parafuso com o máximo de funções"):
+  // o furo INTERNO (+refX) do nó do mini é SIMETRIA/costura — sai quando
+  // uma UNIÃO real chega a <350mm do nível NESTE pórtico (a MF do mezanino
+  // já une e trava as almas ali). O furo EXTERNO fica: atravessa 4 chapas
+  // (mini + almas) — dupla função por natureza.
+  var _uniY=[];
+  if((typeof mezAtivo!=='undefined')&&mezAtivo&&
+     (typeof mezPorticos!=='undefined')&&mezPorticos.indexOf(pp+1)>=0)
+   _uniY.push(pBase+mezH+mfPillarY_mez);
+  function _uniPerto(y){for(var u=0;u<_uniY.length;u++)
+   if(Math.abs(y-_uniY[u])<0.35)return true;return false;}
+  for(var sg=0;sg<MP_SEGS.length;sg++){
+   var syc=MP_SEGS[sg][0],sL=MP_SEGS[sg][1];
+   // PLATIBANDA (R70, Cassiano 15/07): o montante estendido e DUPLO em
+   // TODOS os pilares — par C140 costas-costas (mpL: almas coladas POR
+   // FORA das almas do pilar = pilha de 4 chapas), 1/2" na linha de
+   // maquina atravessando as 4 almas ENCOSTADAS (mesma familia dos
+   // segmentos de baixo). Vale inclusive nos CANTOS (a v5 "por fora do
+   // lip" REPROVOU na R70: parafuso em aba fina sem apoio).
+   var _isExt=(typeof PLATIBANDA!=='undefined')&&(syc+sL/2>pilTopo+0.01);
+   if(_isExt){
+    // lip cut so no(s) lado(s) com VAO adjacente (canto: um lado so)
+    var cP=MP_CUTS,cN=MP_CUTS;
+    if(pp===0)cN=[];else if(pp===nPorticos-1)cP=[];
+    mpL(XC,syc,Zp,sL,cP,cN);
+    var lvE=MP_BOLTS[sg];
+    for(var bE=0;bE<lvE.length;bE++)segBolt(outerX,lvE[bE],Zp,true);
+    continue;
+   }
+   if(hasPos&&hasNeg)mpL(XC,syc,Zp,sL,MP_CUTS);
+   else if(hasPos)mpHalf(XC,syc,Zp,+1,sL,MP_CUTS);
+   else if(hasNeg)mpHalf(XC,syc,Zp,-1,sL,MP_CUTS);
+   // Furo interno (+refX) pulado na BASE (sapata ja une) e no TOPO (rafter ja une)
+   var lv=MP_BOLTS[sg],semInterno=(sg===0)||(sg===MP_SEGS.length-1);
+   for(var bi=0;bi<lv.length;bi++){
+    segBolt(outerX,lv[bi],Zp,true);                  // -refX: 4 pecas (segura o mini)
+    if(!semInterno&&!_uniPerto(lv[bi]))
+     segBolt(innerX,lv[bi],Zp,false);                // +refX: 2 almas do pilar
+   }}
+  // Parafusos CENTRAIS (linha 0) nos gaps entre segmentos — solidariza as 2 almas.
+  // R54 (Cassiano 11/07): parafuso de COSTURA não acumula com parafuso de
+  // UNIÃO próximo. No pórtico COM mezanino, o nó da viga (3x 1/2" que já
+  // travam as almas do pilar) dispensa o central logo acima (estava a
+  // 183mm); nos pórticos SEM mezanino ele continua — lá é o único do vão.
+  var _temMez=(typeof mezAtivo!=='undefined')&&mezAtivo&&
+              (typeof mezPorticos!=='undefined')&&mezPorticos.indexOf(pp+1)>=0;
+  var _yVg=_temMez?(pBase+mezH+cy_viga):-99;
+  for(var ci=0;ci<MP_CENTRAL.length;ci++){
+   if(_temMez&&Math.abs(MP_CENTRAL[ci]-_yVg)<0.5)continue;   // R54: 500mm
+   segBolt(PC,MP_CENTRAL[ci],Zp,false);}}
+ // (parede mista: o painel de placa cimentícia 0→h_placa é gerado pelo
+ //  módulo parede_placa.py — kit completo do painel-teste)
+ // PARAFUSOS DAS JUNTAS (R33d v3, verificado no navegador 03/07): cabeca NO
+ // DIMPLE, nas faces do RECEPTOR do no — junto ao pilar o receptor e o MINI
+ // (b1 = PELE EXTERNA do pilar — a mesa do mini fica atras do flange, invisivel de fora; b4 = face interna do pacote, visivel de dentro; o entrante conificado nesta por dentro);
+ // no APEX o receptor e a TERCA superior (a1/a4). b1 (plano do pilar/telha)
+ // flutua no z da junta — nao usar.
+ for(var pp=0;pp<nPorticos;pp++){var Zp=pp*modulo,zB=Zp+zM_mp,zBN=Zp-zM_mp;
+  // R47+R33d: com T0G a peca fisica da linha 0 e a GUIA do painel, mas a
+  // COSTURA dela no pilar existe igual (mesma orientacao: alma na linha,
+  // mesa de 45 pendurada -> mesmo nivel Ym). O skip antigo deixava o no
+  // da terca base PELADO — print do Cassiano 11/07.
+  // PLATIBANDA: acima do pilar a junta e no MONTANTE estendido (mesas
+  // do mini, b2/b5) — as faces b1/b4 do pilar nao existem la em cima
+  var _pTopJ=(typeof PLATIBANDA!=='undefined')?pilTopo:1e9;
+  for(var ti=0;ti<NT;ti++){var Ym=tercaY_lat[ti]-Fm/2;
+   var _o1=(Ym>_pTopJ)?S.b2:S.b1,_o4=(Ym>_pTopJ)?S.b5:S.b4;
+   if(pp<nPorticos-1)jFull(_o1,_o4,Ym,zB);
+   if(pp>0)jFull(_o1,_o4,Ym,zBN);}
+  for(var ti=0;ti<NT-1;ti++){var Yd=YbD_lat[ti]-dYb_lat+dimoff_lat[ti];
+   var _p1=(Yd>_pTopJ)?S.b2:S.b1,_p4=(Yd>_pTopJ)?S.b5:S.b4;
+   if(pp<nPorticos-1)jFull(_p1,_p4,Yd,zB);
+   if(pp>0)jFull(_p1,_p4,Yd,zBN);}
+  if(pp<nPorticos-1){var Zv2=Zp+modulo/2;
+   for(var ti=0;ti<NT-1;ti++){var Ya=tercaY_lat[ti+1]-Fm/2;
+    jFull(S.a1,S.a4,Ya,Zv2-apexZ);jFull(S.a1,S.a4,Ya,Zv2+apexZ);}}}
+}
+// KIT DA LATERAL exposto p/ as EMPENAS (v3b, 13/07): a parede do fundo/
+// frente REUSA a mesma peca CL (terca/diagonal com swage, lip cut,
+// chamfer R60) num wrapper girado — "mesma linguagem estrutural".
+window.KIT_LAT={CL:CL};
+})();
+// === FIM LATERAIS ===
+
+
+// === CANTONEIRA DE ARRANQUE v2 (Cassiano 13/07: vedacao hidraulica) ===
+// INVERTIDA: aba dobrada p/ FORA do galpao. Aba VERTICAL (120mm, mais
+// alta) parafusada na face EXTERNA do pilar; aba HORIZONTAL p/ fora no
+// piso (chumbadores + cordao de PU/selante na obra — nota de montagem).
+// A TELHA SOBREPOE a cantoneira (desce na frente dela, ate y=80mm, a
+// cantoneira sobe a 120mm = 40mm de transpasse): chapa superior sempre
+// sobre a inferior — agua da fachada cai NA cantoneira e escorre p/
+// FORA; o selante veda a base. (A telha da parede desloca 2,5mm p/
+// fora no fechamento.py p/ passar NA FRENTE da aba — na obra ela apoia
+// na propria cantoneira no pe.) Assume a funcao da antiga pingadeira
+// de base (removida — R50).
+(function(){
+  var legV=0.120, legH=0.075, tt=0.0025;        // dobrada 120x75x2,5
+  var matCant=new THREE.MeshLambertMaterial({color:0x565c63});  // chumbo (v2 13/07)
+  var matPB  =new THREE.MeshLambertMaterial({color:0x202428});  // chumbador
+  var BDz=(typeof BD!=='undefined')?BD:0.25;     // profundidade base sapata (Z)
+  var gapZ=0.010, pbStep=0.600, floorY=0.0;
+  var outerL=-wH/2, outerR=cumXworld*2+wH/2;     // faces externas dos pilares
+  var walls=[{x:outerL,dir:1},{x:outerR,dir:-1}]; // dir = sentido P/ DENTRO
+  // v3 (Cassiano 13/07): CONTINUA de pilar a pilar (pecas de 5m, centro a
+  // centro — emenda EM CIMA do pilar, vedada na obra): "pelo lado de fora
+  // nao quero ficar olhando o pilar". MEDIDO antes: alem da face externa
+  // do pilar so ha o raio de dobra (tangente ao plano da aba) e cabecas
+  // de parafuso 0,1mm — contato coincidente, sem cruzamento. A fixacao
+  // da aba no pilar migrou p/ a COSTURA DA BASE (telha->cantoneira->
+  // pilar, cabeca visivel por fora — fechamento.py), 1 parafuso a menos
+  // por linha (R54: maximo de funcoes por parafuso).
+  for(var w=0;w<walls.length;w++){
+    var WX=walls[w].x, dir=walls[w].dir;
+    for(var b=0;b<nPorticos-1;b++){
+      var z0=b*modulo+0.001, z1=(b+1)*modulo-0.001;  // peca de 5m (vao inteiro)
+      // CANTOS (13/07): a peca das pontas ESTENDE ate a extremidade
+      // EXTERNA do pilar — apoio continuo p/ a telha descer ate o fim
+      if(b===0)z0=-0.081; if(b===nPorticos-2)z1=(nPorticos-1)*modulo+0.081;
+      var Lz=z1-z0, zc=(z0+z1)/2;
+      novaPeca('cantoneira-arranque');
+      // aba VERTICAL encostada na face externa do pilar (sobe 120mm)
+      mkBox(scene, WX-dir*(tt/2),        floorY+legV/2, zc, tt,   legV, Lz, matCant);
+      // aba HORIZONTAL p/ FORA (apoio no piso; selante por baixo na obra)
+      mkBox(scene, WX-dir*(tt+legH/2),   floorY+tt/2,   zc, legH, tt,   Lz, matCant);
+      for(var pz=z0+0.10; pz<=z1-0.05; pz+=pbStep){
+        // PARABOLT APERTADO (Cassiano 13/07): so a CABECA sextavada +
+        // arruela sobre a aba — o corpo esta dentro do radier
+        var pxb=WX-dir*(tt+0.040);
+        mkCyl(scene, pxb, floorY+tt+0.001, pz, 0.014, 0.002, 'y', matPB);
+        var hx=new THREE.Mesh(new THREE.CylinderGeometry(0.0095,0.0095,0.008,6),matPB);
+        hx.position.set(pxb, floorY+tt+0.006, pz);scene.add(hx);
+      }
+    }
+  }
+})();
+// === FIM CANTONEIRA ===
+
+// parede de placa desativada
+
+
+// === FECHAMENTO COMPLETO: TELHA TP36-980 + CALHA (2 lados) ===
+(function(){
+var TP25=location.search.indexOf('tp25')>=0;
+// TP36-980 (ficha do Cassiano): passo 196, crista h36 topo32, nervura 28
+// no pan. Base da crista (66) e altura da nervura (7) inferidas do
+// desenho — conferir na ficha tecnica se divergirem.
+var TPP=TP25?0.204:0.196, TPH=TP25?0.024:0.036;
+var WB=TP25?0.082:0.066, WT=TP25?0.030:0.032;
+var RIBW=TP25?0:0.028, RIBH=TP25?0:0.007;
+var STRIP=(TPP-WB-RIBW)/2;                          // faixa PLANA da onda baixa
+var TT=0.0025;
+var HPF=0.000000, TERCAS=[0.297, 2.2053, 4.1136, 6.0219], TSR=[0.4327, 1.8987, 3.3648, 4.8308];
+var COMPF=(nPorticos-1)*modulo;
+// v6 (Cassiano 13/07, envelope completo): laterais e cobertura vao ATE
+// O PLANO EXTERNO DA EMPENA (EXTF = 80 pilar + 2,5 cantoneira + 2,5
+// chapa + 36 onda + 4 folga), com o ultimo modulo CORTADO exato (corte
+// longitudinal, como na obra) — antes sobrava ~meio modulo sem telha
+// em cada ponta.
+var EXTF=0.125;
+var WLAT=COMPF+2*EXTF, Z0=-EXTF;
+var NP=Math.max(1,Math.ceil(WLAT/TPP)), WTOT=WLAT;
+// BEIRAL de empena (frente/fundo): a telha da COBERTURA avança em Z além
+// das empenas. Z0R/WROOF/NPR são PRÓPRIOS da cobertura — a telha da PAREDE
+// mantém WLAT/Z0/NP/WTOT intactos (goldens preservados).
+var Z0R=Z0, WROOF=WLAT, NPR=NP;
+if(typeof BEIRAL_EMPENA!=='undefined'){WROOF=COMPF+2*BEIRAL_EMPENA;Z0R=-BEIRAL_EMPENA;NPR=Math.max(1,Math.ceil(WROOF/TPP));}
+// CORES v2 (Cassiano 13/07: "muito claro, parece branco"): telha
+// galvalume NATURAL (entre o claro e o chumbo); remates/calha/
+// cantoneiras em CHUMBO (grafite) — contorno marcado, como os galpoes
+// reais de fabrica
+var mTel=new THREE.MeshLambertMaterial({color:0xc3c9cd,side:THREE.DoubleSide});
+var mRufo=new THREE.MeshLambertMaterial({color:0x565c63,side:THREE.DoubleSide});
+var mCal=new THREE.MeshLambertMaterial({color:0x51575e,side:THREE.DoubleSide});
+var mSup=new THREE.MeshLambertMaterial({color:0x5c646c,side:THREE.DoubleSide});
+var mVin=new THREE.LineBasicMaterial({color:0xb9c6cf,transparent:true,opacity:0.45});
+var LUXG=[],LUXOFFG=[],LUXPTS=[];   // toggle PRISMA (Skylux) + z dos vaos
+// policarbonato NanoPrismatico: leitoso, translucido, leve brilho
+// proprio (a luz atravessa) — VLT 80% da ficha Engepoli
+// emissive quase nulo (v2 14/07: o brilho proprio fazia o modulo
+// "acender" DE FORA — por fora fica igual; por dentro quem clareia
+// sao as PointLights)
+var mLux=new THREE.MeshLambertMaterial({color:0xdfeef8,transparent:true,
+ opacity:0.55,emissive:0x121518,side:THREE.DoubleSide});
+var FECH=new THREE.Group();FECH.userData.fech=true;scene.add(FECH);
+// ── PERFIL TRAPEZOIDAL (superficie + volta com espessura) ──
+// v6: PARAMETRIZADO pela largura W — modulos inteiros + CORTE exato do
+// ultimo (interpolacao na polilinha), como o corte longitudinal real.
+// Retorna {sh, pts} (pts alimenta os vincos da propria telha).
+function telhaShape(W,W0){W0=W0||0;var raw=[],u=0,rmp=(WB-WT)/2;
+ var n=Math.ceil(W/TPP)+1;
+ for(var i=0;i<n;i++){raw.push([u,0]);u+=STRIP;raw.push([u,0]);
+  if(RIBW>0){u+=RIBW*0.2;raw.push([u,RIBH]);u+=RIBW*0.6;raw.push([u,RIBH]);
+   u+=RIBW*0.2;raw.push([u,0]);}
+  u+=STRIP;raw.push([u,0]);
+  u+=rmp;raw.push([u,TPH]);u+=WT;raw.push([u,TPH]);u+=rmp;}
+ raw.push([u,0]);
+ // clip nas DUAS pontas (W0..W) por interpolacao — corte longitudinal
+ var pts=[];
+ for(var i=0;i<raw.length;i++){var P=raw[i];
+  if(P[0]<W0-1e-6)continue;
+  if(!pts.length&&P[0]>W0+1e-6&&i>0){var a0=raw[i-1];
+   var f0=(W0-a0[0])/(P[0]-a0[0]);pts.push([W0,a0[1]+f0*(P[1]-a0[1])]);}
+  if(P[0]<=W+1e-6){pts.push(P);continue;}
+  var a=pts[pts.length-1];
+  var f=(W-a[0])/(P[0]-a[0]);
+  pts.push([W,a[1]+f*(P[1]-a[1])]);break;}
+ var sh=new THREE.Shape();sh.moveTo(pts[0][0],pts[0][1]);
+ for(var i=1;i<pts.length;i++)sh.lineTo(pts[i][0],pts[i][1]);
+ for(var i=pts.length-1;i>=0;i--)sh.lineTo(pts[i][0],pts[i][1]-TT);
+ sh.closePath();return {sh:sh,pts:pts}}
+var _TL=telhaShape(WLAT);
+var SHT=_TL.sh, SH_PTS=_TL.pts;
+// VINCOS (Cassiano 13/07: "linhas nos vincos, pouca coisa"): 1 linha
+// sutil em cada dobra do perfil, filha do mesh da telha (herda a
+// transformacao). 1 LineSegments por telha = barato.
+function addVincos(mesh,depth,pts){
+ var PL=pts||SH_PTS,arr=[];
+ for(var i=0;i<PL.length;i++){var u=PL[i][0],v=PL[i][1]+0.0004;
+  arr.push(u,v,0.002,u,v,depth-0.002);}
+ var g=new THREE.BufferGeometry();
+ g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(arr),3));
+ var ls=new THREE.LineSegments(g,mVin);ls.userData.p=-1;mesh.add(ls);}
+// ── CHAPA DOBRADA (polilinha X-Y + espessura + extrusao em Z) ──
+function bentPlate(pts,t,z0,depth,mat,par){
+ var sh=new THREE.Shape();sh.moveTo(pts[0][0],pts[0][1]);
+ for(var i=1;i<pts.length;i++)sh.lineTo(pts[i][0],pts[i][1]);
+ var off=[];
+ for(var i=0;i<pts.length;i++){var n=[0,0];
+  function seg(a,b){var dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy)||1;
+   return [-dy/L,dx/L]}
+  if(i>0){var n1=seg(pts[i-1],pts[i]);n[0]+=n1[0];n[1]+=n1[1]}
+  if(i<pts.length-1){var n2=seg(pts[i],pts[i+1]);n[0]+=n2[0];n[1]+=n2[1]}
+  var L=Math.hypot(n[0],n[1])||1;
+  off.push([pts[i][0]+n[0]/L*t,pts[i][1]+n[1]/L*t])}
+ for(var i=off.length-1;i>=0;i--)sh.lineTo(off[i][0],off[i][1]);
+ sh.closePath();
+ var g=new THREE.ExtrudeGeometry(sh,{depth:depth,bevelEnabled:false});
+ var m=new THREE.Mesh(g,mat);m.position.z=z0;(par||FECH).add(m);return m}
+// ── Geometria do beiral (lado ESQUERDO; direito = espelho) ──
+// CANTONEIRA v2 (13/07): a aba vertical de 2,5mm fica encostada na face
+// externa do pilar e a TELHA SOBREPOE a cantoneira — a telha da parede
+// inteira desloca 2,5mm p/ fora (na obra ela apoia na cantoneira no
+// pe). Suporte/calha/rampa derivam de xPan/xq e seguem em cascata.
+var xw=-wH/2-0.0025;   // face externa do pilar + espessura da cantoneira
+var yCant=pilTopo+cy+(wH/2)/Math.cos(theta)-Math.abs(-wH/2-cx)*Math.tan(theta);
+// telha desce ate 17,5mm da BASE da cantoneira (Cassiano 13/07:
+// "15 a 20mm acima da base") — transpasse de 100mm sobre a aba de 120
+var y0w=HPF>0?HPF+0.02:0.020, y1w=yCant-0.008, hW=y1w-y0w;
+// PLATIBANDA (modelo C, 15/07): a parede lateral sobe ate a ALTURA DA
+// CUMEEIRA (Cassiano: "copia e cola da altura da cumeeira" — grau fixo,
+// largura maior -> cumeeira e platibanda sobem juntas)
+if(typeof PLATIBANDA!=='undefined'){y1w=PLAT_TOPO;hW=y1w-y0w;}
+var cs=Math.cos(theta),sn=Math.sin(theta);
+var NRM=wH/2+TT+TPH;
+var Ex=cx-NRM*sn, Ey=pilTopo+cy+NRM*cs;
+var Rx=cx+rafLen*cs-NRM*sn, Ry=pilTopo+cy+rafLen*sn+NRM*cs;
+var xq=xw-TT-TPH-0.004;                             // face externa das ondas
+var xPan=xw-TT;                                     // face externa da onda baixa
+var TULT=TERCAS.length?TERCAS[TERCAS.length-1]:(Ey-0.10);
+var yTab=TULT+0.001;                                // topo da terca (medido)
+function zPar(u){return Z0+WTOT-u;}                 // telha da parede: ESPELHADA
+function yRoofUnder(x){return pilTopo+cy+((x-cx+(wH/2+TT)*sn)/cs)*sn+(wH/2)*cs;}
+// telha da cobertura avanca 50mm alem do plano das ondas (hidraulica)
+var sEdge=(xq-0.050-cx+(wH/2+TT)*sn)/cs;
+// PLATIBANDA: a telha da cobertura PARA ANTES da parede erguida — a
+// borda fica 60mm p/ DENTRO do eixo do pilar (espaco da futura calha
+// embutida; a agua morre ali). Sem isso o telhado atravessava a parede.
+if(typeof PLATIBANDA!=='undefined')sEdge=(0.060-cx+(wH/2+TT)*sn)/cs;
+// SUPORTE (barra 30x2,5) e CALHA — cotas definitivas 13/07:
+// fundo util 135 | interna 100 | externa 130 | rampa 120 | berco 180
+var yTopSup=yTab-0.006, yFunSup=yTab-0.108, xFreSup=xPan-0.180;
+var SUP_PTS=[[xFreSup,yFunSup+0.130],[xFreSup,yFunSup],
+             [xPan,yFunSup],[xPan,yTopSup]];
+var xBc=xq-0.0015, xInt=xBc+0.120*cs, xFc=xFreSup+0.004;
+var yFundoC=yFunSup+0.0025+0.0015;
+var yFrontT=yRoofUnder(xq-0.050)+TT+TPH+0.002;
+// ── CUMEEIRA capote — SEGMENTAVEL p/ o acessorio VENTILACAO (Exhaust/
+// Engepoli, validado Cassiano 13/07): lanternins de 3m substituem
+// trechos do capote; OFF = capote continuo (trechos-tampao no gVentOff)
+var CAP_PTS=[[Rx-0.22*cs+0.006*sn,Ry-0.22*sn+0.006*cs],
+             [cumXworld-0.012,Ry+0.010],[cumXworld+0.012,Ry+0.010],
+             [2*cumXworld-(Rx-0.22*cs)+0.006*sn,Ry-0.22*sn+0.006*cs]];
+function capote(z0c,dep,par){if(dep<0.02)return;
+ novaPeca('cumeeira');
+ bentPlate(CAP_PTS,0.002,z0c,dep,mRufo,par);}
+// distribuicao SIMETRICA (Cassiano 13/07: "espacos iguais no teto"):
+// nL lanternins dividem a cumeeira em nL+1 espacos IGUAIS
+// (teste 20m: 2 lanternins em 1/3 e 2/3 -> 3 espacos iguais)
+var VENTZ=[],LV=3.0;
+(function(){var nL=Math.max(1,Math.round(COMPF/10));
+ for(var i=0;i<nL;i++)VENTZ.push((i+1)*COMPF/(nL+1));})();
+var gVent=new THREE.Group();gVent.visible=false;FECH.add(gVent);
+var gVentOff=new THREE.Group();FECH.add(gVentOff);
+var VENTAIR=[];                              // sprites de "ar quente"
+// capote: segmentos FIXOS entre lanternins + tampoes (OFF) nos gaps
+(function(){var zA=Z0-0.03,zB=Z0+WTOT+0.03,cur=zA;
+ VENTZ.slice().sort(function(a,b){return a-b;}).forEach(function(zc){
+  capote(cur,zc-LV/2-cur,FECH);
+  capote(zc-LV/2,LV,gVentOff);cur=zc+LV/2;});
+ capote(cur,zB-cur,FECH);})();
+// ── LANTERNIM v3 (fotos do Exhaust real, Cassiano 13/07): TUBO OVAL
+// ACHATADO FECHADO EM CHAPA correndo na cumeeira (nao aparece telhado
+// por cima), tampas de ponta em PILULA escuras (como as da marca),
+// assentado numa base/curb sobre o pico. O ar sai pelas frestas
+// laterais da base — corpo 100% fechado em cima. ──
+var yPk=Ry+0.008,tanT2=Math.tan(theta);
+var mCapV=new THREE.MeshLambertMaterial({color:0x2b3036,side:THREE.DoubleSide});
+VENTZ.forEach(function(zc){
+ novaPeca('lanternim');
+ var rV=0.38,ryV=0.55;                       // raio e achatamento do oval
+ var yC=yPk+0.155;                           // centro do tubo (base ~no pico)
+ // TUBO fechado (chapa clara da telha), oval deitado ao longo da cumeeira
+ var tube=new THREE.Mesh(new THREE.CylinderGeometry(rV,rV,LV,36,1,true),mTel);
+ tube.rotation.x=Math.PI/2;
+ tube.scale.set(1,1,ryV);                    // achatamento vertical (apos rot.x, z-local = y mundo)
+ tube.position.set(cumXworld,yC,zc);
+ tube.userData.p=PIECE;gVent.add(tube);
+ // BASE/curb: 2 chapinhas seguindo as aguas, fechando tubo -> telha
+ [-1,1].forEach(function(sx){
+  var cb=new THREE.Mesh(new THREE.BoxGeometry(0.30,0.0025,LV+0.06),mTel);
+  cb.position.set(cumXworld+sx*0.19,yPk-0.19*tanT2+0.012,zc);
+  cb.rotation.z=-sx*theta;
+  cb.userData.p=PIECE;gVent.add(cb);});
+ // TAMPAS de ponta: elipse escura (perfil do tubo) — a "cara" do Exhaust
+ [-1,1].forEach(function(se){
+  var sh2=new THREE.Shape();
+  sh2.ellipse(0,0,rV+0.012,rV*ryV+0.012,0,Math.PI*2,false,0);
+  var mT2=new THREE.Mesh(new THREE.ExtrudeGeometry(sh2,{depth:0.006,bevelEnabled:false}),mCapV);
+  mT2.position.set(cumXworld,yC,zc+se*(LV/2)-((se>0)?0.006:0)+se*0.003);
+  mT2.userData.p=PIECE;gVent.add(mT2);});});
+// ── UM LADO COMPLETO (telha parede + agua + suportes + calha) ──
+function buildLado(gS){
+ // telha da PAREDE — com VENEZIANAS (Cassiano 13/07): 1 por VAO entre
+ // porticos, no alto, ENTRE os 2 niveis de terca mais altos (nenhum
+ // perfil cortado; parafusos de terca ficam fora da janela). Telha em
+ // 3 BANDAS de altura; na banda da janela o perfil e SEGMENTADO entre
+ // os recortes (clip por interpolacao = corte longitudinal + na onda).
+ novaPeca('telha-parede');
+ var VL=[],y1v=0,y2v=0;
+ // PLATIBANDA: veneziana fica ABAIXO da cobertura — usa as 2 tercas
+ // mais altas AINDA ABAIXO do pilar (as de cima sao da platibanda)
+ var TVZ=TERCAS;
+ if(typeof PLATIBANDA!=='undefined')
+  TVZ=TERCAS.filter(function(y){return y<pilTopo-0.05;});
+ if(TVZ.length>=2){
+  var tA=TVZ[TVZ.length-2],tB=TVZ[TVZ.length-1];
+  var ycV=(tA+tB)/2;y1v=ycV-0.20;y2v=ycV+0.20;
+  if(y2v<y1w-0.10&&y1v>tA+0.05)
+   // 1,00 x 0,40 (Cassiano 13/07: +20cm de comprimento)
+   for(var iv=0;iv<nPorticos-1;iv++){var zc2=(iv+0.5)*modulo;
+    VL.push({u1:Z0+WLAT-(zc2+0.50),u2:Z0+WLAT-(zc2-0.50),z1:zc2-0.50,z2:zc2+0.50});}}
+ function telhaParede(so,y0,h2,par){if(h2<0.01)return;
+  var g=new THREE.ExtrudeGeometry(so.sh,{depth:h2,bevelEnabled:false});
+  var m=new THREE.Mesh(g,mTel);
+  var gp=new THREE.Group();gp.rotation.y=Math.PI/2;(par||gS).add(gp);
+  m.rotation.x=-Math.PI/2;
+  m.position.set(-(Z0+WTOT),y0,xw-TT);gp.add(m);addVincos(m,h2,so.pts);}
+ // grupos do TOGGLE VENEZIANA (Cassiano 13/07: "o cliente pode querer
+ // ou nao"): gVz = recortes+molduras+laminas; gVzOff = banda CONTINUA
+ // (parede fechada), escondida por padrao — o botao alterna.
+ var gVz=new THREE.Group(),gVzOff=new THREE.Group();gVzOff.visible=false;
+ gS.add(gVz);gS.add(gVzOff);VENZG.push(gVz);VENZOFFG.push(gVzOff);
+ if(VL.length){
+  telhaParede(telhaShape(WLAT),y0w,y1v-y0w);
+  telhaParede(telhaShape(WLAT),y2v,y1w-y2v);
+  var us=[0];VL.slice().sort(function(a,b){return a.u1-b.u1;})
+   .forEach(function(v){us.push(v.u1,v.u2);});us.push(WLAT);
+  for(var si2=0;si2<us.length;si2+=2)
+   if(us[si2+1]-us[si2]>0.01)
+    telhaParede(telhaShape(us[si2+1],us[si2]),y1v,y2v-y1v,gVz);
+  telhaParede(telhaShape(WLAT),y1v,y2v-y1v,gVzOff);   // versao fechada
+ } else telhaParede({sh:SHT,pts:SH_PTS},y0w,hW);
+ // VENEZIANA de sobrepor (item de prateleira): moldura METALAO 40x40
+ // sentada nas cristas + laminas inclinadas p/ baixo/fora (agua nao
+ // entra). Lado direito herda pelo espelho do grupo.
+ var mMet2=new THREE.MeshLambertMaterial({color:0x6d7a86});
+ VL.forEach(function(v){
+  novaPeca('veneziana');
+  var xV=xw-TT-TPH-0.019,zc3=(v.z1+v.z2)/2,cyv=(y1v+y2v)/2;
+  var wV=v.z2-v.z1,hV=y2v-y1v;
+  function bx3(z,y,dz,dy){var b=new THREE.Mesh(new THREE.BoxGeometry(0.040,dy,dz),mMet2);
+   b.position.set(xV,y,z);b.userData.p=PIECE;gVz.add(b);}
+  bx3(zc3,y1v+0.020,wV,0.040);bx3(zc3,y2v-0.020,wV,0.040);
+  bx3(v.z1+0.020,cyv,0.040,hV-0.080);bx3(v.z2-0.020,cyv,0.040,hV-0.080);
+  for(var yl=y1v+0.072;yl<y2v-0.055;yl+=0.070){
+   var lam=new THREE.Mesh(new THREE.BoxGeometry(0.075,0.0008,wV-0.084),mRufo);
+   lam.position.set(xw-TT-TPH-0.010,yl,zc3);
+   lam.rotation.z=0.7;                       // desce p/ FORA (agua escorre)
+   lam.userData.p=PIECE;gVz.add(lam);}});
+ // costura da parede: onda baixa (faixa plana), SEMPRE NO CENTRO DA
+ // MESA da terca (Cassiano 13/07: a linha TERCAS e o TOPO da mesa de
+ // 45mm — parafuso na linha ficava meio dentro/meio fora da borda)
+ // (v6: telha avanca alem das empenas — parafuso SO onde ha terca
+ // atras, 0..COMPF; nas pontas quem costura e o pacote da empena)
+ function ondaOK(zc){return zc>0.03&&zc<COMPF-0.03;}
+ TERCAS.forEach(function(ty){if(ty<y0w+0.05||ty>y1w-0.02)return;
+  for(var i=0;i<NP;i++){var zc=zPar(i*TPP+STRIP/2);if(!ondaOK(zc))continue;
+   screwV(xw-TT-0.0005,ty-0.0225,zc,'x',1,gS);}});
+ // COSTURA DA BASE (Cassiano 13/07): telha -> cantoneira -> pilar/vao,
+ // 1 por onda baixa a 70mm do piso (meio do transpasse de 100mm),
+ // CABECA VISIVEL pelo lado de FORA da telha. Assume tambem a fixacao
+ // da aba da cantoneira (parafuso proprio removido — R54).
+ for(var ib=0;ib<NP;ib++){var zb=zPar(ib*TPP+STRIP/2);if(!ondaOK(zb))continue;
+  screwV(xw-TT-0.0005,0.070,zb,'x',1,gS);}
+ // telha da COBERTURA — com ILUMINACAO NATURAL opcional (Cassiano
+ // 13/07, ref. Skylux/Engepoli): MODULOS CURTOS de policarbonato
+ // NanoPrismatico (3 ondas x ~1,7m) cavalgando as 2 TERCAS CENTRAIS da
+ // agua (transpasse 100mm sobre cada — fixacao real do sistema), 1 por
+ // agua em VAOS ALTERNADOS ("poucos, so p/ ajudar" — galpao economico;
+ // NADA de faixa cumeeira-beiral). Mesma infra de bandas das venezianas:
+ // banda em s dividida, modulos translucidos (gLux) vs metal (gLuxOff).
+ var wg=new THREE.Group();wg.position.set(cx,pilTopo+cy,0);
+ wg.rotation.z=theta;gS.add(wg);
+ novaPeca('telha-cobertura');
+ function telhaCob(so,sTopo,len,par){if(len<0.01)return;
+  var g=new THREE.ExtrudeGeometry(so.sh,{depth:len,bevelEnabled:false});
+  var m=new THREE.Mesh(g,mTel);
+  m.rotation.y=-Math.PI/2;
+  m.position.set(sTopo,wH/2+TT,Z0R);(par||wg).add(m);addVincos(m,len,so.pts);}
+ var LUX=[];                                 // bandas u dos modulos
+ if(TSR.length>=2&&nPorticos>2){
+  var iT=Math.max(0,Math.floor(TSR.length/2)-1);
+  var sM1=TSR[iT]-0.10,sM2=TSR[iT+1]+0.10;   // cavalga as 2 tercas centrais
+  // 1 PRISMA POR VAO, todos os vaos (Cassiano 13/07: "4 por lado,
+  // preenche o espaco vazio" — no teste, 4 vaos = 4 prismas/agua)
+  var nV=nPorticos-1,vSel=[];
+  for(var iv2=0;iv2<nV;iv2++)vSel.push(iv2);
+  vSel.forEach(function(il){var zcl=(il+0.5)*modulo;
+   LUX.push({u1:zcl-Z0-0.294,u2:zcl-Z0+0.294,zc:zcl});
+   if(LUXPTS.indexOf(zcl)<0)LUXPTS.push(zcl);});}
+ // acessorio OPCIONAL: nasce DESLIGADO (cobertura toda metalica)
+ var gLx=new THREE.Group(),gLxOff=new THREE.Group();gLx.visible=false;
+ wg.add(gLx);wg.add(gLxOff);LUXG.push(gLx);LUXOFFG.push(gLxOff);
+ if(LUX.length&&typeof BEIRAL_EMPENA==='undefined'){   // beiral: cobertura toda metálica (sem prisma nesta etapa)
+  telhaCob(telhaShape(WLAT),rafLen,rafLen-sM2);        // cumeeira -> topo do modulo
+  telhaCob(telhaShape(WLAT),sM1,sM1-sEdge);            // base do modulo -> beiral
+  var usL=[0];LUX.forEach(function(v){usL.push(v.u1,v.u2);});usL.push(WLAT);
+  for(var sl2=0;sl2<usL.length;sl2+=2)
+   if(usL[sl2+1]-usL[sl2]>0.01)
+    telhaCob(telhaShape(usL[sl2+1],usL[sl2]),sM2,sM2-sM1);   // metal entre modulos
+  LUX.forEach(function(v){
+   novaPeca('skylux');
+   var g=new THREE.ExtrudeGeometry(telhaShape(v.u2,v.u1).sh,{depth:sM2-sM1,bevelEnabled:false});
+   var m=new THREE.Mesh(g,mLux);
+   m.rotation.y=-Math.PI/2;m.position.set(sM2,wH/2+TT+0.001,Z0);
+   m.userData.p=PIECE;gLx.add(m);});
+  // versao OFF: SO as bandas dos modulos em metal (o resto ja existe)
+  LUX.forEach(function(v){
+   telhaCob(telhaShape(v.u2,v.u1),sM2,sM2-sM1,gLxOff);});
+ } else telhaCob((typeof BEIRAL_EMPENA!=='undefined')?telhaShape(WROOF):{sh:SHT,pts:SH_PTS},rafLen,rafLen-sEdge);
+ // costura da cobertura: ALTA da onda, linhas de terca
+ TSR.forEach(function(s){for(var i=0;i<NPR;i++){
+  var zc=Z0R+i*TPP+(TPP-WB)+WB/2;if(!ondaOK(zc))continue;
+  screwV(s,wH/2+TT+TPH+0.0005,zc,'y',-1,wg);}});
+ // SISTEMA DE AGUAS num subgrupo proprio (botao CALHA ON/OFF):
+ // suportes + calha + tampas + condutores
+ var gA=new THREE.Group();gA.userData.agua=true;gS.add(gA);AGUAS.push(gA);
+ // PLATIBANDA: sem calha EXTERNA no beiral (a parede sobe na frente
+ // dela) — a calha embutida interna e a etapa 2. Em vez disso, RUFO DE
+ // COROAMENTO no topo da platibanda (chapa chumbo tampando a parede).
+ if(typeof PLATIBANDA!=='undefined'){
+  novaPeca('rufo-coroamento');
+  var xoC=xq-0.006,xiC=xw+0.060;
+  mkBox(gS,(xoC+xiC)/2,y1w+0.0015,Z0+WTOT/2,xiC-xoC,0.003,WTOT+0.012,mRufo);
+ } else {
+ // SUPORTES da calha: passo 4 ondas (~784mm), sempre na faixa plana
+ for(var ip=0;ip<NP;ip+=4){
+  var zSup=zPar(ip*TPP+STRIP/2);if(!ondaOK(zSup))continue;
+  novaPeca('suporte-calha');
+  bentPlate(SUP_PTS,0.0025,zSup-0.015,0.030,mSup,gA);
+  screwV(xPan-0.0025-0.0005,TULT-0.022,zSup,'x',1,gA);}
+ // CALHA continua (rampa colada na telha + externa acima da onda alta)
+ novaPeca('calha');
+ bentPlate([[xInt,yRoofUnder(xInt)],
+            [xBc,yRoofUnder(xBc)],
+            [xBc,yFundoC],
+            [xFc,yFundoC],
+            [xFc,yFrontT],[xFc+0.010,yFrontT]],
+           0.0015,Z0-0.05,WTOT+0.10,mCal,gA);
+ // PINGADEIRA de base: REMOVIDA (13/07) — a CANTONEIRA DE ARRANQUE v2
+ // (aba p/ fora, telha sobrepondo) assume a vedacao da base (R50:
+ // cada componente justifica sua existencia).
+ // TAMPAS DA CALHA (Cassiano 13/07): chapa com o PROPRIO PERFIL da
+ // calha fechando as duas extremidades — agua nao escapa pelas pontas.
+ function tampaCalha(zt){
+  novaPeca('tampa-calha');
+  var sh=new THREE.Shape();
+  sh.moveTo(xInt,yRoofUnder(xInt));sh.lineTo(xBc,yRoofUnder(xBc));
+  sh.lineTo(xBc,yFundoC);sh.lineTo(xFc,yFundoC);
+  sh.lineTo(xFc,yFrontT);sh.closePath();
+  var g=new THREE.ExtrudeGeometry(sh,{depth:0.002,bevelEnabled:false});
+  var m=new THREE.Mesh(g,mCal);m.position.z=zt;gA.add(m);}
+ tampaCalha(Z0-0.052);tampaCalha(Z0+WTOT+0.050);
+ // CONDUTORES (Cassiano 13/07): 2 por lado (CBCA 1cm2/m2: secao
+ // 60x100=60cm2 -> ~60m2 por condutor; meia-agua do teste=100m2 OK).
+ // Descem do fundo da calha ENCOSTADOS nas cristas da telha e fazem a
+ // CURVA de 45 no pe, guiando a agua ~280mm p/ longe do barracao
+ // (a boca termina a ~65mm do piso, por cima da aba da cantoneira).
+ function condutor(zc){
+  novaPeca('condutor');
+  // v3 (Cassiano 13/07, foto de referencia): tubo em GOMOS harmonicos —
+  // sai do MEIO da calha, curva em S de volta p/ a parede (como condutor
+  // corrugado real), desce colado na telha e termina num pe de 2 gomos
+  // com biquinho curto p/ fora.
+  // v4 (Cassiano 13/07): 6 GOMOS PEQUENOS como na foto — 3 no S do topo
+  // (15/25/15 graus) e 3 no pe (20/40/60), + stub, tubo e biquinho.
+  var w=0.060,d=0.100,xi=xq-0.001,xc2=xi-w/2;
+  var xo=(xBc+xFc)/2;                                // saida no meio da calha
+  var PTS=[[xo,yFundoC-0.001]];
+  function ad2(angDeg,len){var a=angDeg*Math.PI/180;var l=PTS[PTS.length-1];
+   PTS.push([l[0]+Math.sin(a)*len,l[1]-Math.cos(a)*len]);}
+  ad2(0,0.060);                                      // stub vertical
+  ad2(15,0.035);ad2(25,0.035);ad2(15,0.035);         // S: 3 gomos p/ a parede
+  PTS[PTS.length-1][0]=xc2;                          // alinha exato no tubo
+  ad2(0,PTS[PTS.length-1][1]-0.221);                 // tubo longo colado
+  // COTOVELO DE BATIDINHAS (foto Cassiano 13/07): 8 gomos curtinhos de
+  // 10 em 10 graus formando a curva de ~90, terminando quase deitado
+  // com a boca a ~20mm do chao (igual a telha)
+  for(var a2=5;a2<=75;a2+=10)ad2(-a2,0.028);
+  ad2(-82,0.050);                                    // bocal CURTO (nao saltar
+                                                     // no caminho de quem passa)
+  for(var s2=0;s2<PTS.length-1;s2++){
+   var ax=PTS[s2+1][0]-PTS[s2][0],ay=PTS[s2+1][1]-PTS[s2][1];
+   var L2=Math.hypot(ax,ay)+0.014;                   // transpasse nos gomos
+   var b=new THREE.Mesh(new THREE.BoxGeometry(w,L2,d),mCal);
+   b.rotation.z=Math.atan2(-ax,ay);
+   b.position.set((PTS[s2][0]+PTS[s2+1][0])/2,(PTS[s2][1]+PTS[s2+1][1])/2,zc);
+   b.userData.p=PIECE;gA.add(b);}}
+ condutor(0.45);condutor(COMPF-0.45);
+ } // fim do else (sistema de aguas externo — so sem platibanda)
+}
+var AGUAS=[];   // subgrupos do sistema de aguas (botao CALHA ON/OFF)
+var VENZG=[],VENZOFFG=[];   // toggle VENEZIANA (aberta / parede fechada)
+var gEsq=new THREE.Group();FECH.add(gEsq);buildLado(gEsq);
+// lado DIREITO = espelho (materiais DoubleSide toleram scale -1)
+var gDir=new THREE.Group();gDir.scale.x=-1;gDir.position.x=2*cumXworld;
+FECH.add(gDir);buildLado(gDir);
+// ══ TELHA DAS EMPENAS (Cassiano 13/07 — envelope completo) ══
+// Mesma TP36-980, ondas VERTICAIS: cada trecho reto do perfil vira uma
+// tira vertical extrudada no plano da fachada, com o TOPO cortado no
+// grau da agua (rake liso, CAD) e DEGRAU sobre o vao da porta. Dados
+// estruturais (tercas/guias com os clamps reais + porta) vem de
+// window.EMP (exportado pela propria empena — R01: parafuso so onde ha
+// perfil atras).
+function buildEmpena(E){
+ var X0=-wH/2-0.0025;                       // como a lateral (cantoneira 2,5)
+ var WEMP=2*cumXworld+wH+0.005;
+ // telha 2,5mm NA FRENTE da cantoneira de arranque (MESMA regra da
+ // lateral) — antes ocupava o MESMO plano da aba vertical e a
+ // cantoneira chumbo "vazava" por z-fighting (print Cassiano 13/07)
+ var zw=E.zP-E.dir*0.085;                   // face interna da telha
+ var pE=telhaShape(WEMP).pts;               // so a polilinha (shapes proprios)
+ function ytopE(x){var xx=Math.max(0,Math.min(2*cumXworld,x));
+  return yRoofUnder(xx<=cumXworld?xx:2*cumXworld-xx)-0.004;}
+ // PLATIBANDA: empena sobe RETA ate a altura da cumeeira (sem rake)
+ if(typeof PLATIBANDA!=='undefined')ytopE=function(){return PLAT_TOPO;};
+ function ybotE(x){return (E.porta&&x>E.porta.a&&x<E.porta.b)?E.porta.h+0.004:0.020;}
+ // (venezianas ficam nas LATERAIS — Cassiano 13/07; a infra de recorte
+ // por tira fica disponivel p/ vaos futuros na empena)
+ var VENTS=[];
+ novaPeca('telha-empena');
+ for(var s=0;s<pE.length-1;s++){
+  var u1=pE[s][0],v1=pE[s][1],u2=pE[s+1][0],v2=pE[s+1][1];
+  var du=u2-u1,dv=v2-v1,L=Math.hypot(du,dv);if(L<1e-5)continue;
+  var xa=X0+u1,xb=X0+u2;
+  // quebras internas da tira: pico da agua + bordas da porta
+  var brk=[xa];[cumXworld].concat(E.porta?[E.porta.a,E.porta.b]:[]).forEach(function(q){
+   if(q>xa+1e-6&&q<xb-1e-6)brk.push(q);});brk.push(xb);brk.sort(function(a,b){return a-b;});
+  function sOf(x){return (x-xa)/(xb-xa)*L;}
+  function mkTira(ybF,ytF){
+   var sh=new THREE.Shape();
+   sh.moveTo(0,ybF((brk[0]+brk[1])/2));
+   for(var b2=1;b2<brk.length;b2++){                // base c/ degraus da porta
+    var yb1=ybF((brk[b2-1]+brk[b2])/2);
+    sh.lineTo(sOf(brk[b2]),yb1);
+    if(b2<brk.length-1){var yb2=ybF((brk[b2]+brk[b2+1])/2);
+     if(Math.abs(yb2-yb1)>1e-6)sh.lineTo(sOf(brk[b2]),yb2);}}
+   for(var b3=brk.length-1;b3>=0;b3--)              // topo no grau (rake liso)
+    sh.lineTo(sOf(brk[b3]),ytF(brk[b3]));
+   sh.closePath();
+   var g=new THREE.ExtrudeGeometry(sh,{depth:TT,bevelEnabled:false});
+   var m=new THREE.Mesh(g,mTel);
+   m.rotation.y=Math.atan2(E.dir*dv,du);            // tira segue o relevo da onda
+   m.position.set(xa,0,zw-E.dir*v1);
+   m.userData.p=PIECE;FECH.add(m);}
+  // tira dentro da banda de uma veneziana: RECORTE (2 pedacos)
+  var vt=null;VENTS.forEach(function(v){if(xa>=v.x1-1e-4&&xb<=v.x2+1e-4)vt=v;});
+  if(vt){var yA2=vt.y1,yB2=vt.y2;
+   mkTira(ybotE,function(){return yA2});
+   mkTira(function(){return yB2},ytopE);}
+  else mkTira(ybotE,ytopE);}
+ // vincos: 1 linha vertical por dobra do perfil (pulando os recortes)
+ (function(){var arr=[];
+  for(var i=0;i<pE.length;i++){var x=X0+pE[i][0],z=zw-E.dir*(pE[i][1]+0.0004);
+   var yb=ybotE(x+0.001)+0.004,yt=ytopE(x)-0.004;if(yt-yb<0.05)continue;
+   var vtv=null;VENTS.forEach(function(v){if(x>v.x1+1e-4&&x<v.x2-1e-4)vtv=v;});
+   if(vtv){arr.push(x,yb,z,x,vtv.y1,z);arr.push(x,vtv.y2,z,x,yt,z);continue;}
+   arr.push(x,yb,z,x,yt,z);}
+  var g2=new THREE.BufferGeometry();
+  g2.setAttribute('position',new THREE.BufferAttribute(new Float32Array(arr),3));
+  var ls=new THREE.LineSegments(g2,mVin);ls.userData.p=-1;FECH.add(ls);})();
+ // moldura METALAO 40x40 estruturando o recorte + LAMINAS inclinadas
+ // p/ baixo/fora (agua nao entra) — veneziana de prateleira sobreposta
+ var mMet=new THREE.MeshLambertMaterial({color:0x6d7a86});
+ VENTS.forEach(function(v){
+  novaPeca('veneziana');
+  // veneziana de SOBREPOR: o quadro senta NAS CRISTAS, por fora
+  var zc0=zw-E.dir*(TT+TPH+0.019);
+  var wV=v.x2-v.x1,hV=v.y2-v.y1,cxv=(v.x1+v.x2)/2,cyv=(v.y1+v.y2)/2;
+  function bx2(x,y,dx,dy){var b=new THREE.Mesh(new THREE.BoxGeometry(dx,dy,0.040),mMet);
+   b.position.set(x,y,zc0);b.userData.p=PIECE;FECH.add(b);}
+  bx2(cxv,v.y1+0.020,wV,0.040);bx2(cxv,v.y2-0.020,wV,0.040);
+  bx2(v.x1+0.020,cyv,0.040,hV-0.080);bx2(v.x2-0.020,cyv,0.040,hV-0.080);
+  for(var yl=v.y1+0.058;yl<v.y2-0.048;yl+=0.070){
+   var lam=new THREE.Mesh(new THREE.BoxGeometry(wV-0.084,0.0008,0.075),mRufo);
+   lam.position.set(cxv,yl,zw-E.dir*(TT+TPH+0.010));
+   lam.rotation.x=-E.dir*0.7;                // desce p/ FORA (agua escorre)
+   lam.userData.p=PIECE;FECH.add(lam);}});
+ // ── CANTONEIRA DE ARREMATE DA PORTA (Cassiano 13/07: a MESMA peca dos
+ // cantos, 150x150x0,55): 2 ombreiras verticais + verga horizontal —
+ // aba por FORA da telha + aba revestindo o tunel do vao; 4,8 na
+ // CRISTA mais proxima fora do vao, a cada 600mm. ──
+ if(E.porta){
+  novaPeca('cantoneira-porta');
+  var zPo=zw-E.dir*(TT+TPH+0.002);
+  var hPo=E.porta.h+0.002;
+  var uCr0G=STRIP+RIBW+STRIP+(WB-WT)/2+WT/2;
+  [[E.porta.a,1],[E.porta.b,-1]].forEach(function(om){
+   var gP=new THREE.Group();gP.position.set(om[0],0.003,zPo);
+   gP.rotation.x=-Math.PI/2;FECH.add(gP);
+   bentPlate([[-om[1]*0.150,0],[0,0],[0,-E.dir*0.150]],0.0006,0,hPo-0.003,mRufo,gP);
+   var xcr=null,bd2=1;
+   for(var i3=0;i3*TPP<WEMP;i3++){var p3=X0+uCr0G+i3*TPP;
+    var dd=(p3-om[0])*(-om[1]);               // >0 = fora do vao
+    if(dd>0.02&&dd<0.148&&dd<bd2){bd2=dd;xcr=p3;}}
+   if(xcr!==null)for(var yb3=0.35;yb3<hPo;yb3+=0.6)
+    screwV(xcr,yb3,zPo,'z',E.dir,FECH);});
+  // verga ESTENDIDA 150 sobre cada ombreira (Cassiano 13/07: os cantos
+  // superiores ficavam abertos — a verga cobre o quadrado do canto)
+  var gV=new THREE.Group();gV.position.set(E.porta.b+0.150,hPo,zPo);
+  gV.rotation.y=-Math.PI/2;FECH.add(gV);
+  bentPlate([[0,0.150],[0,0],[E.dir*0.150,0]],0.0006,0,
+            E.porta.b-E.porta.a+0.300,mRufo,gV);}
+ // ── COSTURAS (mesmo padrao da lateral: onda baixa, centro da mesa) ──
+ var zScr=zw-E.dir*(TT+0.0005);
+ for(var i=0;i<NP+2;i++){var uc=i*TPP+STRIP/2;if(uc>WEMP-0.02)break;
+  var x=X0+uc;
+  // base: telha -> cantoneira de arranque -> pilar/painel (70mm, R57)
+  if(!(E.porta&&x>E.porta.a-0.01&&x<E.porta.b+0.01))
+   screwV(x,0.070,zScr,'z',E.dir,FECH);
+  // tercas da empena: so nos segmentos REAIS (clamps de MF/rafter/porta)
+  E.T.forEach(function(tc){if(uc<tc[0]+0.02||uc>tc[1]-0.02)return;
+   screwV(x,tc[2]-0.046,zScr,'z',E.dir,FECH);});
+  // guias (rafter e MF): centro da mesa externa (linha da peca -24mm)
+  E.G.forEach(function(gd){var half=gd[3]/2*Math.cos(gd[2]);
+   if(uc<gd[1]-half+0.02||uc>gd[1]+half-0.02)return;
+   var yl=gd[0]+(uc-gd[1])*Math.tan(gd[2]);
+   screwV(x,yl-0.024,zScr,'z',E.dir,FECH);});}
+ // ── RUFO DE RAKE (Cassiano 13/07: PECA REAL de fabricacao) ──
+ // UMA chapa dobrada 0,55 (bentPlate = extrusao da SECAO continua, como
+ // sai da dobradeira), 4 dobras, por agua:
+ //   retorno interno 12mm p/ baixo (anti-sifao: agua que tentar entrar
+ //   por baixo pinga de volta na telha) + aba 150 SOBRE as cristas da
+ //   cobertura + descida 120 POR FORA da telha da empena + PINGADEIRA
+ //   20mm a 45 p/ fora (agua descola da fachada).
+ // Fixacao: 4,8 na ONDA ALTA da cobertura a cada ~600mm.
+ var zEdge=zw-E.dir*(TT+TPH);               // plano ext. das cristas da empena
+ function yRT(x){var xx=Math.max(0,Math.min(2*cumXworld,x));
+  return yRoofUnder(xx<=cumXworld?xx:2*cumXworld-xx)+TT+TPH;}
+ // PLATIBANDA: topo reto -> SEM rufo de rake/capote; RUFO DE COROAMENTO
+ // horizontal tampando a empena (mesma logica da lateral)
+ if(typeof PLATIBANDA!=='undefined'){
+  novaPeca('rufo-coroamento');
+  var zoC=E.zP-E.dir*(0.095+TT+TPH),ziC=E.zP+E.dir*0.060;
+  mkBox(FECH,X0+WEMP/2,PLAT_TOPO+0.0015,(zoC+ziC)/2,
+        WEMP+0.012,0.003,Math.abs(ziC-zoC),mRufo);
+ } else {
+ novaPeca('rufo-rake');
+ [[X0-0.020,1],[X0+WEMP+0.020,-1]].forEach(function(rk){
+  var x0r=rk[0],sxr=rk[1];
+  var Lr=Math.hypot(cumXworld-x0r,yRT(cumXworld)-yRT(x0r));
+  var g2=new THREE.Group();
+  g2.position.set(x0r,yRT(x0r)+0.002,zEdge-E.dir*0.002);
+  // base ortonormal DESTRA: z-local = eixo do rake; y-local = p/ CIMA
+  // (explicito — o cross antigo dava y p/ BAIXO na agua direita e a
+  // secao montava invertida, "aba p/ cima", print Cassiano 13/07);
+  // x-local = y x z (pode cair p/ dentro ou p/ fora conforme o lado —
+  // fator fx espelha a SECAO p/ que +x seja sempre P/ FORA da fachada)
+  var d=new THREE.Vector3(sxr*Math.cos(theta),Math.sin(theta),0);
+  var yv=new THREE.Vector3(-sxr*Math.sin(theta),Math.cos(theta),0);
+  var xv=new THREE.Vector3().crossVectors(yv,d);
+  var mB=new THREE.Matrix4().makeBasis(xv,yv,d);
+  g2.quaternion.setFromRotationMatrix(mB);FECH.add(g2);
+  var fx=(sxr*E.dir>0)?1:-1;
+  // secao (x p/ fora, y p/ cima): retorno -> aba -> quina -> descida -> pingadeira
+  bentPlate([[-0.170*fx,-0.012],[-0.170*fx,0],[0,0],[0,-0.120],[0.015*fx,-0.135]],
+            0.0006,0,Lr,mRufo,g2);
+  // 4,8 na crista da COBERTURA (~600mm), no meio da aba
+  var nR=Math.max(2,Math.round(Lr/0.6));
+  for(var kr=0;kr<nR;kr++){var fr=(kr+0.5)/nR;
+   var xr=x0r+sxr*fr*Lr*Math.cos(theta);
+   screwV(xr,yRT(xr)+0.0015,E.zP-E.dir*(0.0825+TT+TPH-0.085),'y',-1,FECH);}
+  // CAPOTE DA CUMEEIRA (13/07): peca UNICA dobrada no angulo das aguas
+  // cavalgando o pico POR CIMA dos 2 rufos (200mm de transpasse por
+  // lado, mesma secao +2mm) — fecha a junta topo-a-topo dos rufos.
+  var gK=new THREE.Group();
+  var xK=cumXworld-sxr*0.200*Math.cos(theta);
+  gK.position.set(xK,yRT(xK)+0.004,zEdge-E.dir*0.002);
+  gK.quaternion.copy(g2.quaternion);FECH.add(gK);
+  bentPlate([[-0.170*fx,-0.010],[-0.170*fx,0.002],[0.0012*fx,0.002],
+             [0.0012*fx,-0.116],[0.016*fx,-0.131]],
+            0.0006,0,0.202,mRufo,gK);});
+ } // fim do else (rufo de rake — so sem platibanda)
+}
+// ══ PLACA INSTITUCIONAL DO FABRICANTE (Cassiano 13/07, padrao do
+// sistema — filosofia Frisomat): pequena (340x190), elegante, DISCRETA,
+// centralizada na empena logo abaixo da cumeeira, frente E fundo.
+// Identifica APENAS o fabricante (nao e outdoor). Chapa galvanizada
+// com acabamento premium, 4 rebites nos cantos. ══
+// Arte FIEL ao Brandbook (manual lido 13/07): simbolo = losango com
+// chevron em GRADIENTE verde (escuro no topo -> claro), FOLHA central
+// e swoosh branco; "ARAUCARIA" grafite bold + fio verde-claro +
+// "P E R F I S" espacado. Formato da placa = GABLE (topo em V invertido
+// NO ANGULO REAL DO TELHADO, base reta — filosofia Frisomat).
+var _texPlaca={};
+function texPlaca(hFrac,mirror){var key=mirror?'m':'n';
+ if(_texPlaca[key])return _texPlaca[key];
+ var W2=1024,HB=560,HP=HB*(1+hFrac);        // base + bico proporcional
+ var CH=Math.ceil(HP)+8;
+ var c=document.createElement('canvas');c.width=W2;c.height=CH;
+ var g=c.getContext('2d');g.clearRect(0,0,W2,CH);
+ if(mirror){g.translate(W2,0);g.scale(-1,1);}
+ var y0=CH,yb=CH-HB,yp=CH-HP;               // base / ombros / pico (y tela)
+ function contorno(m){g.beginPath();
+  g.moveTo(m,y0-m);g.lineTo(W2-m,y0-m);g.lineTo(W2-m,yb+m*0.6);
+  g.lineTo(W2/2,yp+m*1.8);g.lineTo(m,yb+m*0.6);g.closePath();}
+ var grM=g.createLinearGradient(0,yp,W2,y0); // metal escovado
+ grM.addColorStop(0,'#f0f2f4');grM.addColorStop(0.45,'#ffffff');
+ grM.addColorStop(0.7,'#e9edf0');grM.addColorStop(1,'#dbe0e4');
+ contorno(6);g.fillStyle=grM;g.fill();
+ contorno(6);g.strokeStyle='#aeb6bd';g.lineWidth=3;g.stroke();
+ contorno(20);g.strokeStyle='#2e8b3a';g.lineWidth=9;g.stroke(); // filete verde
+ // ── simbolo do Brandbook: chevron gradiente + folha + swoosh ──
+ var cx=W2/2,cy=yp+205,S=1.7;               // escala do simbolo
+ var grC=g.createLinearGradient(cx,cy-62*S,cx,cy+10*S);
+ grC.addColorStop(0,'#166c2b');grC.addColorStop(0.6,'#3fa03a');
+ grC.addColorStop(1,'#8dc63f');
+ g.fillStyle=grC;g.beginPath();               // chevron (V invertido grosso)
+ g.moveTo(cx,cy-62*S);g.lineTo(cx+58*S,cy-6*S);g.lineTo(cx+36*S,cy+14*S);
+ g.lineTo(cx,cy-20*S);g.lineTo(cx-36*S,cy+14*S);g.lineTo(cx-58*S,cy-6*S);
+ g.closePath();g.fill();
+ var grF=g.createLinearGradient(cx,cy-2*S,cx,cy+60*S);
+ grF.addColorStop(0,'#2e8b3a');grF.addColorStop(1,'#8dc63f');
+ g.fillStyle=grF;g.beginPath();               // folha central
+ g.moveTo(cx,cy-2*S);g.quadraticCurveTo(cx+32*S,cy+20*S,cx,cy+60*S);
+ g.quadraticCurveTo(cx-32*S,cy+20*S,cx,cy-2*S);g.closePath();g.fill();
+ g.strokeStyle='#ffffff';g.lineWidth=8*S*0.8; // swoosh
+ g.lineCap='round';
+ g.beginPath();g.moveTo(cx-56*S,cy+10*S);
+ g.quadraticCurveTo(cx,cy-36*S,cx+56*S,cy+10*S);g.stroke();
+ // ── tipografia do manual ──
+ g.fillStyle='#33383d';g.textAlign='center';
+ g.font='800 118px Arial';g.fillText('ARAUCÁRIA',cx,cy+250);
+ g.strokeStyle='#8dc63f';g.lineWidth=6;
+ g.beginPath();g.moveTo(cx-318,cy+282);g.lineTo(cx+318,cy+282);g.stroke();
+ g.font='400 62px Arial';g.fillStyle='#43484d';
+ g.fillText('P   E   R   F   I   S',cx,cy+352);
+ var t2=new THREE.CanvasTexture(c);t2.anisotropy=4;
+ _texPlaca[key]={tex:t2,HP:HP,CH:CH};return _texPlaca[key];}
+function placaFabricante(E){
+ novaPeca('placa-fabricante');
+ var zw2=E.zP-E.dir*0.0825;
+ var xP=cumXworld;
+ // GABLE no angulo REAL do telhado — v2 (Cassiano 13/07): maior
+ // (450x125+bico) e mais PERTO da cumeeira (bico a ~10cm do rake)
+ var PW=0.450,PB=0.125,PR=PW/2*Math.tan(theta),PH2=PB+PR;
+ var yTop=yRoofUnder(cumXworld)-0.004;
+ var yP=yTop-0.10-PH2;                      // base da placa (bico ~10cm do rake)
+ var zPl=zw2-E.dir*(TT+TPH+0.006);          // sobre as cristas, discreta
+ // corpo: chapa 3mm extrudada no formato gable
+ var shP=new THREE.Shape();
+ shP.moveTo(-PW/2,0);shP.lineTo(PW/2,0);shP.lineTo(PW/2,PB);
+ shP.lineTo(0,PH2);shP.lineTo(-PW/2,PB);shP.closePath();
+ var mPlB=new THREE.MeshLambertMaterial({color:0xc8cdd2});
+ var corpo=new THREE.Mesh(new THREE.ExtrudeGeometry(shP,{depth:0.003,bevelEnabled:false}),mPlB);
+ corpo.position.set(xP,yP,zPl-((E.dir>0)?0.003:0));
+ corpo.userData.p=PIECE;FECH.add(corpo);
+ // face com a marca (textura mapeada no formato)
+ // rotacao de 180 NAO espelha (corpo rigido) — arte normal nos 2 lados
+ var tp=texPlaca(PR/PB,false),tx=tp.tex;
+ tx.repeat.set(1/PW,tp.HP/(tp.CH*PH2));
+ tx.offset.set(0.5,0);
+ var mPl=new THREE.MeshLambertMaterial({map:tx,transparent:true,side:THREE.DoubleSide});
+ var face=new THREE.Mesh(new THREE.ShapeGeometry(shP),mPl);
+ face.position.set(xP,yP,zPl-E.dir*0.0041);
+ if(E.dir>0)face.rotation.y=Math.PI;                  // frente p/ FORA
+ face.userData.p=PIECE;FECH.add(face);
+ // rebites discretos: pico + 2 ombros + 2 cantos inferiores
+ var mRb=new THREE.MeshLambertMaterial({color:0x9aa2aa});
+ [[0,PH2-0.014],[-PW/2+0.014,PB-0.008],[PW/2-0.014,PB-0.008],
+  [-PW/2+0.014,0.012],[PW/2-0.014,0.012]].forEach(function(q){
+  var rb=new THREE.Mesh(new THREE.CylinderGeometry(0.0035,0.0035,0.003,10),mRb);
+  rb.rotation.x=Math.PI/2;
+  rb.position.set(xP+q[0],yP+q[1],zPl-E.dir*0.0055);
+  rb.userData.p=PIECE;FECH.add(rb);});}
+// ORDEM DOS MODULOS: o fechamento roda ANTES do oitao no HTML — quem
+// chegar por ultimo dispara (o oitao chama FECH_EMPENA apos exportar)
+window.FECH_EMPENA=function(E){buildEmpena(E);placaFabricante(E);};
+if(window.EMP)window.EMP.forEach(window.FECH_EMPENA);
+// ── CANTONEIRA DE CANTO (4): PECA UNICA dobrada 150x150x0,55 (Cassiano
+// 13/07, peca real). Aba de 150 GARANTE onda alta sob a aba em QUALQUER
+// fase da telha (passo 196 - crista 66 = vao maximo 130) — padrao unico
+// p/ todos os galpoes. Fixacao 4,8 na CRISTA REAL mais proxima do canto
+// (posicao calculada pela fase, nao chutada), a cada ~600mm.
+novaPeca('cantoneira-canto');
+(function(){
+ var xE=wH/2+0.0025+TT+TPH;                 // plano externo das cristas laterais
+ // desce ate 3mm do radier (inspecao 13/07: o canto parava a 20mm e as
+ // abas das cantoneiras de arranque deixam um triangulo aberto no bico
+ // — o canto desce e COBRE o encontro por fora; miolo = selante na obra)
+ var yC0=0.003,hC=y1w-yC0;
+ var uCr0=STRIP+RIBW+STRIP+(WB-WT)/2+WT/2;  // centro da 1a crista no perfil
+ var X0G=-wH/2-0.0025,WEMPG=2*cumXworld+wH+0.005;
+ // crista REAL mais proxima do canto (fase da telha; a LATERAL e
+ // espelhada: z=Z0+WLAT-u — armadilha ja medida por raycast)
+ function cristaPerto(pos0,base,dir2,wTot){var best=null;
+  for(var i=0;i*TPP<wTot+TPP;i++){var p2=base+dir2*(uCr0+i*TPP);
+   if(Math.abs(p2-pos0)<0.148&&(best===null||Math.abs(p2-pos0)<Math.abs(best-pos0)))best=p2;}
+  return best;}
+ [[0,-1],[2*cumXworld,1]].forEach(function(cx2){
+  [[0,-1],[COMPF,1]].forEach(function(cz){
+   var xF=cx2[0]+cx2[1]*(xE+0.002);         // plano da aba da FACHADA lateral
+   var zF=cz[0]+cz[1]*(0.085+TT+TPH+0.002); // plano da aba da EMPENA (telha 2,5 fora)
+   // peca unica: bentPlate vertical (grupo com z-local = altura)
+   var gC=new THREE.Group();gC.position.set(xF,yC0,zF);
+   gC.rotation.x=-Math.PI/2;FECH.add(gC);
+   // secao no plano local: x = x mundo; y-local -> -z mundo
+   bentPlate([[-cx2[1]*0.150,0],[0,0],[0,cz[1]*0.150]],
+             0.0006,0,hC,mRufo,gC);
+   // parafusos na crista REAL mais proxima (lateral: z; empena: x)
+   var zCr=cristaPerto(cz[0],Z0+WLAT,-1,WLAT);
+   var xCr=cristaPerto(cx2[0],X0G,1,WEMPG);
+   for(var yb=0.35;yb<hC;yb+=0.6){
+    if(zCr!==null)screwV(xF+cx2[1]*0.0005,yb,zCr,'x',-cx2[1],FECH);
+    if(xCr!==null)screwV(xCr,yb,zF+cz[1]*0.0005,'z',-cz[1],FECH);}});});
+})();
+// ── TOGGLES (Cassiano 13/07: so TELHA e CALHA, sem os botoes de
+// "VISTA: ..." — e fora de cima da legenda ELEMENTOS: ficam no canto
+// INFERIOR direito, empilhados acima do botao VISTAS) ──
+function mkToggle(txt,bottom,fn){var b=document.createElement('button');
+ b.textContent=txt+': ON';
+ b.style.cssText='position:fixed;bottom:'+bottom+'px;right:14px;z-index:9;'+
+  'padding:8px 0;background:#14532d;color:#dce8f4;border:1px solid #2a7a4a;'+
+  'border-radius:6px;font-family:inherit;font-size:10px;letter-spacing:1px;'+
+  'cursor:pointer;width:120px;text-align:center';
+ b.onclick=function(){var v=fn();
+  b.textContent=txt+(v?': ON':': OFF');
+  b.style.background=v?'#14532d':'#333a42'};
+ document.body.appendChild(b);return b}
+mkToggle('TELHA',248,function(){FECH.visible=!FECH.visible;
+ // sem telha nao ha prisma: tirar a telha APAGA a luz junto (Cassiano
+ // 14/07) — "clica" no botao PRISMA p/ manter label/estado coerentes
+ if(!FECH.visible&&window._bLx&&window._bLx.textContent.indexOf('ON')>=0)
+  window._bLx.click();
+ return FECH.visible});
+// VENTILACAO natural (Exhaust — v2 13/07: SEM animacao de ar, a pedido)
+mkToggle('VENTILACAO',210,function(){
+ var v=!gVent.visible;
+ gVent.visible=v;gVentOff.visible=!v;
+ return v}).textContent='VENTILACAO: OFF';
+[].slice.call(document.querySelectorAll('button')).forEach(function(b){
+ if(b.textContent==='VENTILACAO: OFF')b.style.background='#333a42';});
+// PRISMA (Cassiano 13/07, ref. Skylux): mostra os modulos prismaticos
+// E clareia SO O INTERIOR — PointLights DENTRO do galpao, sob os
+// prismas (de fora nada muda: luz interna nao alcanca as faces
+// externas — fisicamente correto, "a luz entra pra dentro").
+// Transicao suave ~0,6s; OFF volta ao padrao.
+if(LUXG.length){
+ var _pl=[];                                 // 1 PointLight por vao com prisma
+ // SPOTLIGHTS apontando P/ BAIXO (v3 14/07, "clareia SO por dentro"):
+ // PointLight iluminava a chapa EXTERNA da cobertura (backface do
+ // Lambert DoubleSide, medido 208->224) e vazava no chao externo. O
+ // cone do spot nunca alcanca o teto (esta acima da luz) e morre
+ // dentro do galpao. Requer o RADIER SUBDIVIDIDO (Gouraud por vertice
+ // — caixa de 8 vertices nao "via" a luz; gerador_master).
+ LUXPTS.forEach(function(zc){
+  // cone ABERTO (1.25 rad ~72 graus por lado) SEM queda por distancia
+  // (decay 0) e penumbra minima: cantos junto as paredes/empenas ficam
+  // tao claros quanto o centro (pedido 14/07); distance 14 corta a luz
+  // antes de escapar alem da porta
+  var L=new THREE.SpotLight(0xf2f7fb,0,14,1.25,0.12,0);
+  L.position.set(cumXworld,pilTopo*0.72,zc);
+  L.target.position.set(cumXworld,0,zc);
+  scene.add(L.target);scene.add(L);_pl.push(L);});
+ // FACHO DA PORTA (decal): mancha de luz na calcada em frente a porta —
+ // a calcada e MeshBasic (imune aos spots), entao o "vazamento pela
+ // porta" que o cliente espera ver e pintado aqui, acendendo junto
+ var _glow=null;
+ function mkGlow(){
+  if(_glow||!window.EMP)return;
+  var E=null;window.EMP.forEach(function(e){if(e.porta)E=e;});
+  if(!E)return;
+  // LEQUE (Cassiano 14/07, rabiscos no print): a luz nasce na LARGURA DA
+  // PORTA e abre em angulo p/ os dois lados, varrendo a secao inteira da
+  // calcada em frente — trapezio com gradiente + bordas esfumadas
+  var wPo=E.porta.b-E.porta.a,dG=1.35,wG=wPo+2.6;
+  var cg=document.createElement('canvas');cg.width=256;cg.height=128;
+  var g5=cg.getContext('2d');
+  var dw2=(wPo/wG)*128;                       // meia-porta em px
+  var gr=g5.createLinearGradient(0,0,0,128);  // forte na porta -> some
+  gr.addColorStop(0,'rgba(242,247,251,0.95)');
+  gr.addColorStop(0.6,'rgba(242,247,251,0.40)');
+  gr.addColorStop(1,'rgba(242,247,251,0)');
+  g5.filter='blur(7px)';g5.fillStyle=gr;
+  g5.beginPath();
+  g5.moveTo(128-dw2,-6);g5.lineTo(128+dw2,-6); // topo = vao da porta
+  g5.lineTo(252,132);g5.lineTo(4,132);         // base = leque aberto
+  g5.closePath();g5.fill();g5.filter='none';
+  // ADITIVO: luz SOMA sobre o concreto (blend normal com canvas
+  // pre-multiplicado ESCURECIA a faixa — medido 14/07)
+  var mG=new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cg),
+   transparent:true,opacity:0,depthWrite:false,
+   blending:THREE.AdditiveBlending});
+  _glow=new THREE.Mesh(new THREE.PlaneGeometry(wG,dG),mG);
+  _glow.rotation.x=-Math.PI/2;
+  var zOut=(E.zP<1)?E.zP-dG/2-0.03:E.zP+dG/2+0.03; // p/ FORA da empena
+  // lado ESTREITO/forte na porta, leque ABRINDO p/ fora (Cassiano 14/07:
+  // "inverter" — sem o giro o leque abria na porta e fechava na calcada)
+  if(E.zP<1)_glow.rotation.z=Math.PI;
+  _glow.position.set((E.porta.a+E.porta.b)/2,0.004,zOut);
+  scene.add(_glow);}
+ var _lxAnim=null;
+ function luzNatural(on){
+  var i0=_pl.length?_pl[0].intensity:0,i1=on?0.55:0; // calibrado por pixel 14/07 (decay 0 pede I baixo)
+  mkGlow();
+  var g0=_glow?_glow.material.opacity:0,g1=on?0.55:0;
+  var t0=performance.now();if(_lxAnim)clearInterval(_lxAnim);
+  _lxAnim=setInterval(function(){
+   var f=Math.min(1,(performance.now()-t0)/600);
+   var e=f*f*(3-2*f);                        // suave (smoothstep)
+   _pl.forEach(function(L){L.intensity=i0+(i1-i0)*e;});
+   if(_glow)_glow.material.opacity=g0+(g1-g0)*e;
+   if(typeof invalidate==='function')invalidate();
+   if(typeof renderer!=='undefined')renderer.render(scene,camera);
+   if(f>=1){clearInterval(_lxAnim);_lxAnim=null;}},16);}
+ var bLx=mkToggle('PRISMA',172,function(){
+  var v=!LUXG[0].visible;
+  LUXG.forEach(function(g){g.visible=v;});
+  LUXOFFG.forEach(function(g){g.visible=!v;});
+  luzNatural(v);return v});
+ bLx.textContent='PRISMA: OFF';bLx.style.background='#333a42';
+ window._bLx=bLx;   // TELHA OFF apaga a luz junto (ver toggle TELHA)
+}
+// VENEZIANA ON/OFF (Cassiano 13/07: opcional de venda — OFF mostra a
+// parede FECHADA, sem os recortes)
+if(VENZG.length)mkToggle('VENEZIANA',134,function(){
+ var v=!VENZG[0].visible;
+ VENZG.forEach(function(g){g.visible=v;});
+ VENZOFFG.forEach(function(g){g.visible=!v;});
+ return v});
+mkToggle('CALHA',96,function(){var v=!AGUAS[0].visible;
+ AGUAS.forEach(function(g){g.visible=v;});
+ window.AGUA_ON=v;                 // arestas CAD do sistema de aguas somem junto
+ if(typeof camUpdate==='function')camUpdate();
+ return v});
+console.log('FECHAMENTO TOTAL: '+(TP25?'TP25':'TP36-980')+' · '+NP+' modulos/superficie · ?tp25 troca perfil');
+})();
+// === FIM FECHAMENTO ===
+
+
+// === OITOES v4 — PAINEL ESTRUTURAL REAL (kit da lateral) ===
+(function(){
+var tanT=0.230000, quedaRaf=0.307833;
+var PH=4.000;
+// teto do fechamento = linha INFERIOR do rafter naquela x (validado por
+// medicao: pilTopo - queda + tanT*dist da parede)
+function yTopo(x){var d=Math.min(x-(-wH/2),(cumXworld*2+wH/2)-x);
+ return pilTopo-quedaRaf+tanT*(d)-0.020;}
+function box(gr,cx,cy,cz,sx,sy,sz,m){var b=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),m);
+ b.position.set(cx,cy,cz);b.userData.p=PIECE;gr.add(b);return b;}
+var T=[[0.157, 2.693, 0.297, 9000000000.0, 0, 0.0, 0.2753, 0.06], [0.157, 2.693, 2.2053, 9000000000.0, 0, 0.0, 2.1836, 0.06], [0.157, 2.693, 4.1136, 9000000000.0, 0, 0.0, 4.0919, 0.06], [1.2141, 2.693, 6.0219, 9000000000.0, -1, 1.0423, 6.0002, 0.0756], [3.007, 6.693, 0.297, 9000000000.0, 0, 0.0, 0.2753, 0.06], [3.007, 6.693, 2.2053, -0.1097, 0, 0.0, 2.1836, 0.06], [3.007, 6.693, 4.1136, -0.1097, 0, 0.0, 4.0919, 0.06], [3.007, 6.693, 6.0219, -0.1097, 0, 0.0, 6.0002, 0.06], [7.007, 9.543, 0.297, 9000000000.0, 0, 0.0, 0.2753, 0.06], [7.007, 9.543, 2.2053, 9000000000.0, 0, 0.0, 2.1836, 0.06], [7.007, 9.543, 4.1136, 9000000000.0, 0, 0.0, 4.0919, 0.06], [7.007, 8.4859, 6.0219, 9000000000.0, 1, 8.6577, 6.0002, 0.0756]], R=[], D=[[1.2906, 3.8737, 0.811783, 2.5186, 0.06, 0.0706, 4.85, 0.297], [3.1989, 3.8737, 0.811783, 2.5186, 0.06, 0.0706, 4.85, 2.2053], [5.1072, 3.8737, 0.811783, 2.5186, 0.06, 0.0706, 4.85, 4.1136]], GG=[[5.8151, 0.2888, 0.226068, 0.213, null], [6.1737, 1.848, 0.226068, 1.6869, null], [6.6546, 3.939, 0.226068, 1.8655, null], [6.6546, 5.761, -0.226068, 1.8655, null], [6.1737, 7.852, -0.226068, 1.6869, null], [5.8151, 9.4112, -0.226068, 0.213, null], [5.5638, 0.5989, 0.785398, 1.1001, null, 0.0438], [5.5638, 9.1011, -0.785398, 1.1001, null, 0.0438]], MM=[[0.0, 1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [0.0, 1, 2.1828, 0.2, [2.2578, 2.1078], [[2.1503, 2.2153]]], [0.0, 1, 4.0911, 0.2, [4.1661, 4.0161], [[4.0586, 4.1236]]], [2.85, -1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [2.85, -1, 2.1828, 0.2, [2.2578, 2.1078], [[2.1503, 2.2153]]], [2.85, -1, 4.0911, 0.2, [4.1661, 4.0161], [[4.0586, 4.1236]]], [2.85, -1, 5.9994, 0.2, [6.0744, 5.9244], [[5.9669, 6.0319]]], [2.85, 1, 0.3257, 0.288, [0.4447, 0.2067], [[0.242, 0.307], [0.2608, 0.4344]]], [2.85, 1, 2.234, 0.288, [2.3531, 2.115], [[2.1503, 2.2153], [2.1691, 2.3427]]], [2.85, 1, 4.1424, 0.288, [4.2614, 4.0234], [[4.0586, 4.1236], [4.0774, 4.251]]], [2.85, 1, 5.9994, 0.2, [6.0744, 5.9244], [[5.9669, 6.0319]]], [6.85, -1, 0.3257, 0.288, [0.4447, 0.2067], [[0.242, 0.307], [0.2608, 0.4344]]], [6.85, -1, 2.234, 0.288, [2.3531, 2.115], [[2.1503, 2.2153], [2.1691, 2.3427]]], [6.85, -1, 4.1424, 0.288, [4.2614, 4.0234], [[4.0586, 4.1236], [4.0774, 4.251]]], [6.85, -1, 5.9994, 0.2, [6.0744, 5.9244], [[5.9669, 6.0319]]], [6.85, 1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [6.85, 1, 2.1828, 0.2, [2.2578, 2.1078], [[2.1503, 2.2153]]], [6.85, 1, 4.0911, 0.2, [4.1661, 4.0161], [[4.0586, 4.1236]]], [6.85, 1, 5.9994, 0.2, [6.0744, 5.9244], [[5.9669, 6.0319]]], [9.7, -1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [9.7, -1, 2.1828, 0.2, [2.2578, 2.1078], [[2.1503, 2.2153]]], [9.7, -1, 4.0911, 0.2, [4.1661, 4.0161], [[4.0586, 4.1236]]]];
+var mMPe=new THREE.MeshLambertMaterial({color:0xe54983});   // rosa (mini)
+// monta um oitao no plano zP; dirIn = +1 (frente, interior a +z) / -1 (fundo)
+// portao = {h} (frente) ou null (fundo 100% fechado)
+function oitao(zP,dirIn,portao){
+ var gr=new THREE.Group();scene.add(gr);
+ // R58: pilares da empena EXATAMENTE na projecao dos nos da travessa
+ var P1=travCx-travComp/2, P2=travCx+travComp/2;
+ function pilarEmpena(x){buildSapata(x,zP);
+  var uLow=Math.min(yTopo(x-0.16),yTopo(x+0.16))+0.020;
+  // MESA DO PILAR QUASE ENCOSTA NO RAFTER — 5mm de folga (REGRA,
+  // Cassiano 13/07). O recuo antigo de 56mm dava passagem a guia C140,
+  // mas a guia e SECCIONADA nos pilares (nao passa aqui): a mesa sobe.
+  var fPos=yTopo(x+0.1475)+0.020-0.005;
+  var fNeg=yTopo(x-0.1475)+0.020-0.005;
+  var hh=Math.min(fPos,fNeg)-pBase;
+  buildPilar(x,zP,hh,{webTop:uLow+quedaRaf-0.003,
+                      ctr:yTopo(x)+0.020+quedaRaf/2,
+                      slp:(x<cumXworld)?tanT:-tanT,   // agua: rafter sobe/desce
+                      fTopPos:fPos,fTopNeg:fNeg});}
+ pilarEmpena(P1);pilarEmpena(P2);
+ if(portao){                                  // porta central entre os pilares
+  var pa=P1+0.175,pb=P2-0.175;                // R58: largura = travComp-0,35
+  // VIGA DA FRENTE = LONGARINA DO MEZANINO (Cassiano 13/07: "nao crie
+  // nova solucao, copie o componente aprovado"): par de C, almas
+  // ENTRANDO wH/2 na boca de cada pilar (receita do buildViga:
+  // vigaLen=vao+wH, flanges a wH/2+5mm dos eixos), lip CONTINUO (sem
+  // travessas chegando nesta etapa) e 3 parafusos 1/2" em DIAGONAL por
+  // pilar na intersecao das linhas de maquina (viga horizontal = caso
+  // mezanino da regra R60, slp=0). Substitui a verga-caixa laranja.
+  novaPeca('viga-frente');
+  var vY=portao.h+wH/2;                       // base da viga = topo da porta
+  var fSt=P1+wH/2+0.005,fEn=P2-wH/2-0.005,fLn=fEn-fSt,fCx=(fSt+fEn)/2;
+  // COR/GRAFISMO = VIGA ESTRUTURAL (Cassiano 13/07): mesmo material dos
+  // pilares/rafter/MF (nao a cor de terca) + linhas de maquina brancas
+  // (-refX/0/+refX) + tracejado do end face da alma dentro do pilar
+  var vg=new THREE.Group();vg.position.set(0,vY,zP);scene.add(vg);
+  var vA=P1-wH/2,vB=P2+wH/2;                  // extremos das almas (boca dos pilares)
+  function bVF(sg){
+   mkBox(vg,(P1+P2)/2,0,sg*t/2,(P2-P1)+wH,wH,t,matPilar);
+   mkBox(vg,fCx,+(wH/2-t/2),sg*(t+fW/2),fLn,t,fW,matPilar);
+   mkBox(vg,fCx,-(wH/2-t/2),sg*(t+fW/2),fLn,t,fW,matPilar);
+   mkCyl(vg,fCx,+(wH/2),sg*(t+r),r,fLn,'x',matRad);
+   mkCyl(vg,fCx,+(wH/2-r),sg*(t+fW),r,fLn,'x',matRad);
+   mkCyl(vg,fCx,-(wH/2),sg*(t+r),r,fLn,'x',matRad);
+   mkCyl(vg,fCx,-(wH/2-r),sg*(t+fW),r,fLn,'x',matRad);
+   mkBox(vg,fCx,+(wH/2-lL/2),sg*(t/2+fW),fLn,lL,t,matPilar);
+   mkBox(vg,fCx,-(wH/2-lL/2),sg*(t/2+fW),fLn,lL,t,matPilar);}
+  bVF(1);bVF(-1);
+  // linhas de calibracao (R31) nas duas faces do par, como no rafter
+  [-refX,0,refX].forEach(function(ly){
+   mkRef(vg,[new V3(vA,ly,t+0.001),new V3(vB,ly,t+0.001)]);
+   mkRef(vg,[new V3(vA,ly,-t-0.001),new V3(vB,ly,-t-0.001)]);});
+  // end faces das almas (dentro da boca dos pilares) — tracejado padrao
+  [[vA,0.85],[vB,0.85]].forEach(function(ef){
+   mkDash(vg,[new V3(ef[0],+wH/2,t+0.001),new V3(ef[0],-wH/2,t+0.001)],0x4a9ad8,ef[1]);
+   mkDash(vg,[new V3(ef[0],+wH/2,-t-0.001),new V3(ef[0],-wH/2,-t-0.001)],0x4a9ad8,0.75);});
+  [P1,P2].forEach(function(px){[-refX,0,refX].forEach(function(bx){
+   bolt12(px+bx,bx,0,'z',t*4,vg);});});}
+ // ── PAINEL REAL num wrapper girado ──
+ // rotation.y=+PI/2: zLocal -> +x mundo (posicao ao longo da fachada);
+ // xLocal -> -z mundo.
+ // v6 (Cassiano 13/07): painel EMBUTIDO NA ESPESSURA DO PILAR — o C140
+ // fica FACEADO com a face EXTERNA do pilar (+-0,080 do eixo) e os 140
+ // entram p/ dentro (sobra ~15mm de pilar no lado interno). Corpo do
+ // kit: -0,080..+0,060 -> centro do CL a 10mm do eixo, LADO DE DENTRO.
+ var W=new THREE.Group();W.position.set(0,0,zP);W.rotation.y=Math.PI/2;scene.add(W);
+ var XCE=(dirIn>0)?0.010:-0.010;
+ function vaoPorta(u){return portao&&u>P1+0.01&&u<P2-0.01;}
+ // GUARDA (13/07, bug do itie): sem parede lateral (B81=0) o KIT_LAT
+ // nao existe — o TypeError daqui abortava o SCRIPT INTEIRO (matava o
+ // LOD/FAST, window.EMP e a telha das empenas, silenciosamente). Sem o
+ // kit, a empena monta so a parte independente (pilares, viga, porta,
+ // cantoneira, telha via EMP com T/G vazios) e PULA o painel.
+ if(typeof window.KIT_LAT==='undefined'){T=[];R=[];D=[];GG=[];MM=[];}
+ T.forEach(function(t){
+  if(portao&&t[2]<portao.h+0.14&&vaoPorta((t[0]+t[1])/2))return;  // FRENTE: acima da porta
+  var L=t[1]-t[0],Zc=(t[0]+t[1])/2;
+  // swage: ponta que ENTRA na guia da MF usa comprimento pelo ângulo
+  // (t[7]); a outra ponta segue o flat padrão. mfEdge<0 entra em -L/2
+  // (u1), mfEdge>0 em +L/2 (u2). Senão a terça colide com a guia (45°).
+  var swA=0.0600,swB=0.0600;
+  if(t[4]){var swE=(t[7]!=null)?t[7]:0.0600;if(t[4]<0)swA=swE;else swB=swE;}
+  var o={color:0x66ccff,nseg:40,swZ:[[-L/2,-L/2+swA],[L/2-swB,L/2]]};
+  if(t[3]<8e8)o.lipCutZ=[t[3]-0.25,t[3]+0.25];
+  // CHANFRO na terça que ENTRA na guia da MF (t[4]!=0, Cassiano 18/07):
+  // mesmo kit da diagonal-na-terça (swage+chanfro no entrante).
+  if(t[4])o.chamfer=1;
+  var gk=KIT_LAT.CL([XCE,t[2],Zc],0,L,o);scene.remove(gk);W.add(gk);
+  // 2x AUTOBROCANTE 4,8x19 na INTERSEÇÃO das linhas centrais das mesas
+  // (Cassiano 18/07, regra geral p/ CSV — nao importa o grau): t[5]=x da
+  // intersecao, t[6]=y no centro da mesa; z=+-0,068 (as 2 mesas). NAO na
+  // alma. Atravessa mesa-da-terca + mesa-da-guia encostadas.
+  if(t[4]){var zc0=zP-XCE;
+   [0.0685,-0.0685].forEach(function(zo){
+    screwV(t[5],t[6],zc0+zo,'z',(zo>0?-1:1),scene);});}});
+ R.forEach(function(t){var L=t[1]-t[0],Zc=(t[0]+t[1])/2;
+  // REMATE MF->pilar: mesma peca, swage nas 2 pontas (regra R53 >=200mm)
+  var o={color:0x66ccff,nseg:20,swZ:[[-L/2,-L/2+0.0600],[L/2-0.0600,L/2]]};
+  var gk=KIT_LAT.CL([XCE,t[2],Zc],0,L,o);scene.remove(gk);W.add(gk);});
+ D.forEach(function(d){
+  if(portao&&d[7]<portao.h+0.14&&vaoPorta(d[6]))return;           // FRENTE: V acima da porta
+  var o={color:0x28c08a,nseg:40,chamfer:1,
+         swZ:[[-d[3]/2,-d[3]/2+d[4]],[d[3]/2-d[5],d[3]/2]]};
+  var dA=KIT_LAT.CL([XCE,d[0],d[1]],d[2],d[3],o);scene.remove(dA);W.add(dA);
+  var piv=new THREE.Group();piv.position.set(XCE,0,d[6]);piv.rotation.y=Math.PI;W.add(piv);
+  var dB=dA.clone();dB.position.set(0,d[0],d[1]-d[6]);piv.add(dB);});
+ // GUIA INCLINADA CONTINUA (1 por agua): contorno superior + costura da
+ // telha da empena. Conexao PADRAO (Cassiano 13/07): SWAGE nas 2 pontas
+ // + AUTOBROCANTE 4,8x19 vertical (dimple) alma-da-guia -> mesa do
+ // rafter/MF: 1 em cada ponta (30mm) + intermediarios a cada ~1m
+ // (antes: pontas cruas + sextavado 1/2" — perfiladeira nao fura ali)
+ GG.forEach(function(gd){
+  var L=gd[3];
+  var o={color:0x66ccff,nseg:40,swZ:[[-L/2,-L/2+0.0600],[L/2-0.0600,L/2]]};
+  // LIP CUT onde a terça entra na guia da MF (gd[4]=Z local centrado no
+  // CENTRO DA MESA da terça; gd[5]=meia-largura cobrindo a altura do
+  // perfil na guia inclinada; Cassiano 15/07, alinhamento 21/07).
+  if(gd[4]!=null){var lh=(gd[5]!=null)?gd[5]:0.030;o.lipCutZ=[gd[4]-lh,gd[4]+lh];}
+  var gk=KIT_LAT.CL([XCE,gd[0],gd[1]],gd[2],L,o);scene.remove(gk);W.add(gk);
+  var eB=0.030/L,nB=Math.max(2,Math.round(L/1.0)+1);
+  for(var k=0;k<nB;k++){var fr=-0.5+eB+k*(1-2*eB)/(nB-1);
+   var by=gd[0]+fr*L*Math.sin(gd[2])-0.0013;
+   var bz=gd[1]+fr*L*Math.cos(gd[2]);
+   screwV((dirIn>0)?0.0425:-0.0425,by,bz,'y',1,W);}
+  // (Cassiano 18/07: o 4,8 que estava aqui ficava na ALMA da guia,
+  // solto — REMOVIDO. A fixacao correta e nas MESAS/ABAS, atravessando
+  // as 2 chapas encostadas, como na ligacao diagonal×mini de referencia
+  // — a montar com a geometria das mesas da guia deitada.)
+  });
+ // PLACA DE APEX das guias: chapa 2,5 dobrada no angulo das aguas, POR
+ // DENTRO do canal, encostada sob as almas (aba 150 por agua, largura
+ // 100) — mesma filosofia da placa de cumeeira do rafter; os 4,8 de
+ // ponta das guias (30mm) atravessam alma+placa (reuso R50).
+ var AP=[6.8642, 4.85, 0.226068];
+ var mPlA=new THREE.MeshLambertMaterial({color:0xb8c0c8});
+ novaPeca('placa-apex-guia');
+ [1,-1].forEach(function(s){
+  var ca=Math.cos(AP[2]),sa=Math.sin(AP[2]);
+  var pzA=AP[1]-s*(ca*0.077-sa*0.0034);
+  var pyA=AP[0]-sa*0.077-ca*0.0034;
+  var pl=new THREE.Mesh(new THREE.BoxGeometry(0.100,0.0025,0.150),mPlA);
+  pl.position.set(XCE,pyA,pzA);pl.rotation.x=-s*AP[2];
+  pl.userData.p=PIECE;W.add(pl);});
+ // MINI-PILARES DA EMPENA v2 (rosa, Cassiano 13/07): NA SECAO DA MESA
+ // do pilar, de frente pro vao — ALMA do mini colada na face da mesa
+ // (parafuso de cada nivel atravessa alma-do-mini + mesa-do-pilar,
+ // eixo ao longo da fachada) e as MESAS do mini avancando PRO VAO
+ // formam o CANAL onde o swage da terca/diagonal desliza (o encaixe
+ // da boca da lateral, girado pra direcao da empena).
+ function mb(x,y,z,dx,dy,dz){var b=new THREE.Mesh(new THREE.BoxGeometry(dx,dy,dz),mMPe);
+  b.position.set(x,y,z);b.userData.p=PIECE;W.add(b);}
+ var tmE=0.00155,FmE=0.045,LmE=0.020;
+ MM.forEach(function(m){var e=m[0],sd=m[1],yc=m[2],Ls=m[3];
+  // FRENTE: nas faces INTERNAS dos pilares (lado da PORTA) nao ha
+  // painel abaixo da verga — mini ali e peca sem funcao (R50; print
+  // Cassiano 13/07: "copiados do outro lado"). Somem TODOS ate o topo
+  // da verga; ACIMA dela ficam (as tercas sobre a porta precisam do
+  // receptor).
+  if(portao&&((Math.abs(e-P1)<0.01&&sd>0)||(Math.abs(e-P2)<0.01&&sd<0))
+     &&(yc-Ls/2<portao.h+0.32))return;
+  novaPeca('mini-pilar');
+  var za=e+sd*(0.150+tmE/2);                          // alma na face da mesa (0,150)
+  mb(XCE,yc,za,0.140,Ls,tmE);                         // alma (140 na normal)
+  // LIPS SEGMENTADOS: abertura na banda da terca/diagonal que entra no
+  // canal (mini_cuts da lateral replicado)
+  var lipSegs=lipSegsP(m[5],yc-Ls/2,yc+Ls/2);
+  [-1,1].forEach(function(sx){
+   var xm=XCE+sx*(0.070-tmE/2);
+   mb(xm,yc,za+sd*(tmE/2+FmE/2),tmE,Ls,FmE);          // mesas: canal pro vao
+   lipSegs.forEach(function(sg){var a=sg[0],b=sg[1];if(b-a<0.006)return;
+    mb(XCE+sx*(0.070-LmE/2),(a+b)/2,za+sd*(tmE/2+FmE-tmE/2),LmE,b-a,tmE);});});
+  // 4x AUTOBROCANTE 4,8x19 (2 em cima + 2 embaixo, linhas +-47,5 do
+  // C140), cabeca na face externa da alma do mini, broca atravessando
+  // alma do mini -> mesa do pilar — mesmo screwV do resto do galpao
+  m[4].forEach(function(sy){[-0.0475,0.0475].forEach(function(lx){
+   screwV(XCE+lx,sy,za+sd*(tmE/2+0.0005),'z',-sd,W);});});});
+ // CANTONEIRA DE ARRANQUE DA EMPENA (13/07): a MESMA peca v2 da lateral
+ // (aba vertical 120 p/ fora na face externa + aba horizontal 75 no
+ // radier c/ chumbador 600mm). Continua pilar-a-pilar com juntas de 2mm
+ // (vedadas na obra), estendendo ate a extremidade EXTERNA dos pilares
+ // dos cantos; na FRENTE interrompe na porta. Sapata otimizada (BD
+ // flush) liberou o caminho.
+ var mCant=new THREE.MeshLambertMaterial({color:0x565c63});   // chumbo (v2 13/07)
+ var mPB2=new THREE.MeshLambertMaterial({color:0x202428});
+ // pontas ENCOSTAM na cantoneira da LATERAL (aba vertical dela em
+ // x=+-0,150) — Cassiano 13/07: "nada aberto, ali vai telha"
+ var ctSegs;
+ if(portao){var pa2=P1+0.175,pb2=P2-0.175;
+  ctSegs=[[-0.150,pa2],[pb2,cumXworld*2+0.150]];}
+ else ctSegs=[[-0.150,P1-0.001],[P1+0.001,P2-0.001],[P2+0.001,cumXworld*2+0.150]];
+ var ctv=0.120,cth=0.075,ctt=0.0025;
+ var zF=zP-dirIn*(0.080+ctt/2);                       // aba vertical na face externa
+ var zH=zP-dirIn*(0.080+ctt+cth/2);                   // aba horizontal p/ fora
+ ctSegs.forEach(function(s){var L=s[1]-s[0];if(L<0.1)return;
+  var cx2=(s[0]+s[1])/2;
+  novaPeca('cantoneira-arranque');
+  box(gr,cx2,ctv/2,zF,L,ctv,ctt,mCant);
+  box(gr,cx2,ctt/2,zH,L,ctt,cth,mCant);
+  for(var pu=s[0]+0.10;pu<=s[1]-0.05;pu+=0.600){
+   // PARABOLT APERTADO (Cassiano 13/07): so a CABECA sextavada +
+   // arruela sobre a aba — o corpo esta dentro do radier
+   var zpb=zP-dirIn*(0.080+ctt+0.040);
+   var arr=new THREE.Mesh(new THREE.CylinderGeometry(0.014,0.014,0.002,20),mPB2);
+   arr.position.set(pu,ctt+0.001,zpb);gr.add(arr);
+   var hx=new THREE.Mesh(new THREE.CylinderGeometry(0.0095,0.0095,0.008,6),mPB2);
+   hx.position.set(pu,ctt+0.006,zpb);gr.add(hx);}});
+ // EXPORTA a empena p/ o FECHAMENTO (telha da fachada, 13/07): terças/
+ // guias com os clamps REAIS (MF, rafter, verga) — a costura da telha
+ // só nasce onde existe perfil atrás (R01, sem duplicar a lógica aqui)
+ window.EMP=window.EMP||[];
+ window.EMP.push({zP:zP,dir:dirIn,T:T,G:GG,P1:P1,P2:P2,
+                  porta:portao?{a:P1+0.175,b:P2-0.175,h:portao.h}:null});
+ return gr;}
+// FUNDO: 100% fechado
+oitao((nPorticos-1)*modulo,-1,null);
+// FRENTE: porta central R58
+oitao(0,+1,{h:PH});
+// telha das empenas: o fechamento roda ANTES deste modulo — dispara aqui
+if(window.FECH_EMPENA)window.EMP.forEach(window.FECH_EMPENA);
+})();
+
+
+// === COBERTURA: tercas C140 + contraventamento V (parametrico) ===
+(function(){
+var tc=0.00155,Fc=0.045,Lc=0.012,Hmc=0.14,SWDc=0.1365;
+var TS=[0.432672, 1.898726, 3.36478, 4.830833],BR=[1, 0, 0, 1],NB=nPorticos-1;
+var MRS=[[0.454943, 0.289541], [1.920996, 0.289541], [3.38705, 0.289541], [4.808333, 0.2]],MRB=[[0.360172, 0.549713], [1.826226, 2.015767], [3.29228, 3.481821], [4.758333, 4.858333]],MRS_S=[[0.410172, 0.2], [1.876226, 0.2], [3.34228, 0.2], [4.808333, 0.2]],MRB_S=[[0.360172, 0.460172], [1.826226, 1.926226], [3.29228, 3.39228], [4.758333, 4.858333]],MRCT=[[0.3777, 0.4427], [1.8437, 1.9087], [3.3098, 3.3748], [4.7758, 4.8408]],MRCD=[[0.424, 0.5488], [1.89, 2.0148], [3.3561, 3.4809]];
+var zAm=0.005775,zMm=0.02905;
+var DMT=[0.410172, 1.876226, 3.34228, 4.808333],DMD=[0.499713, 1.965767, 3.431821],DIMZ=0.02905;
+var ANGc=[0.52569801, 0.52569801, 0.52569769],LAc=[2.760079, 2.760079, 2.760078],ZTc=[2.393946, 2.393946, 2.393946],SBc=[0.512672, 1.978726, 3.44478],STc=[1.897726, 3.36378, 4.829833];
+var DLB=[-1.36708, -1.36708, -1.36708],DLT=[1.375978, 1.375978, 1.375978],DZA=[2.401724, 2.401724, 2.401724];
+var TRGc=[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]],DRGA=[[[-1.38004, -1.318015, 0.1365], [-1.318015, -1.313015, 0.13825], [-1.313015, 1.277359, 0.14], [1.277359, 1.282359, 0.13825], [1.282359, 1.38004, 0.1365]], [[-1.38004, -1.318015, 0.1365], [-1.318015, -1.313015, 0.13825], [-1.313015, 1.277359, 0.14], [1.277359, 1.282359, 0.13825], [1.282359, 1.38004, 0.1365]], [[-1.380039, -1.318014, 0.1365], [-1.318014, -1.313014, 0.13825], [-1.313014, 1.277358, 0.14], [1.277358, 1.282358, 0.13825], [1.282358, 1.380039, 0.1365]]],DRGB=[[[-1.38004, -1.282359, 0.1365], [-1.282359, -1.277359, 0.13825], [-1.277359, 1.313015, 0.14], [1.313015, 1.318015, 0.13825], [1.318015, 1.38004, 0.1365]], [[-1.38004, -1.282359, 0.1365], [-1.282359, -1.277359, 0.13825], [-1.277359, 1.313015, 0.14], [1.313015, 1.318015, 0.13825], [1.318015, 1.38004, 0.1365]], [[-1.380039, -1.282358, 0.1365], [-1.282358, -1.277358, 0.13825], [-1.277358, 1.313014, 0.14], [1.313014, 1.318014, 0.13825], [1.318014, 1.380039, 0.1365]]];
+var LTc=4.9869,Zbc=0.00655,UPc=0.076;
+var mCt=new THREE.MeshLambertMaterial({color:0x66ccff});
+var mCd=new THREE.MeshLambertMaterial({color:0x28c08a});
+var mMR=new THREE.MeshLambertMaterial({color:0xe54983});
+var mBt=new THREE.MeshLambertMaterial({color:0xe04040});
+function cobBox(par,m,x,y,z,sx,sy,sz){var b=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),m);b.position.set(x,y,z);b.userData.p=PIECE;par.add(b);}
+function cobCutSegs(v,cuts){for(var c=0;c<cuts.length;c++){var nv=[],a=cuts[c][0],e=cuts[c][1];
+ for(var i=0;i<v.length;i++){var s=v[i][0],t2=v[i][1];
+  if(e<=s||a>=t2){nv.push([s,t2]);}else{if(a>s)nv.push([s,a]);if(e<t2)nv.push([e,t2]);}}v=nv;}return v;}
+// peca C deitada no plano da agua (CL da parede mapeado): alma atravessa a
+// profundidade (X local), mesas penduram down-slope (-Y local), corre em Z.
+// CHAMFER R60 h=18 (kit de juncao): SO quando o entrante chega EM GRAU
+// (diagonais). Tercas retas a 90 graus NAO levam (batida desnecessaria).
+// Nos ultimos 18mm, alma e lip saem; a MESA chega quase inteira na ponta
+// (corte reto a 45 nos cantos — representacao do R60, foto do Cassiano).
+function cobPiece(par,m,rotLay,regs,lipCuts,semChamfer){
+ novaPeca(semChamfer?'terca-cobertura':'diagonal-cobertura'); // 1 cobPiece = 1 peça
+ var gp=new THREE.Group();gp.rotation.z=rotLay;par.add(gp);
+ var zMin=regs[0][0],zMax=regs[regs.length-1][1];
+ var CH=0.0135;                                  // recuo dos cantos da MESA: (45-18)/2
+ var LIPR=0.0115;                                // alivio do lip cut: (83-60)/2
+ var chZ=semChamfer?[]:[[zMin,zMin+CH],[zMax-CH,zMax]];
+ // lips: corte funcional EXPANDIDO pelo alivio (as cunhas preenchem o alivio)
+ var lcE=lipCuts.map(function(C){return [C[0]-LIPR,C[1]+LIPR];});
+ var lc2=lcE.concat(chZ);
+ for(var i=0;i<regs.length;i++){var z0=regs[i][0],z1=regs[i][1],w=regs[i][2];
+  // ALMA: recua ate a MESMA LINHA do lip (cortada junto — Cassiano);
+  // MESAS inteiras: so fora da zona do chamfer (na zona viram trapezio)
+  var as=cobCutSegs([[z0,z1]],chZ);
+  for(var k=0;k<as.length;k++){var a0=as[k][0],a1=as[k][1],ac=(a0+a1)/2,ad=a1-a0;
+   cobBox(gp,m,0,0,ac,w,tc,ad);
+   cobBox(gp,m,-w/2,-Fc/2,ac,tc,Fc,ad);cobBox(gp,m,w/2,-Fc/2,ac,tc,Fc,ad);}
+  // LIPS: fora dos cortes (conexoes) e fora do chamfer
+  var ls=cobCutSegs([[z0,z1]],lc2);
+  for(var k=0;k<ls.length;k++){var a2=ls[k][0],b2=ls[k][1];
+   cobBox(gp,m,-w/2+Lc/2,-Fc,(a2+b2)/2,Lc,tc,b2-a2);
+   cobBox(gp,m,w/2-Lc/2,-Fc,(a2+b2)/2,Lc,tc,b2-a2);}}
+ // CUNHAS do lip cut (alivio 60->83): nas pontas de cada corte, o lip
+ // remanescente termina em cunha — cheio na DOBRA, zero na borda livre
+ lipCuts.forEach(function(C){
+  [[C[0],-1],[C[1],1]].forEach(function(E){
+   var zE=E[0],dr=E[1];
+   [[Hmc/2,-1],[-Hmc/2,1]].forEach(function(F){
+    var sh=new THREE.Shape();
+    sh.moveTo(F[0],-(zE+dr*LIPR));sh.lineTo(F[0],-zE);
+    sh.lineTo(F[0]+F[1]*Lc,-(zE+dr*LIPR));sh.closePath();
+    var g2=new THREE.ExtrudeGeometry(sh,{depth:tc,bevelEnabled:false});
+    var mm=new THREE.Mesh(g2,m);
+    mm.rotation.x=-Math.PI/2;mm.position.y=-Fc-tc/2;gp.add(mm);});});});
+ // CORRUGADO DO SWAGE (foto da peca real, corrigido pelo Cassiano):
+ // DOIS corrugados LONGITUDINAIS na alma (no sentido do comprimento),
+ // um perto de cada canto junto a mesa — e o material que sobra quando
+ // as mesas sao puxadas pra dentro. Respeita o chamfer.
+ var mCo=new THREE.MeshLambertMaterial({color:new THREE.Color(m.color).multiplyScalar(0.72)});
+ var bMin=semChamfer?zMin:zMin+CH, bMax=semChamfer?zMax:zMax-CH;
+ regs.forEach(function(R,ri){
+  if(ri!==0&&ri!==regs.length-1)return;          // so nos flats das pontas
+  var c0=Math.max(R[0],bMin+0.002),c1=Math.min(R[1],bMax-0.002);
+  if(c1-c0<0.008)return;
+  var zc2=(c0+c1)/2,ld=c1-c0;
+  [-(R[2]/2-0.008),(R[2]/2-0.008)].forEach(function(xr){
+   cobBox(gp,mCo,xr,0,zc2,0.006,tc+0.0008,ld);});});
+ // CHAMFER conformado (pag.9 ANOTADA pelo Cassiano):
+ // MESA com os DOIS cantos recuando (R60 ~ diagonais 45) e TIRA RETA de
+ // 18mm no MEIO DA MESA indo ate a ponta (onde mora o dimple).
+ // ALMA intacta; LIP recua (chZ).
+ var wE=regs[0][2];
+ function chamferEnd(tipZ,dir){
+  var zb=tipZ-dir*CH;                          // lado do corpo da zona
+  var yA=-(Fc/2-0.009),yB=-(Fc/2+0.009);       // tira central de 18mm
+  var sh=new THREE.Shape();
+  sh.moveTo(-zb,0);sh.lineTo(-tipZ,yA);        // canto da alma recua (45)
+  sh.lineTo(-tipZ,yB);                         // 18mm retos na ponta
+  sh.lineTo(-zb,-Fc);sh.closePath();           // canto do lip recua (45)
+  var g2=new THREE.ExtrudeGeometry(sh,{depth:tc,bevelEnabled:false});
+  [-wE/2,wE/2].forEach(function(xm){
+   var mm=new THREE.Mesh(g2,m);
+   mm.rotation.y=Math.PI/2;mm.position.x=xm-tc/2;gp.add(mm);});}
+ if(!semChamfer){chamferEnd(zMax,1);chamferEnd(zMin,-1);}
+ return gp;}
+function cobDimple(gp,w,zd){ // onde tem DIMPLE tem PARAFUSO (representacao = cabeca Philips)
+ // 1 por mesa (as 2 mesas do entrante), cabeca Philips na face EXTERNA, broca
+ // rumo a dentro — MESMA representacao do painel (lsf_core screwV). R33, sem cratera ambar.
+ screwV(w/2+tc/2,-Fc/2,zd,'x',-1,gp);screwV(-(w/2+tc/2),-Fc/2,zd,'x',1,gp);}
+// MINI-RAFTER: meia-C (um lado do portal) — conceito mpHalf do mini-pilar.
+// cuts = SO as faixas de quem chega NESTE lado (terca sempre; diagonal so
+// se o vao adjacente e contraventado) — corte so pra quem chega (Cassiano)
+function mrHalf(wg,dx,sc,sL,zP,sign,cuts){
+ cobBox(wg,mMR,dx*sc,UPc,zP+sign*zAm,sL,Hmc,tc);                  // alma
+ cobBox(wg,mMR,dx*sc,UPc+Hmc/2,zP+sign*zMm,sL,tc,Fc);            // mesas
+ cobBox(wg,mMR,dx*sc,UPc-Hmc/2,zP+sign*zMm,sL,tc,Fc);
+ var lipZ=sign*(zMm+Fc/2),LIPR=0.0115;
+ var MRCm=mergeBands(cuts,2*LIPR+0.001);         // aberturas unicas (regra mestra)
+ var MRCe=MRCm.map(function(C){return [C[0]-LIPR,C[1]+LIPR];});
+ var segs=cobCutSegs([[sc-sL/2,sc+sL/2]],MRCe);                  // lips seccionados
+ for(var i=0;i<segs.length;i++){var a=segs[i][0],b=segs[i][1];
+  if(b-a<0.006)continue;
+  cobBox(wg,mMR,dx*(a+b)/2,UPc+Hmc/2-Lc/2,zP+lipZ,b-a,Lc,tc);
+  cobBox(wg,mMR,dx*(a+b)/2,UPc-Hmc/2+Lc/2,zP+lipZ,b-a,Lc,tc);}
+ // pontas em CUNHA (cheia na dobra UPc+-Hmc/2, zero na borda livre)
+ MRCm.forEach(function(C){
+  [[C[0],-1],[C[1],1]].forEach(function(E){
+   if(E[0]<sc-sL/2||E[0]>sc+sL/2)return;
+   [[UPc+Hmc/2,-1],[UPc-Hmc/2,1]].forEach(function(F){
+    var sh=new THREE.Shape();
+    sh.moveTo(dx*(E[0]+E[1]*LIPR),F[0]);sh.lineTo(dx*E[0],F[0]);
+    sh.lineTo(dx*(E[0]+E[1]*LIPR),F[0]+F[1]*Lc);sh.closePath();
+    var g2=new THREE.ExtrudeGeometry(sh,{depth:tc,bevelEnabled:false});
+    var mm=new THREE.Mesh(g2,mMR);mm.position.z=zP+lipZ-tc/2;wg.add(mm);});});});}
+// Parafuso 1/2" mini+rafter+rafter+mini na linha de calibracao +refX do rafter
+function mrBolt(wg,dx,s,zP){ bolt12(dx*s,refX,zP,'z',0.006,wg); }
+// DIMPLE da junta = cabeca Philips do parafuso (lsf_core screwHeadV), eixo Y =
+// normal da agua. dir=+1 face de cima, dir=-1 face de baixo. R33, sem cratera ambar.
+function dimTrio(wg,x,y,zq,dir){
+ screwHeadV(x,y,zq,'y',dir,wg);}
+// PARAFUSOS DA JUNCAO — R33d (Cassiano 02/07): parafuso COMPLETO (cabeca +
+// corpo/ponta) SO nas 2 faces EXTERNAS do pacote; camadas internas SEM
+// cabeca. Cima = mesa do rafter (telha); baixo = mesa interna do MINI (o
+// que se ve de dentro do galpao). As cabecas orfas na mesa INFERIOR do
+// rafter (a 300mm do no) sairam junto — mesma logica do b6 da parede.
+function junctionDimples(wg,dx,s,zq){
+ // din = direcao da BROCA (corpo ENTRA nas chapas; cabeca fica na face).
+ // Face de CIMA: broca desce (-y) · face de BAIXO: broca sobe (+y).
+ screwV(dx*s,wH/2,zq,'y',-1,wg);
+ screwV(dx*s,UPc-Hmc/2-tc/2,zq,'y',1,wg);
+}
+var waters=[{x0:cx,dx:1},{x0:2*cumXworld-cx,dx:-1}];
+for(var wi=0;wi<2;wi++){
+ var W=waters[wi];
+ var wg=new THREE.Group();wg.position.set(W.x0,pilTopo+cy,0);wg.rotation.z=W.dx*theta;scene.add(wg);
+ var lay=-W.dx*Math.PI/2;     // deita a secao no plano da agua
+ for(var vv=0;vv<NB;vv++){
+  var zA=vv*modulo;
+  // TERCAS (todas as baias)
+  for(var ti=0;ti<TS.length;ti++){
+   var lip=(BR[vv]&&ti>0)?[[-0.25,0.25]]:[];   // lip cut p/ tip do V (so contraventada)
+   var hold=new THREE.Group();hold.position.set(W.dx*TS[ti],UPc,zA+modulo/2);wg.add(hold);
+   var tg=cobPiece(hold,mCt,lay,TRGc,lip,true); // terca reta: SEM chamfer
+   cobDimple(tg,SWDc,-(LTc/2-0.0225));cobDimple(tg,SWDc,(LTc/2-0.0225));}
+  // CONTRAVENTAMENTO V — so baias contraventadas
+  if(BR[vv]){
+   for(var di=0;di<ANGc.length;di++){
+    var Cs=(SBc[di]+STc[di])/2,Lh=LAc[di];
+    var CzA=zA+(Zbc+ZTc[di])/2,CzB=zA+modulo-(Zbc+ZTc[di])/2;
+    var wrA=new THREE.Group();wrA.position.set(W.dx*Cs,UPc,CzA);wrA.rotation.y=W.dx*ANGc[di];wg.add(wrA);
+    var dgA=cobPiece(wrA,mCd,lay,DRGA[di],[]);
+    var wrB=new THREE.Group();wrB.position.set(W.dx*Cs,UPc,CzB);wrB.rotation.y=-W.dx*ANGc[di];wg.add(wrB);
+    var dgB=cobPiece(wrB,mCd,lay,DRGB[di],[]);
+    // (R33d: diagonal NAO desenha cabeca girada — base coberta pelo
+    //  junctionDimples do mini-rafter; tip coberto pelo apex abaixo)
+    // PARAFUSOS DO APEX (receptor = terca superior): parafuso COMPLETO nas
+    // 2 faces EXTERNAS do pacote, no ponto da intersecao (R33d)
+    var sU=W.dx*(TS[di+1]-Fc/2);
+    [zA+DZA[di],zA+modulo-DZA[di]].forEach(function(zt){
+     screwV(sU,UPc+Hmc/2+tc/2,zt,'y',-1,wg);   // broca desce (corpo entra)
+     screwV(sU,UPc-Hmc/2-tc/2,zt,'y',1,wg);});}}  // broca sobe (corpo entra)
+ }
+ // MINI-RAFTERS (um conjunto de segmentos por portal; meia-C nos portais de ponta)
+ for(var pp=0;pp<nPorticos;pp++){var zP=pp*modulo;
+  var hasP=(pp<nPorticos-1),hasN=(pp>0);
+  var cutsP=MRCT.concat((hasP&&BR[pp])?MRCD:[]);
+  var cutsN=MRCT.concat((hasN&&BR[pp-1])?MRCD:[]);
+  var hasDiag=(hasP&&BR[pp])||(hasN&&BR[pp-1]);   // diagonal chega neste no? (vao adjacente contraventado)
+  for(var ms=0;ms<MRS.length;ms++){
+   var seg=hasDiag?MRS[ms]:MRS_S[ms],lv=hasDiag?MRB[ms]:MRB_S[ms];
+   var sc=seg[0],sL=seg[1];   // FULL (288mm) com diagonal | SHORT (200mm) so terca
+   novaPeca('mini-rafter');   // as duas metades (+z/-z) = 1 peça física
+   if(hasP)mrHalf(wg,W.dx,sc,sL,zP,+1,cutsP);
+   if(hasN)mrHalf(wg,W.dx,sc,sL,zP,-1,cutsN);
+   mrBolt(wg,W.dx,lv[0],zP);   // 1/2" a 50mm de uma ponta do mini-rafter
+   mrBolt(wg,W.dx,lv[1],zP);   // 1/2" a 50mm da outra ponta (centro livre p/ terca/diagonal)
+  }
+  // DIMPLES DA JUNCAO (todas as camadas, dos dois lados): terca sempre, diag so c/ V
+  for(var dt=0;dt<DMT.length;dt++){
+   if(hasP)junctionDimples(wg,W.dx,DMT[dt],zP+DIMZ);
+   if(hasN)junctionDimples(wg,W.dx,DMT[dt],zP-DIMZ);}
+  for(var dd2=0;dd2<DMD.length;dd2++){
+   if(hasP&&BR[pp])junctionDimples(wg,W.dx,DMD[dd2],zP+DIMZ);
+   if(hasN&&BR[pp-1])junctionDimples(wg,W.dx,DMD[dd2],zP-DIMZ);}}
+}
+})();
+// === FIM COBERTURA ===
+
+
+// ── ARESTAS CAD (Cassiano 12/07): contorno escuro em TODA chapa (alma,
+// mesa e principalmente o LIP, que sumia de longe/ângulo ruim). Igual
+// software de engenharia: dobras legíveis sem tocar na geometria.
+// Performance (PC do Cassiano): tudo MESCLADO em 1 LineSegments por
+// grupo-alvo (estrutura + fechamento) = 2 draw calls, não milhares.
+(function(){
+ scene.updateMatrixWorld(true);
+ // Cor CLARA (Cassiano 12/07: preto ficou "muito escuro, um pouco feio")
+ var mEdge=new THREE.LineBasicMaterial({color:0x9cc4e4,transparent:true,opacity:0.7});
+ var EI=[[0,1],[1,3],[3,2],[2,0],[4,5],[5,7],[7,6],[6,4],[0,4],[1,5],[2,6],[3,7]];
+ // SEM "GOMINHOS" (Cassiano 12/07): peça alongada é modelada em varios
+ // segmentos-caixa contíguos; contornar cada caixa desenhava os aneis
+ // das emendas internas ("riscos/gominhos" nas diagonais e terças).
+ // Regra por DEDUP: a emenda interna gera a MESMA aresta 2x (uma de
+ // cada caixa vizinha) — aresta duplicada não é desenhada. A ponta
+ // REAL da peça gera 1x e fica. Funciona em qualquer orientação, sem
+ // depender de id de peça (o motor lsf_core não seta userData.p).
+ function coleta(root,arr,arrAgua){
+  var seen={};
+  function q(v){return Math.round(v.x*2000)+','+Math.round(v.y*2000)+','+Math.round(v.z*2000);}
+  function ehAgua(o){var p=o;while(p){if(p.userData&&p.userData.agua)return true;p=p.parent;}return false;}
+  root.traverse(function(o){
+   if(!o.isMesh||!o.geometry||o.geometry.type!=='BoxGeometry')return;
+   if(o.userData.fastener||o.userData.fastener2)return;
+   var ag=(arrAgua&&ehAgua(o));
+   var pr=o.geometry.parameters,hx=pr.width/2,hy=pr.height/2,hz=pr.depth/2;
+   var C=[];for(var i=0;i<8;i++)C.push(new THREE.Vector3(
+    (i&1)?hx:-hx,(i&2)?hy:-hy,(i&4)?hz:-hz).applyMatrix4(o.matrixWorld));
+   for(var e=0;e<12;e++){var a=C[EI[e][0]],b=C[EI[e][1]];
+    var ka=q(a),kb=q(b),k=(ka<kb)?ka+'|'+kb:kb+'|'+ka;
+    if(seen[k]){seen[k].n++;}else seen[k]={n:1,a:a,b:b,ag:ag};}});
+  for(var k2 in seen){var s=seen[k2];if(s.n>1)continue;
+   (s.ag?arrAgua:arr).push(s.a.x,s.a.y,s.a.z,s.b.x,s.b.y,s.b.z);}}
+ // LOD DE ARESTAS: de longe, milhares de linhas viram ruído subpixel
+ // (speckle) — mesma filosofia do LOD de parafusos: o traço acende
+ // quando a câmera chega perto (células de 3m, raio 12m). De longe o
+ // modelo fica limpo; de perto vira desenho técnico.
+ window.EDGE_CH=[];
+ function monta(arr,parent,isAgua){if(!arr.length)return;
+  var cel={};
+  for(var s=0;s<arr.length;s+=6){
+   var mx=(arr[s]+arr[s+3])/2,my=(arr[s+1]+arr[s+4])/2,mz=(arr[s+2]+arr[s+5])/2;
+   var k=Math.floor(mx/3)+'_'+Math.floor(my/3)+'_'+Math.floor(mz/3);
+   if(!cel[k])cel[k]={a:[],x:0,y:0,z:0,n:0};
+   var c=cel[k];for(var q=0;q<6;q++)c.a.push(arr[s+q]);
+   c.x+=mx;c.y+=my;c.z+=mz;c.n++;}
+  for(var k2 in cel){var c2=cel[k2];
+   var g=new THREE.BufferGeometry();
+   g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(c2.a),3));
+   var ls=new THREE.LineSegments(g,mEdge);ls.userData.p=-1;ls.visible=false;
+   parent.add(ls);
+   EDGE_CH.push({o:ls,x:c2.x/c2.n,y:c2.y/c2.n,z:c2.z/c2.n,ag:!!isAgua});}}
+ var aEstr=[],aFech=[],aAgua=[],FECHg=null;
+ scene.children.forEach(function(ch){
+  if(ch.userData&&ch.userData.fech){FECHg=ch;coleta(ch,aFech,aAgua);}
+  else coleta(ch,aEstr);});
+ monta(aEstr,scene);                 // estrutura
+ if(FECHg){monta(aFech,FECHg);      // fechamento: acompanha o toggle TELHA
+  monta(aAgua,FECHg,true);}         // sistema de aguas: toggle CALHA junto
+})();
+
+// ── QUANTITATIVO (esqueleto da lista única, 13/07): resumo por tipo.
+// window.PECAS = registro id+tipo; a evolução (comprimento, furos,
+// operações) entra quando o agente CSV nascer — lendo a LISTA, não a cena.
+(function(){var q={};PECAS.forEach(function(pc){q[pc.tipo]=(q[pc.tipo]||0)+1;});
+window.PECAS=PECAS;
+console.log('LISTA DE PECAS: '+PIECE+' pecas (clones espelhados nao contados)',q);})();
+
+// ── Piso ──
+// RADIER (Cassiano 13/07): plataforma de concreto 150mm de espessura,
+// avancando 1,0m alem das bordas do galpao em todo o perimetro. O topo
+// fica no nivel da base das sapatas (elas assentam sobre ele).
+novaPeca('radier');
+var radW=cumXworld*2+0.16+2.0, radD=(nPorticos-1)*modulo+2.0;
+// CONCRETO procedural (Cassiano 13/07: "mais cara de concreto"):
+// CanvasTexture com manchas suaves + granulado fino (sem CDN) e juntas
+// de dilatacao serradas em grade ~3m (radier industrial real)
+function texConcreto(){var c2=document.createElement('canvas');c2.width=c2.height=512;
+ var g2=c2.getContext('2d');
+ g2.fillStyle='#b2b0a8';g2.fillRect(0,0,512,512);
+ for(var i2=0;i2<70;i2++){var x2=Math.random()*512,y2=Math.random()*512,r3=25+Math.random()*90;
+  var gr=g2.createRadialGradient(x2,y2,0,x2,y2,r3);
+  var v2=165+Math.floor(Math.random()*35);
+  gr.addColorStop(0,'rgba('+v2+','+v2+','+(v2-8)+',0.18)');gr.addColorStop(1,'rgba(0,0,0,0)');
+  g2.fillStyle=gr;g2.beginPath();g2.arc(x2,y2,r3,0,6.3);g2.fill();}
+ var id2=g2.getImageData(0,0,512,512),d2=id2.data;
+ for(var p3=0;p3<d2.length;p3+=4){var n2=(Math.random()-0.5)*20;
+  d2[p3]+=n2;d2[p3+1]+=n2;d2[p3+2]+=n2;}
+ g2.putImageData(id2,0,0);
+ var t3=new THREE.CanvasTexture(c2);
+ t3.wrapS=t3.wrapT=THREE.RepeatWrapping;return t3;}
+var texC=texConcreto();texC.repeat.set(radW/3.5,radD/3.5);
+var matRadier=new THREE.MeshLambertMaterial({color:0xd8d6ce,map:texC});
+// RADIER EM 2 PARTES (14/07, "luz so por dentro"):
+// - PISO INTERNO: Lambert SUBDIVIDIDO ~1m (Lambert ilumina POR VERTICE —
+//   caixa de 8 vertices nao "via" os spots dos prismas) — recebe a luz.
+// - CALCADA (anel de 1,0m): MeshBasic com a cor ASSADA (= Lambert sob
+//   ambiente+sol calculado abaixo) — visualmente identica mas IMUNE aos
+//   spots (sem isso a luz do prisma atravessava a parede e clareava o
+//   concreto de fora; sombra real e inviavel no Lambert r128 — a mascara
+//   escurece sol+ambiente juntos, faixa escura na parede externa).
+var bwR=radW-2.0,bdR=radD-2.0;
+var radier=new THREE.Mesh(new THREE.BoxGeometry(bwR,0.15,bdR,
+ Math.ceil(bwR),1,Math.ceil(bdR)),matRadier);
+radier.position.set(cumXworld,-BT-0.075,10.00);
+radier.userData.p=PIECE;scene.add(radier);
+(function(){ // cor assada: Lambert horizontal = cor*(amb + sol*cos)
+ var sd=sun.position.clone().normalize(),k=Math.max(sd.y,0)*sun.intensity;
+ var colC=new THREE.Color(0xd8d6ce);
+ colC.r=Math.min(1,colC.r*(amb.color.r*amb.intensity+sun.color.r*k));
+ colC.g=Math.min(1,colC.g*(amb.color.g*amb.intensity+sun.color.g*k));
+ colC.b=Math.min(1,colC.b*(amb.color.b*amb.intensity+sun.color.b*k));
+ function tira(w,d,x,z){
+  var t4=texC.clone();t4.needsUpdate=true;t4.repeat.set(w/3.5,d/3.5);
+  var m4=new THREE.Mesh(new THREE.BoxGeometry(w,0.15,d),
+   new THREE.MeshBasicMaterial({color:colC,map:t4}));
+  m4.position.set(x,-BT-0.075,z);m4.userData.p=PIECE;scene.add(m4);}
+ var cz=10.00;
+ tira(1.0,radD,cumXworld-radW/2+0.5,cz);          // calcada esquerda
+ tira(1.0,radD,cumXworld+radW/2-0.5,cz);          // calcada direita
+ tira(bwR,1.0,cumXworld,cz-radD/2+0.5);           // calcada frente
+ tira(bwR,1.0,cumXworld,cz+radD/2-0.5);})();     // calcada fundos
+// GRAMA (Cassiano 14/07: "faixa de ~5m em volta, depois do radier, sem
+// muitos detalhes"): esmeralda com granulado leve + manchas suaves de
+// tom, no nivel do terreno (o radier e uma laje elevada sobre ela)
+(function(){
+ var cG=document.createElement('canvas');cG.width=cG.height=256;
+ var g6=cG.getContext('2d');g6.fillStyle='#4e7f3e';g6.fillRect(0,0,256,256);
+ for(var i6=0;i6<24;i6++){var x6=Math.random()*256,y6=Math.random()*256,r6=18+Math.random()*50;
+  var gr6=g6.createRadialGradient(x6,y6,0,x6,y6,r6);
+  var t6=Math.random()<0.5?'rgba(64,110,50,0.25)':'rgba(110,150,80,0.20)';
+  gr6.addColorStop(0,t6);gr6.addColorStop(1,'rgba(0,0,0,0)');
+  g6.fillStyle=gr6;g6.beginPath();g6.arc(x6,y6,r6,0,6.3);g6.fill();}
+ var idG=g6.getImageData(0,0,256,256),dG=idG.data;
+ for(var p6=0;p6<dG.length;p6+=4){var n6=(Math.random()-0.5)*26;
+  dG[p6]+=n6*0.6;dG[p6+1]+=n6;dG[p6+2]+=n6*0.5;}
+ g6.putImageData(idG,0,0);
+ var tG=new THREE.CanvasTexture(cG);tG.wrapS=tG.wrapT=THREE.RepeatWrapping;
+ var gw=radW+10,gd=radD+10;tG.repeat.set(gw/4,gd/4);
+ var grama=new THREE.Mesh(new THREE.PlaneGeometry(gw,gd),
+  new THREE.MeshLambertMaterial({color:0x9fbf8f,map:tG}));
+ grama.rotation.x=-Math.PI/2;
+ // +15mm sobre o grid helper (senao as linhas vazavam por cima da grama)
+ grama.position.set(cumXworld,-BT-0.140,10.00);
+ grama.userData.p=-1;scene.add(grama);})();
+// juntas serradas (grade ~3m, linhas sutis no topo do radier)
+(function(){var ja=[],yJ=-BT+0.0008;
+ var x0J=cumXworld-radW/2,z0J=10.00-radD/2;
+ var nX=Math.max(2,Math.round(radW/3)),nZ=Math.max(2,Math.round(radD/3));
+ for(var i3=1;i3<nX;i3++){var xj=x0J+i3*radW/nX;ja.push(xj,yJ,z0J,xj,yJ,z0J+radD);}
+ for(var k3=1;k3<nZ;k3++){var zj=z0J+k3*radD/nZ;ja.push(x0J,yJ,zj,x0J+radW,yJ,zj);}
+ var gJ=new THREE.BufferGeometry();
+ gJ.setAttribute('position',new THREE.BufferAttribute(new Float32Array(ja),3));
+ var lJ=new THREE.LineSegments(gJ,new THREE.LineBasicMaterial({color:0x8a887f,transparent:true,opacity:0.55}));
+ lJ.userData.p=-1;scene.add(lJ);})();
+var gndW=18.0,gndD=28.0;
+var gnd=new THREE.Mesh(new THREE.PlaneGeometry(gndW,gndD),matGnd);
+gnd.rotation.x=-Math.PI/2;gnd.position.set(cumXworld,-BT-0.155,10.00);
+gnd.receiveShadow=true;scene.add(gnd);
+var gridSize=Math.max(gndW,gndD);
+var grid=new THREE.GridHelper(gridSize,Math.round(gridSize*2),0x0a160a,0x080e08);
+grid.position.set(cumXworld,-BT-0.155,10.00);scene.add(grid);
+
+// ── Fixadores: visíveis só de perto (vista de nó); somem na vista geral —
+// são sub-pixel de qualquer jeito — deixando o visualizador LEVE. ──
+// 2 níveis: 4,8x19 (fastener) some <4m (zoom de nó); 1/2" (fastener2) some <16m
+// (aparece já no zoom médio — é o estrutural importante). Geral some tudo = leve.
+var FAST=[],FAST2=[];scene.traverse(function(o){if(o.userData){if(o.userData.fastener)FAST.push(o);else if(o.userData.fastener2)FAST2.push(o);}});
+// R45 v2 (Cassiano 03/07): LOD por distância REAL da CÂMERA a CADA parafuso
+// (antes usava o raio da órbita — girando em volta de alvo distante os
+// parafusos sumiam mesmo com a peça colada na tela). Posições pré-computadas.
+var _wv=new THREE.Vector3();
+function fastPos(arr){var P=new Float32Array(arr.length*3);scene.updateMatrixWorld(true);
+ for(var i=0;i<arr.length;i++){arr[i].getWorldPosition(_wv);P[i*3]=_wv.x;P[i*3+1]=_wv.y;P[i*3+2]=_wv.z;}return P;}
+var FAST_P=fastPos(FAST),FAST2_P=fastPos(FAST2);
+// raio 4,8 = 6m (regra do Cassiano 11/07: LOD apertado NÃO atrapalha —
+// ele inspeciona a <=1m; o que não pode é faltar parafuso de PERTO.
+// "Parafuso sumido" com câmera colada = bug de MODELO, nunca de LOD).
+var FAST_R2=6.0*6.0,FAST2_R2=18.0*18.0;
+function setFastVis(){var cp=camera.position;
+ for(var i=0;i<FAST.length;i++){var dx=FAST_P[i*3]-cp.x,dy=FAST_P[i*3+1]-cp.y,dz=FAST_P[i*3+2]-cp.z;
+  FAST[i].visible=(dx*dx+dy*dy+dz*dz)<FAST_R2;}
+ for(var j=0;j<FAST2.length;j++){var dx2=FAST2_P[j*3]-cp.x,dy2=FAST2_P[j*3+1]-cp.y,dz2=FAST2_P[j*3+2]-cp.z;
+  FAST2[j].visible=(dx2*dx2+dy2*dy2+dz2*dz2)<FAST2_R2;}
+ // arestas CAD: acendem por célula a <12m; as do sistema de ÁGUAS
+ // respeitam também o botão CALHA (window.AGUA_ON)
+ if(window.EDGE_CH)for(var k=0;k<EDGE_CH.length;k++){var ec=EDGE_CH[k];
+  var dx3=ec.x-cp.x,dy3=ec.y-cp.y,dz3=ec.z-cp.z;
+  ec.o.visible=(dx3*dx3+dy3*dy3+dz3*dz3)<144&&(!ec.ag||window.AGUA_ON!==false);}}
+
+// ── AUDITOR R01 — OPT-IN (rode com ?audit na URL); off por padrão (catálogo
+// leve, sem o relatório aparecer pro cliente). O galpão modela perfis se
+// SOBREPONDO nos nós (modelo visual), então o auditor estrito acusa muitos
+// pares intencionais — usar só como ferramenta de investigação. ──
+if(location.search.indexOf('audit')>=0){document.getElementById('hud').style.display='';auditorGlobal();}
+
+// ── Câmera ──
+var centerX=cumXworld,centerY=pilTopo*0.45,centerZ=10.00;
+var target=new THREE.Vector3(centerX,centerY,centerZ);
+var camR=26.0,camT=0.55,camP=1.10;
+function camUpdate(){
+  camera.position.set(
+    target.x+camR*Math.sin(camP)*Math.sin(camT),
+    target.y+camR*Math.cos(camP),
+    target.z+camR*Math.sin(camP)*Math.cos(camT));
+  camera.lookAt(target);
+  setFastVis();   // depois de posicionar a câmera (distância real)
+  if(typeof invalidate==='function')invalidate();   // render sob demanda
+}
+cv.addEventListener('dblclick',function(){camR=26.0;camT=0.55;camP=1.10;target.set(centerX,centerY,centerZ);camUpdate();});
+
+function setView(i){
+  var d=1.4;
+  var no=pilTopo+cy;
+  var mfPilarY=pilTopo+mfPillarY;
+  var mfRafX=mfLen*Math.cos(mfAng);
+  var mfRafY=pilTopo+mfPillarY+mfLen*Math.sin(mfAng);
+  var trY=pilTopo+travCy;
+  var travEsqBoltX=travCx-travComp/2;
+  var travDirBoltX=travCx+travComp/2;
+  var vigaY=pBase+mezH;
+  var mfMezPilarY=pBase+mezH+mfPillarY_mez;
+  var mfMezVigaX=mfLenMez*Math.cos(mfAngMez);
+  var mfMezVigaY=pBase+mezH+mfPillarY_mez+mfLenMez*Math.sin(mfAngMez);
+  // Pilar intermediário — 1º pilar (ox = cumXworld*2/(nMezPilares+1))
+  var oxMez1 = (nMezPilares>0) ? cumXworld*2/(nMezPilares+1) : cumXworld;
+  var pilarMezTopY = pBase+mezH+cy_viga;  // topo/nó pilar mez + viga
+  // REVISÃO DAS VISTAS (Cassiano 11/07: "MF do mezanino aparece do outro
+  // lado do galpão"): (a) zMez = 1º PÓRTICO COM MEZANINO — as vistas do
+  // mezanino miravam tz:0, onde ele nem existe; (b) vistas DIR com camT
+  // ESPELHADO (câmera ficava FORA do galpão olhando a parede); (c)
+  // cumeeira no pórtico CENTRAL (contexto dos dois lados).
+  var zMez=(typeof mezPorticos!=='undefined'&&mezPorticos.length)?(mezPorticos[0]-1)*modulo:0;
+  var zC=(nPorticos-1)*modulo/2;
+  var views=[
+    {tx:centerX,      ty:centerY,    tz:centerZ,r:26.0,camT:0.55,camP:1.10}, //  0 GERAL
+    {tx:0,            ty:pBase,      tz:0,r:d,  camT:0.55,  camP:1.20}, //  1 SAPATA ESQ
+    {tx:cumXworld*2,  ty:pBase,      tz:0,r:d,  camT:-0.55, camP:1.20}, //  2 SAPATA DIR
+    {tx:0,            ty:no,         tz:0,r:d,  camT:0.55,  camP:1.10}, //  3 NÓ PILAR ESQ
+    {tx:cumXworld*2,  ty:no,         tz:0,r:d,  camT:-0.55, camP:1.10}, //  4 NÓ PILAR DIR
+    {tx:0,            ty:mfPilarY,   tz:0,r:d,  camT:0.55,  camP:1.10}, //  5 MF+PILAR ESQ
+    {tx:cumXworld*2,  ty:mfPilarY,   tz:0,r:d,  camT:-0.55, camP:1.10}, //  6 MF+PILAR DIR
+    {tx:mfRafX,       ty:mfRafY,     tz:0,r:d,  camT:0.55,  camP:1.10}, //  7 MF+RAFTER ESQ
+    {tx:cumXworld*2-mfRafX,ty:mfRafY,tz:0,r:d,  camT:-0.55, camP:1.10}, //  8 MF+RAFTER DIR
+    {tx:cumXworld,    ty:cumYworld,  tz:zC,r:d, camT:0.55,  camP:1.20}, //  9 CUMEEIRA (pórtico central)
+    {tx:travEsqBoltX, ty:trY,        tz:0,r:d,  camT:0.55,  camP:1.10}, // 10 TRAVESSA ESQ
+    {tx:travDirBoltX, ty:trY,        tz:0,r:d,  camT:-0.55, camP:1.10}, // 11 TRAVESSA DIR
+    {tx:0,            ty:vigaY,      tz:zMez,r:1.8, camT:0.9,   camP:1.28}, // 12 VIGA MEZ ESQ
+    {tx:cumXworld*2,  ty:vigaY,      tz:zMez,r:1.8, camT:-0.9,  camP:1.28}, // 13 VIGA MEZ DIR
+    {tx:0,            ty:mfMezPilarY,tz:zMez,r:1.8, camT:1.0,   camP:1.35}, // 14 MF MEZ+PILAR ESQ
+    {tx:cumXworld*2,  ty:mfMezPilarY,tz:zMez,r:1.8, camT:-1.0,  camP:1.35}, // 15 MF MEZ+PILAR DIR
+    {tx:mfMezVigaX,   ty:mfMezVigaY, tz:zMez,r:d,  camT:0.55,  camP:1.10}, // 16 MF MEZ+VIGA ESQ
+    {tx:cumXworld*2-mfMezVigaX,ty:mfMezVigaY,tz:zMez,r:d,camT:-0.55,camP:1.10}, // 17 MF MEZ+VIGA DIR
+    {tx:oxMez1,       ty:pBase,       tz:zMez,r:d,  camT:0.55,  camP:1.20}, // 18 SAPATA PILAR MEZ
+    {tx:oxMez1,       ty:pilarMezTopY,tz:zMez,r:d,  camT:0.55,  camP:1.10}, // 19 TOPO PILAR MEZ + VIGA
+    // Vista 20: PISO DO MEZANINO em grade (vigas + travessas + nós) — o nó
+    // travessa×viga enterrado entre chapas não rendia enquadramento fixo;
+    // a vista larga mostra as ligações COM contexto (testada 11/07)
+    {tx:cumXworld, ty:pBase+mezH, tz:zMez+modulo/2, r:5.5, camT:0.7, camP:1.15}, // 20 PISO DO MEZANINO
+    {tx:-0.08, ty:3.000, tz:10.000, r:12.0, camT:Math.PI, camP:1.50}, // 21 LATERAL GERAL
+    {tx:-0.08, ty:0.2970, tz:5.000, r:0.45, camT:Math.PI*0.92, camP:1.15}, // 22 TERCA BASE x PILAR
+    {tx:-0.08, ty:0.3770, tz:5.000, r:0.50, camT:Math.PI*0.92, camP:1.05}, // 23 DIAGONAL x PILAR
+    {tx:-0.08, ty:1.2511, tz:5.000, r:0.80, camT:Math.PI*0.95, camP:1.10}, // 24 MINI-PILAR DENTRO
+    {tx:-0.08, ty:2.2053, tz:2.500, r:0.80, camT:Math.PI*0.95, camP:1.10}, // 25 APEX V
+    {tx:4.850, ty:6.176, tz:10.000, r:16.0, camT:0.85, camP:0.55}, // 26 COBERTURA GERAL
+    {tx:3.1455, ty:6.7083, tz:10.000, r:0.55, camT:2.60, camP:0.50}, // 27 NO TERCA x RAFTER
+    {tx:3.1455, ty:6.7083, tz:10.000, r:0.30, camT:2.95, camP:0.42}, // 28 MINI-RAFTER + PARAFUSOS
+    {tx:1.0023, ty:6.2154, tz:2.500, r:0.90, camT:2.70, camP:0.40}, // 29 APEX V COBERTURA
+    {tx:4.850, ty:7.176, tz:10.000, r:1.80, camT:0.65, camP:0.38}, // 30 CUMEEIRA + TERCAS
+    {tx:-0.150, ty:0.08, tz:7.500, r:0.70, camT:Math.PI*0.92, camP:1.25}, // 31 CANTONEIRA ARRANQUE
+    {tx:cumXworld, ty:3.300, tz:0, r:13.5, camT:Math.PI, camP:1.30}, // 32 EMPENA GERAL (frente, de fora)
+    {tx:cumXworld, ty:6.867, tz:0.02, r:1.91, camT:0.52, camP:2.03}, // 33 APEX DAS GUIAS + PLACA (de baixo/dentro; enquadrado no browser 13/07)
+    {tx:mfLen*0.55*Math.cos(mfAng), ty:pilTopo+mfPillarY+mfLen*0.55*Math.sin(mfAng)-0.08, tz:0, r:1.30, camT:0.45, camP:1.15}, // 34 GUIA DA MF
+    {tx:travCx-travComp/2, ty:3.120, tz:0.15, r:2.84, camT:0.68, camP:1.36}, // 35 MINI DA EMPENA (pilar frente, canal do vao central — camera pela direita: pela esq a MF bloqueia; enquadrado no browser 13/07)
+  ];
+  var v=views[Math.min(i,views.length-1)];
+  target.set(v.tx,v.ty,v.tz);camR=v.r;camT=v.camT;camP=v.camP;camUpdate();
+}
+camUpdate();
+
+var drag=false,lx=0,ly=0;
+cv.addEventListener('mousedown',function(e){drag=true;lx=e.clientX;ly=e.clientY;cv.style.cursor='grabbing';});
+window.addEventListener('mouseup',function(){drag=false;cv.style.cursor='grab';});
+window.addEventListener('mousemove',function(e){
+  if(!drag)return;
+  camT-=(e.clientX-lx)*0.005;
+  camP+=(e.clientY-ly)*0.005;
+  lx=e.clientX;ly=e.clientY;camUpdate();
+});
+cv.addEventListener('wheel',function(e){
+  camR=Math.max(0.5,Math.min(200,camR*(e.deltaY>0?1.08:0.93)));
+  camUpdate();e.preventDefault();
+},{passive:false});
+var touches={},lastPinch=0;
+cv.addEventListener('touchstart',function(e){e.preventDefault();
+  for(var i=0;i<e.changedTouches.length;i++){var tc=e.changedTouches[i];touches[tc.identifier]={x:tc.clientX,y:tc.clientY};}
+  if(e.touches.length===1){lx=e.touches[0].clientX;ly=e.touches[0].clientY;}
+},{passive:false});
+cv.addEventListener('touchend',function(e){
+  for(var i=0;i<e.changedTouches.length;i++)delete touches[e.changedTouches[i].identifier];
+  lastPinch=0;
+},{passive:false});
+cv.addEventListener('touchmove',function(e){
+  e.preventDefault();
+  if(e.touches.length===1){
+    camT-=(e.touches[0].clientX-lx)*0.005;
+    camP+=(e.touches[0].clientY-ly)*0.005;
+    lx=e.touches[0].clientX;ly=e.touches[0].clientY;camUpdate();
+  } else if(e.touches.length===2){
+    var t1=e.touches[0],t2=e.touches[1];
+    var dist=Math.hypot(t1.clientX-t2.clientX,t1.clientY-t2.clientY);
+    if(lastPinch>0){camR=Math.max(0.5,Math.min(200,camR*lastPinch/dist));camUpdate();}
+    lastPinch=dist;
+  }
+},{passive:false});
+cv.style.cursor='grab';
+// RENDER SOB DEMANDA (Cassiano 11/07: "meu computador quase trava") —
+// a cena é ESTÁTICA: só redesenha quando algo muda (câmera/botão/resize).
+// Parado = zero GPU. Qualquer clique invalida (cobre TELHA ON/OFF, vistas
+// e futuros toggles sem depender de cada botão lembrar de chamar).
+var _dirty=true;function invalidate(){_dirty=true;}
+document.addEventListener('click',invalidate,true);
+function loop(){requestAnimationFrame(loop);if(_dirty){_dirty=false;renderer.render(scene,camera);}}
+loop();
+window.addEventListener('resize',function(){W=window.innerWidth;H=window.innerHeight;camera.aspect=W/H;camera.updateProjectionMatrix();renderer.setSize(W,H);invalidate();});
+</script></body></html>

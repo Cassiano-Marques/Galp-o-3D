@@ -14,14 +14,16 @@ body {
 header { text-align:center; margin-bottom:36px; }
 header h1 { font-size:20px; letter-spacing:4px; text-transform:uppercase; }
 header p  { font-size:11px; color:#3a5a7a; margin-top:8px; letter-spacing:2px; }
-.grid { display:flex; flex-wrap:wrap; gap:18px; justify-content:center; max-width:980px; }
+.linha { font-size:11px; color:#468a3d; letter-spacing:3px; margin:0 0 18px; text-transform:uppercase; }
+.grid { display:flex; flex-wrap:wrap; gap:18px; justify-content:center; max-width:1040px; }
 .card {
   display:block; text-decoration:none; color:#dce8f4;
   background:rgba(10,18,28,0.9); border:1px solid #1a2a3a; border-radius:10px;
-  padding:22px 26px; min-width:260px; transition:border-color .15s, transform .15s;
+  padding:22px 26px; min-width:280px; transition:border-color .15s, transform .15s;
 }
 .card:hover { border-color:#468a3d; transform:translateY(-2px); }
-.card h2 { font-size:14px; letter-spacing:2px; margin-bottom:10px; color:#66ccff; }
+.card h2 { font-size:16px; letter-spacing:3px; margin-bottom:6px; color:#66ccff; }
+.card .tag { font-size:9px; letter-spacing:1px; color:#c89030; margin-bottom:10px; display:block; }
 .card ul { list-style:none; font-size:10px; color:#a0b8d0; line-height:1.9; }
 .card .go {
   display:inline-block; margin-top:14px; font-size:10px; letter-spacing:2px;
@@ -36,41 +38,62 @@ footer { margin-top:48px; font-size:9px; color:#2a4a6a; letter-spacing:2px; text
   <p>GALPÕES PORTAL FRAME EM LIGHT STEEL FRAMING · VISUALIZAÇÃO 3D INTERATIVA</p>
 </header>
 
+<p class="linha">── Linha de galpões duas águas ──</p>
 <div class="grid">
-  <a class="card" href="galpao-teste.html">
-    <h2>GALPÃO TESTE 10×20m</h2>
+  <a class="card" href="galpao-genesis.html">
+    <h2>GENESIS</h2>
+    <span class="tag">MODELO ORIGINAL</span>
     <ul>
-      <li>► Vão livre 10m · Comprimento 20m</li>
-      <li>► Pé-direito 6m · 5 pórticos</li>
-      <li>► MEZANINO (pórticos 4-5) + 1 pilar</li>
-      <li>► Paredes + cobertura · Perfil C300</li>
-      <li>► Modelo leve p/ detalhamento</li>
+      <li>► Duas águas SEM beirais</li>
+      <li>► Cobertura rente às paredes</li>
+      <li>► Vão 10m · Comprimento 20m · pé-direito 6m</li>
+      <li>► Perfil C300 · 5 pórticos</li>
     </ul>
     <span class="go">ABRIR 3D ▶</span>
   </a>
-  <a class="card" href="galpao-teste-platibanda.html">
-    <h2>GALPÃO TESTE PLATIBANDA 10×20m</h2>
+  <a class="card" href="galpao-classico.html">
+    <h2>CLÁSSICO</h2>
+    <span class="tag">EM DESENVOLVIMENTO</span>
     <ul>
-      <li>► Vão livre 10m · Comprimento 20m</li>
-      <li>► Pé-direito 6m · 5 pórticos</li>
-      <li>► PLATIBANDA nas 4 fachadas (modelo C)</li>
-      <li>► Calha embutida · EM DESENVOLVIMENTO</li>
-      <li>► Galpão de trabalho atual</li>
+      <li>► Duas águas COM beirais</li>
+      <li>► Beiral frontal, traseiro e laterais</li>
+      <li>► Vão 10m · Comprimento 20m · pé-direito 6m</li>
+      <li>► Perfil C300 · 5 pórticos</li>
+    </ul>
+    <span class="go">ABRIR 3D ▶</span>
+  </a>
+  <a class="card" href="galpao-moderno.html">
+    <h2>MODERNO</h2>
+    <span class="tag">EM DESENVOLVIMENTO</span>
+    <ul>
+      <li>► Duas águas com PLATIBANDA</li>
+      <li>► Parede sobe e oculta a cobertura</li>
+      <li>► Vão 10m · Comprimento 20m · pé-direito 6m</li>
+      <li>► Perfil C300 · 5 pórticos</li>
     </ul>
     <span class="go">ABRIR 3D ▶</span>
   </a>
 </div>
 
-<h2 style="font-size:12px;letter-spacing:3px;color:#2a4a6a;margin:40px 0 18px;text-transform:uppercase;">── Detalhes &amp; Testes ──</h2>
+<h2 style="font-size:12px;letter-spacing:3px;color:#2a4a6a;margin:44px 0 18px;text-transform:uppercase;">── Componentes &amp; Testes ──</h2>
 <div class="grid">
+  <a class="card" href="pilar-boca-a-boca.html">
+    <h2 style="font-size:13px;">PILAR BOCA COM BOCA</h2>
+    <span class="tag">COMPONENTE</span>
+    <ul>
+      <li>► 2× C300 seção fechada 300×150</li>
+      <li>► Bloqueadores swage + 4,8×19</li>
+      <li>► Auditor de colisão · 0 violações</li>
+    </ul>
+    <span class="go">ABRIR 3D ▶</span>
+  </a>
   <a class="card" href="painel-teste.html">
-    <h2>PAREDE LSF · BLOQUEADOR + K</h2>
+    <h2 style="font-size:13px;">PAREDE LSF · BLOQUEADOR + K</h2>
+    <span class="tag">COMPONENTE</span>
     <ul>
       <li>► Painel 5,00 × 2,70m · Ue140</li>
-      <li>► Bloqueadores seccionados alternados</li>
-      <li>► K-brace (boca pra baixo)</li>
-      <li>► Parafuso auto brocante 4,8×19</li>
-      <li>► Auditor de colisão · 0 violações</li>
+      <li>► Bloqueadores + K-brace</li>
+      <li>► Auto brocante 4,8×19 · 0 violações</li>
     </ul>
     <span class="go">ABRIR 3D ▶</span>
   </a>
