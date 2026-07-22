@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Genesis · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD 360ef91 · 22/07/2026 13:04</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD 50d02ee · 22/07/2026 13:41</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -2700,7 +2700,7 @@ var DLB=[-1.36708, -1.36708, -1.36708],DLT=[1.375978, 1.375978, 1.375978],DZA=[2
 var TRGc=[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]],DRGA=[[[-1.38004, -1.318015, 0.1365], [-1.318015, -1.313015, 0.13825], [-1.313015, 1.277359, 0.14], [1.277359, 1.282359, 0.13825], [1.282359, 1.38004, 0.1365]], [[-1.38004, -1.318015, 0.1365], [-1.318015, -1.313015, 0.13825], [-1.313015, 1.277359, 0.14], [1.277359, 1.282359, 0.13825], [1.282359, 1.38004, 0.1365]], [[-1.380039, -1.318014, 0.1365], [-1.318014, -1.313014, 0.13825], [-1.313014, 1.277358, 0.14], [1.277358, 1.282358, 0.13825], [1.282358, 1.380039, 0.1365]]],DRGB=[[[-1.38004, -1.282359, 0.1365], [-1.282359, -1.277359, 0.13825], [-1.277359, 1.313015, 0.14], [1.313015, 1.318015, 0.13825], [1.318015, 1.38004, 0.1365]], [[-1.38004, -1.282359, 0.1365], [-1.282359, -1.277359, 0.13825], [-1.277359, 1.313015, 0.14], [1.313015, 1.318015, 0.13825], [1.318015, 1.38004, 0.1365]], [[-1.380039, -1.282358, 0.1365], [-1.282358, -1.277358, 0.13825], [-1.277358, 1.313014, 0.14], [1.313014, 1.318014, 0.13825], [1.318014, 1.380039, 0.1365]]];
 var LTc=4.9869,Zbc=0.00655,UPc=0.076;
 var BEIR=0.0,TRGb=[],LZb=(nPorticos-1)*modulo;   // beiral empena (Clássico): terça em balanço
-var BLKR=[[-0.726477, -0.666477, 0.1365], [-0.666477, -0.661477, 0.13825], [-0.661477, 0.661477, 0.14], [0.661477, 0.666477, 0.13825], [0.666477, 0.726477, 0.1365]];   // bloqueador seccionado entre terças (vão SEM V)
+var BLKL=1.452954;   // comprimento do bloqueador entre terças vizinhas (vão SEM V)
 var mCt=new THREE.MeshLambertMaterial({color:0x66ccff});
 var mCd=new THREE.MeshLambertMaterial({color:0x28c08a});
 var mMR=new THREE.MeshLambertMaterial({color:0xe54983});
@@ -2784,6 +2784,41 @@ function cobDimple(gp,w,zd){ // onde tem DIMPLE tem PARAFUSO (representacao = ca
  // 1 por mesa (as 2 mesas do entrante), cabeca Philips na face EXTERNA, broca
  // rumo a dentro — MESMA representacao do painel (lsf_core screwV). R33, sem cratera ambar.
  screwV(w/2+tc/2,-Fc/2,zd,'x',-1,gp);screwV(-(w/2+tc/2),-Fc/2,zd,'x',1,gp);}
+// BLOQUEADOR do telhado = MESMO detalhe da PAREDE já validada (segBloq):
+// a peça PRINCIPAL (terça) tem SWAGE e NÃO pode ter a alma cortada; o
+// BLOQUEADOR é a peça secundária → tem CORTE NA ALMA (web cut) e passa POR
+// FORA, ligado só pelas MESAS (tabs que lapeiam a mesa da terça) + lip cut +
+// cunhas de grau. SEM swage no bloqueador. Deslocado p/ fora (telha) p/ lapear.
+function cobBloq(par,m,rotLay,L){
+ novaPeca('bloqueador-cobertura');
+ var gp=new THREE.Group();gp.rotation.z=rotLay;par.add(gp);
+ var TAB=0.018,LIPR=0.0115,w=Hmc;                 // C140 CHEIO (bloqueador não é swagejado)
+ gp.position.y=tc;                                // sobe p/ FORA (lado da telha) → lapeia por fora
+ var esp2=L/2+Zbc;                                // meia-distância entre terças (= centro da terça)
+ var zWeb=Math.max(0.05,esp2-Hmc/2-0.003);        // WEB CUT: a ALMA para ANTES da alma da terça
+ var zTab=esp2+TAB;                               // MESAS seguem como TAB e lapeiam a terça
+ // ALMA — só no corpo (CORTADA nas 2 pontas: é o que deixa a peça passar por fora)
+ cobBox(gp,m,0,0,0,w,tc,2*zWeb);
+ // MESAS — contínuas com TABS (lapeiam POR FORA da mesa da terça — a ligação é por elas)
+ cobBox(gp,m,-w/2,-Fc/2,0,tc,Fc,2*zTab);
+ cobBox(gp,m, w/2,-Fc/2,0,tc,Fc,2*zTab);
+ // LIPS — só no corpo, recuados pelo alívio (as cunhas preenchem o grau)
+ var lz=zWeb-LIPR;
+ cobBox(gp,m,-w/2+Lc/2,-Fc,0,Lc,tc,2*lz);
+ cobBox(gp,m, w/2-Lc/2,-Fc,0,Lc,tc,2*lz);
+ // CUNHAS do lip cut nas pontas do CORPO (cheio na dobra, zero na borda livre)
+ [[-zWeb,-1],[zWeb,1]].forEach(function(E){
+  var zE=E[0],dr=E[1];
+  [[Hmc/2,-1],[-Hmc/2,1]].forEach(function(F){
+   var sh=new THREE.Shape();
+   sh.moveTo(F[0],-(zE+dr*LIPR));sh.lineTo(F[0],-zE);
+   sh.lineTo(F[0]+F[1]*Lc,-(zE+dr*LIPR));sh.closePath();
+   var g2=new THREE.ExtrudeGeometry(sh,{depth:tc,bevelEnabled:false});
+   var mm=new THREE.Mesh(g2,m);
+   mm.rotation.x=-Math.PI/2;mm.position.y=-Fc-tc/2;gp.add(mm);});});
+ // DIMPLES nos TABS (parafuso tab→mesa da terça), 1 por mesa em cada ponta
+ cobDimple(gp,w,esp2);cobDimple(gp,w,-esp2);
+ return gp;}
 // MINI-RAFTER: meia-C (um lado do portal) — conceito mpHalf do mini-pilar.
 // cuts = SO as faixas de quem chega NESTE lado (terca sempre; diagonal so
 // se o vao adjacente e contraventado) — corte so pra quem chega (Cassiano)
@@ -2865,7 +2900,7 @@ for(var wi=0;wi<2;wi++){
     var Csb=(TS[gb]+TS[gb+1])/2, zBlk=zA+modulo/2+((gb%2===0)?-0.030:0.030);
     var hb=new THREE.Group();hb.position.set(W.dx*Csb,UPc,zBlk);
     hb.rotation.y=W.dx*Math.PI/2;wg.add(hb);
-    cobPiece(hb,mCd,lay,BLKR,[],true);
+    cobBloq(hb,mCd,lay,BLKL);
    }
   }
  }
