@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Clássico · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD 7eaa7b6 · 22/07/2026 10:06</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD 700e799 · 22/07/2026 12:13</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -1249,6 +1249,19 @@ for(var ip=0;ip<nPorticos;ip++){
     var nextTemMez  = mezAtivo && mezPorticos.indexOf(nextPortNum)>=0;
     if(nextTemMez) buildTravessaMez(oz);
   }
+}
+
+// ── RAFTER DE EMPENA (beiral frente/fundo — Clássico, passo 2): rafter
+// completo na PONTA do beiral (z=∓BEIRAL), reusa buildRafter (já traz o
+// rabo do eave nos 2 lados). Fica em balanço, segurado pelas mãos-francesas.
+if(typeof BEIRAL!=='undefined'){
+ var _LZb=(nPorticos-1)*modulo;
+ [-BEIRAL,_LZb+BEIRAL].forEach(function(zb){
+  buildRafter(0,zb,false,true);                  // água esquerda
+  var _rr=buildRafter(0,zb,true,true);           // água direita (espelhada)
+  _rr.position.x-=cumXworld;_rr.position.x=-_rr.position.x;
+  _rr.rotation.y+=Math.PI;_rr.position.x+=cumXworld;
+ });
 }
 
 
