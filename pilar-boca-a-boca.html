@@ -178,7 +178,8 @@ function auditorGlobal(){
 
 PIECE=0;
 // LINHAS DE CONTORNO (leitura CAD): só arestas REAIS (>18°) — sem gominhos.
-var edgeMat=new THREE.LineBasicMaterial({color:0x0a1c2c});
+// Cor igual às ARESTAS CAD do galpão (Cassiano): azul claro 0x9cc4e4, op 0.7.
+var edgeMat=new THREE.LineBasicMaterial({color:0x9cc4e4,transparent:true,opacity:0.7});
 function edg(mesh){mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry,18),edgeMat));}
 function box(m,x,y,z,w,h,d,par){var b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
  b.position.set(x,y,z);b.userData.p=PIECE;(par||scene).add(b);edg(b);return b}
