@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Clássico · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD 40cb74a · 22/07/2026 08:54</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD 7eaa7b6 · 22/07/2026 10:06</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -208,7 +208,7 @@ var fInfStartAbaM=0.000000,fInfEndAbaM=0.000000;
 var LAT_CUTS=[[0.242, 0.307], [0.2567, 0.4423], [2.1503, 2.2153], [2.165, 2.3506], [4.0586, 4.1236], [4.0733, 4.2589], [5.9669, 6.0319]];
 // Parede lateral ativa? Se sim, o mini-pilar solidariza as almas (nos niveis
 // de terca/diagonal) e os pontos fixos 2000/4000 do pilar saem.
-var latAtivo=1;
+var latAtivo=1;var BEIRAL=0.7;
 // ── Cobertura: bandas de corte do lip SUPERIOR do rafter ──
 var RAF_CUTS_T=[[0.3777, 0.4427], [1.8437, 1.9087], [3.3098, 3.3748], [4.7758, 4.8408]];
 var RAF_CUTS_D=[[0.4096, 0.5631], [1.8757, 2.0292], [3.3417, 3.4952]];
@@ -746,6 +746,22 @@ function buildRafter(ox,oz,mirrorSwap,semTrav){novaPeca('rafter');
       mkBox(rg,fiCx,-(wH/2-lL/2),sign*(t+fW-t/2),fiL,lL,t,mat);
       mkCyl(rg,fiCx,-(wH/2),sign*(t+r),r,fiL,'x',matRad);
       mkCyl(rg,fiCx,-(wH/2-r),sign*(t+fW),r,fiL,'x',matRad);}
+    // ── RABO DE RAFTER (beiral lateral — modelo Clássico, Cassiano 21/07):
+    // o rafter avança em BALANÇO além do pilar (eave), seção C COMPLETA no
+    // trecho. Projeção HORIZONTAL = BEIRAL (ao longo da água = BEIRAL/cosT).
+    // Passo 1 de 4 (só o rabo; terça de borda/mãos-francesas/telha depois).
+    if(typeof BEIRAL!=='undefined'){
+      var _bl=BEIRAL/cosT,_bc=-_bl/2;
+      mkBox(rg,_bc,0,sign*t/2,_bl,wH,t,mat);                       // alma
+      mkBox(rg,_bc,+(wH/2-t/2),sign*(t+fW/2),_bl,t,fW,mat);        // mesa sup
+      mkCyl(rg,_bc,+(wH/2),sign*(t+r),r,_bl,'x',matRad);
+      mkBox(rg,_bc,+(wH/2-lL/2),sign*(t+fW-t/2),_bl,lL,t,mat);     // lip sup
+      mkCyl(rg,_bc,+(wH/2-r),sign*(t+fW),r,_bl,'x',matRad);
+      mkBox(rg,_bc,-(wH/2-t/2),sign*(t+fW/2),_bl,t,fW,mat);        // mesa inf
+      mkBox(rg,_bc,-(wH/2-lL/2),sign*(t+fW-t/2),_bl,lL,t,mat);     // lip inf
+      mkCyl(rg,_bc,-(wH/2),sign*(t+r),r,_bl,'x',matRad);
+      mkCyl(rg,_bc,-(wH/2-r),sign*(t+fW),r,_bl,'x',matRad);
+    }
   }
   bRC(+1,matRafter);bRC(-1,matRafter);
   if(typeof PLATIBANDA!=='undefined'){
