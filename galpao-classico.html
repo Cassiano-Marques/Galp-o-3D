@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Clássico · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD 700e799 · 22/07/2026 12:13</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD a7258c9 · 22/07/2026 12:45</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -2699,6 +2699,7 @@ var ANGc=[0.52569801, 0.52569801, 0.52569769],LAc=[2.760079, 2.760079, 2.760078]
 var DLB=[-1.36708, -1.36708, -1.36708],DLT=[1.375978, 1.375978, 1.375978],DZA=[2.401724, 2.401724, 2.401724];
 var TRGc=[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]],DRGA=[[[-1.38004, -1.318015, 0.1365], [-1.318015, -1.313015, 0.13825], [-1.313015, 1.277359, 0.14], [1.277359, 1.282359, 0.13825], [1.282359, 1.38004, 0.1365]], [[-1.38004, -1.318015, 0.1365], [-1.318015, -1.313015, 0.13825], [-1.313015, 1.277359, 0.14], [1.277359, 1.282359, 0.13825], [1.282359, 1.38004, 0.1365]], [[-1.380039, -1.318014, 0.1365], [-1.318014, -1.313014, 0.13825], [-1.313014, 1.277358, 0.14], [1.277358, 1.282358, 0.13825], [1.282358, 1.380039, 0.1365]]],DRGB=[[[-1.38004, -1.282359, 0.1365], [-1.282359, -1.277359, 0.13825], [-1.277359, 1.313015, 0.14], [1.313015, 1.318015, 0.13825], [1.318015, 1.38004, 0.1365]], [[-1.38004, -1.282359, 0.1365], [-1.282359, -1.277359, 0.13825], [-1.277359, 1.313015, 0.14], [1.313015, 1.318015, 0.13825], [1.318015, 1.38004, 0.1365]], [[-1.380039, -1.282358, 0.1365], [-1.282358, -1.277358, 0.13825], [-1.277358, 1.313014, 0.14], [1.313014, 1.318014, 0.13825], [1.318014, 1.380039, 0.1365]]];
 var LTc=4.9869,Zbc=0.00655,UPc=0.076;
+var BEIR=0.7,TRGb=[[-0.35, -0.29, 0.1365], [-0.29, -0.285, 0.13825], [-0.285, 0.285, 0.14], [0.285, 0.29, 0.13825], [0.29, 0.35, 0.1365]],LZb=(nPorticos-1)*modulo;   // beiral empena (Clássico): terça em balanço
 var mCt=new THREE.MeshLambertMaterial({color:0x66ccff});
 var mCd=new THREE.MeshLambertMaterial({color:0x28c08a});
 var mMR=new THREE.MeshLambertMaterial({color:0xe54983});
@@ -2877,6 +2878,17 @@ for(var wi=0;wi<2;wi++){
   for(var dd2=0;dd2<DMD.length;dd2++){
    if(hasP&&BR[pp])junctionDimples(wg,W.dx,DMD[dd2],zP+DIMZ);
    if(hasN&&BR[pp-1])junctionDimples(wg,W.dx,DMD[dd2],zP-DIMZ);}}
+ // ── BEIRAL de empena (Clássico, passo 2B): as TERÇAS avançam em BALANÇO
+ // além do pórtico de ponta (z<0 e z>LZb) até o rafter de empena — seguram
+ // o rafter de empena e apoiam o telhado do beiral. Mesmo cobPiece (C140).
+ if(BEIR>0){
+  [-BEIR/2,LZb+BEIR/2].forEach(function(zbc){
+   for(var tb=0;tb<TS.length;tb++){
+    var holdb=new THREE.Group();holdb.position.set(W.dx*TS[tb],UPc,zbc);wg.add(holdb);
+    cobPiece(holdb,mCt,lay,TRGb,[],true);
+   }
+  });
+ }
 }
 })();
 // === FIM COBERTURA ===
