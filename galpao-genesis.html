@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Genesis · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD 02e25be · 22/07/2026 08:44</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD 40cb74a · 22/07/2026 08:54</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -2308,12 +2308,15 @@ function mkToggle(txt,bottom,fn){var b=document.createElement('button');
   b.textContent=txt+(v?': ON':': OFF');
   b.style.background=v?'#14532d':'#333a42'};
  document.body.appendChild(b);return b}
-mkToggle('TELHA',248,function(){FECH.visible=!FECH.visible;
+var _bTel=mkToggle('TELHA',248,function(){FECH.visible=!FECH.visible;
  // sem telha nao ha prisma: tirar a telha APAGA a luz junto (Cassiano
  // 14/07) — "clica" no botao PRISMA p/ manter label/estado coerentes
  if(!FECH.visible&&window._bLx&&window._bLx.textContent.indexOf('ON')>=0)
   window._bLx.click();
  return FECH.visible});
+// ABRE "PELADO" (Cassiano 21/07): todas as camadas OFF no load — o cliente
+// acompanha a evolução ligando telha/calha/... botão a botão.
+FECH.visible=false;_bTel.textContent='TELHA: OFF';_bTel.style.background='#333a42';
 // VENTILACAO natural (Exhaust — v2 13/07: SEM animacao de ar, a pedido)
 mkToggle('VENTILACAO',210,function(){
  var v=!gVent.visible;
@@ -2404,16 +2407,20 @@ if(LUXG.length){
 }
 // VENEZIANA ON/OFF (Cassiano 13/07: opcional de venda — OFF mostra a
 // parede FECHADA, sem os recortes)
-if(VENZG.length)mkToggle('VENEZIANA',134,function(){
+if(VENZG.length){var _bVz=mkToggle('VENEZIANA',134,function(){
  var v=!VENZG[0].visible;
  VENZG.forEach(function(g){g.visible=v;});
  VENZOFFG.forEach(function(g){g.visible=!v;});
  return v});
-mkToggle('CALHA',96,function(){var v=!AGUAS[0].visible;
+ VENZG.forEach(function(g){g.visible=false;});VENZOFFG.forEach(function(g){g.visible=true;});
+ _bVz.textContent='VENEZIANA: OFF';_bVz.style.background='#333a42';}
+var _bCal=mkToggle('CALHA',96,function(){var v=!AGUAS[0].visible;
  AGUAS.forEach(function(g){g.visible=v;});
  window.AGUA_ON=v;                 // arestas CAD do sistema de aguas somem junto
  if(typeof camUpdate==='function')camUpdate();
  return v});
+if(AGUAS.length){AGUAS.forEach(function(g){g.visible=false;});window.AGUA_ON=false;
+ _bCal.textContent='CALHA: OFF';_bCal.style.background='#333a42';}
 console.log('FECHAMENTO TOTAL: '+(TP25?'TP25':'TP36-980')+' · '+NP+' modulos/superficie · ?tp25 troca perfil');
 })();
 // === FIM FECHAMENTO ===
