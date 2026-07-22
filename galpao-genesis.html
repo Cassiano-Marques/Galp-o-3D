@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Genesis · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD 40cb74a · 22/07/2026 08:54</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD 360ef91 · 22/07/2026 13:04</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -746,6 +746,22 @@ function buildRafter(ox,oz,mirrorSwap,semTrav){novaPeca('rafter');
       mkBox(rg,fiCx,-(wH/2-lL/2),sign*(t+fW-t/2),fiL,lL,t,mat);
       mkCyl(rg,fiCx,-(wH/2),sign*(t+r),r,fiL,'x',matRad);
       mkCyl(rg,fiCx,-(wH/2-r),sign*(t+fW),r,fiL,'x',matRad);}
+    // ── RABO DE RAFTER (beiral lateral — modelo Clássico, Cassiano 21/07):
+    // o rafter avança em BALANÇO além do pilar (eave), seção C COMPLETA no
+    // trecho. Projeção HORIZONTAL = BEIRAL (ao longo da água = BEIRAL/cosT).
+    // Passo 1 de 4 (só o rabo; terça de borda/mãos-francesas/telha depois).
+    if(typeof BEIRAL!=='undefined'){
+      var _bl=BEIRAL/cosT,_bc=-_bl/2;
+      mkBox(rg,_bc,0,sign*t/2,_bl,wH,t,mat);                       // alma
+      mkBox(rg,_bc,+(wH/2-t/2),sign*(t+fW/2),_bl,t,fW,mat);        // mesa sup
+      mkCyl(rg,_bc,+(wH/2),sign*(t+r),r,_bl,'x',matRad);
+      mkBox(rg,_bc,+(wH/2-lL/2),sign*(t+fW-t/2),_bl,lL,t,mat);     // lip sup
+      mkCyl(rg,_bc,+(wH/2-r),sign*(t+fW),r,_bl,'x',matRad);
+      mkBox(rg,_bc,-(wH/2-t/2),sign*(t+fW/2),_bl,t,fW,mat);        // mesa inf
+      mkBox(rg,_bc,-(wH/2-lL/2),sign*(t+fW-t/2),_bl,lL,t,mat);     // lip inf
+      mkCyl(rg,_bc,-(wH/2),sign*(t+r),r,_bl,'x',matRad);
+      mkCyl(rg,_bc,-(wH/2-r),sign*(t+fW),r,_bl,'x',matRad);
+    }
   }
   bRC(+1,matRafter);bRC(-1,matRafter);
   if(typeof PLATIBANDA!=='undefined'){
@@ -1233,6 +1249,19 @@ for(var ip=0;ip<nPorticos;ip++){
     var nextTemMez  = mezAtivo && mezPorticos.indexOf(nextPortNum)>=0;
     if(nextTemMez) buildTravessaMez(oz);
   }
+}
+
+// ── RAFTER DE EMPENA (beiral frente/fundo — Clássico, passo 2): rafter
+// completo na PONTA do beiral (z=∓BEIRAL), reusa buildRafter (já traz o
+// rabo do eave nos 2 lados). Fica em balanço, segurado pelas mãos-francesas.
+if(typeof BEIRAL!=='undefined'){
+ var _LZb=(nPorticos-1)*modulo;
+ [-BEIRAL,_LZb+BEIRAL].forEach(function(zb){
+  buildRafter(0,zb,false,true);                  // água esquerda
+  var _rr=buildRafter(0,zb,true,true);           // água direita (espelhada)
+  _rr.position.x-=cumXworld;_rr.position.x=-_rr.position.x;
+  _rr.rotation.y+=Math.PI;_rr.position.x+=cumXworld;
+ });
 }
 
 
@@ -2670,6 +2699,8 @@ var ANGc=[0.52569801, 0.52569801, 0.52569769],LAc=[2.760079, 2.760079, 2.760078]
 var DLB=[-1.36708, -1.36708, -1.36708],DLT=[1.375978, 1.375978, 1.375978],DZA=[2.401724, 2.401724, 2.401724];
 var TRGc=[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]],DRGA=[[[-1.38004, -1.318015, 0.1365], [-1.318015, -1.313015, 0.13825], [-1.313015, 1.277359, 0.14], [1.277359, 1.282359, 0.13825], [1.282359, 1.38004, 0.1365]], [[-1.38004, -1.318015, 0.1365], [-1.318015, -1.313015, 0.13825], [-1.313015, 1.277359, 0.14], [1.277359, 1.282359, 0.13825], [1.282359, 1.38004, 0.1365]], [[-1.380039, -1.318014, 0.1365], [-1.318014, -1.313014, 0.13825], [-1.313014, 1.277358, 0.14], [1.277358, 1.282358, 0.13825], [1.282358, 1.380039, 0.1365]]],DRGB=[[[-1.38004, -1.282359, 0.1365], [-1.282359, -1.277359, 0.13825], [-1.277359, 1.313015, 0.14], [1.313015, 1.318015, 0.13825], [1.318015, 1.38004, 0.1365]], [[-1.38004, -1.282359, 0.1365], [-1.282359, -1.277359, 0.13825], [-1.277359, 1.313015, 0.14], [1.313015, 1.318015, 0.13825], [1.318015, 1.38004, 0.1365]], [[-1.380039, -1.282358, 0.1365], [-1.282358, -1.277358, 0.13825], [-1.277358, 1.313014, 0.14], [1.313014, 1.318014, 0.13825], [1.318014, 1.380039, 0.1365]]];
 var LTc=4.9869,Zbc=0.00655,UPc=0.076;
+var BEIR=0.0,TRGb=[],LZb=(nPorticos-1)*modulo;   // beiral empena (Clássico): terça em balanço
+var BLKR=[[-0.726477, -0.666477, 0.1365], [-0.666477, -0.661477, 0.13825], [-0.661477, 0.661477, 0.14], [0.661477, 0.666477, 0.13825], [0.666477, 0.726477, 0.1365]];   // bloqueador seccionado entre terças (vão SEM V)
 var mCt=new THREE.MeshLambertMaterial({color:0x66ccff});
 var mCd=new THREE.MeshLambertMaterial({color:0x28c08a});
 var mMR=new THREE.MeshLambertMaterial({color:0xe54983});
@@ -2825,6 +2856,18 @@ for(var wi=0;wi<2;wi++){
     [zA+DZA[di],zA+modulo-DZA[di]].forEach(function(zt){
      screwV(sU,UPc+Hmc/2+tc/2,zt,'y',-1,wg);   // broca desce (corpo entra)
      screwV(sU,UPc-Hmc/2-tc/2,zt,'y',1,wg);});}}  // broca sobe (corpo entra)
+  // ── BLOQUEADORES SECCIONADOS (Cassiano 21/07): vão SEM V invertido →
+  // liga TODAS as terças, 1 bloqueador por par de terças (desencontrado
+  // ±30mm em Z, "um em cima outro embaixo" — igual à parede LSF). Reusa
+  // cobPiece (C140) no sentido da ÁGUA (rotation.y=±90°), swage nas pontas.
+  if(!BR[vv]){
+   for(var gb=0;gb<TS.length-1;gb++){
+    var Csb=(TS[gb]+TS[gb+1])/2, zBlk=zA+modulo/2+((gb%2===0)?-0.030:0.030);
+    var hb=new THREE.Group();hb.position.set(W.dx*Csb,UPc,zBlk);
+    hb.rotation.y=W.dx*Math.PI/2;wg.add(hb);
+    cobPiece(hb,mCd,lay,BLKR,[],true);
+   }
+  }
  }
  // MINI-RAFTERS (um conjunto de segmentos por portal; meia-C nos portais de ponta)
  for(var pp=0;pp<nPorticos;pp++){var zP=pp*modulo;
@@ -2848,6 +2891,17 @@ for(var wi=0;wi<2;wi++){
   for(var dd2=0;dd2<DMD.length;dd2++){
    if(hasP&&BR[pp])junctionDimples(wg,W.dx,DMD[dd2],zP+DIMZ);
    if(hasN&&BR[pp-1])junctionDimples(wg,W.dx,DMD[dd2],zP-DIMZ);}}
+ // ── BEIRAL de empena (Clássico, passo 2B): as TERÇAS avançam em BALANÇO
+ // além do pórtico de ponta (z<0 e z>LZb) até o rafter de empena — seguram
+ // o rafter de empena e apoiam o telhado do beiral. Mesmo cobPiece (C140).
+ if(BEIR>0){
+  [-BEIR/2,LZb+BEIR/2].forEach(function(zbc){
+   for(var tb=0;tb<TS.length;tb++){
+    var holdb=new THREE.Group();holdb.position.set(W.dx*TS[tb],UPc,zbc);wg.add(holdb);
+    cobPiece(holdb,mCt,lay,TRGb,[],true);
+   }
+  });
+ }
 }
 })();
 // === FIM COBERTURA ===
