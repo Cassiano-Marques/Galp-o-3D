@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Moderno · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD 50d02ee · 22/07/2026 13:58</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD ab6681a · 24/07/2026 17:39</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -2700,7 +2700,7 @@ var DLB=[-1.36708, -1.36708, -1.36708],DLT=[1.375978, 1.375978, 1.375978],DZA=[2
 var TRGc=[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]],DRGA=[[[-1.38004, -1.318015, 0.1365], [-1.318015, -1.313015, 0.13825], [-1.313015, 1.277359, 0.14], [1.277359, 1.282359, 0.13825], [1.282359, 1.38004, 0.1365]], [[-1.38004, -1.318015, 0.1365], [-1.318015, -1.313015, 0.13825], [-1.313015, 1.277359, 0.14], [1.277359, 1.282359, 0.13825], [1.282359, 1.38004, 0.1365]], [[-1.380039, -1.318014, 0.1365], [-1.318014, -1.313014, 0.13825], [-1.313014, 1.277358, 0.14], [1.277358, 1.282358, 0.13825], [1.282358, 1.380039, 0.1365]]],DRGB=[[[-1.38004, -1.282359, 0.1365], [-1.282359, -1.277359, 0.13825], [-1.277359, 1.313015, 0.14], [1.313015, 1.318015, 0.13825], [1.318015, 1.38004, 0.1365]], [[-1.38004, -1.282359, 0.1365], [-1.282359, -1.277359, 0.13825], [-1.277359, 1.313015, 0.14], [1.313015, 1.318015, 0.13825], [1.318015, 1.38004, 0.1365]], [[-1.380039, -1.282358, 0.1365], [-1.282358, -1.277358, 0.13825], [-1.277358, 1.313014, 0.14], [1.313014, 1.318014, 0.13825], [1.318014, 1.380039, 0.1365]]];
 var LTc=4.9869,Zbc=0.00655,UPc=0.076;
 var BEIR=0.0,TRGb=[],LZb=(nPorticos-1)*modulo;   // beiral empena (Clássico): terça em balanço
-var BLKL=1.452954;   // comprimento do bloqueador entre terças vizinhas (vão SEM V)
+var TRGS=[null, [[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0075, 0.13825], [0.0075, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0675, 0.13825], [0.0675, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0675, 0.13825], [0.0675, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0075, 0.13825], [0.0075, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]], [[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0075, 0.13825], [0.0075, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0675, 0.13825], [0.0675, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0675, 0.13825], [0.0675, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0075, 0.13825], [0.0075, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]], null],FWSc=0.04325,OFFBc=0.03;   // ligação do bloqueador (= parede): bandas de swage na terça + mesa conificada
 var mCt=new THREE.MeshLambertMaterial({color:0x66ccff});
 var mCd=new THREE.MeshLambertMaterial({color:0x28c08a});
 var mMR=new THREE.MeshLambertMaterial({color:0xe54983});
@@ -2756,7 +2756,8 @@ function cobPiece(par,m,rotLay,regs,lipCuts,semChamfer){
  var mCo=new THREE.MeshLambertMaterial({color:new THREE.Color(m.color).multiplyScalar(0.72)});
  var bMin=semChamfer?zMin:zMin+CH, bMax=semChamfer?zMax:zMax-CH;
  regs.forEach(function(R,ri){
-  if(ri!==0&&ri!==regs.length-1)return;          // so nos flats das pontas
+  if(Math.abs(R[2]-SWDc)>1e-9)return;            // so nos flats conificados
+                                                 // (pontas + bandas do bloqueador)
   var c0=Math.max(R[0],bMin+0.002),c1=Math.min(R[1],bMax-0.002);
   if(c1-c0<0.008)return;
   var zc2=(c0+c1)/2,ld=c1-c0;
@@ -2784,41 +2785,50 @@ function cobDimple(gp,w,zd){ // onde tem DIMPLE tem PARAFUSO (representacao = ca
  // 1 por mesa (as 2 mesas do entrante), cabeca Philips na face EXTERNA, broca
  // rumo a dentro — MESMA representacao do painel (lsf_core screwV). R33, sem cratera ambar.
  screwV(w/2+tc/2,-Fc/2,zd,'x',-1,gp);screwV(-(w/2+tc/2),-Fc/2,zd,'x',1,gp);}
-// BLOQUEADOR do telhado = MESMO detalhe da PAREDE já validada (segBloq):
-// a peça PRINCIPAL (terça) tem SWAGE e NÃO pode ter a alma cortada; o
-// BLOQUEADOR é a peça secundária → tem CORTE NA ALMA (web cut) e passa POR
-// FORA, ligado só pelas MESAS (tabs que lapeiam a mesa da terça) + lip cut +
-// cunhas de grau. SEM swage no bloqueador. Deslocado p/ fora (telha) p/ lapear.
-function cobBloq(par,m,rotLay,L){
+// ── BLOQUEADOR do telhado = TRANSPLANTE FIEL do segBloq da PAREDE validada
+// (painel-teste, referência oficial Cassiano 24/07). A TERÇA é o "montante":
+// fica ÍNTEGRA (alma NUNCA cortada) e ganha BANDA DE SWAGE + dimple na
+// região da ligação. O BLOQUEADOR leva TODOS os cortes: WEB NOTCH (alma só
+// no corpo), LIP CUT com cunhas do grau, TABS SÓ DE MESA (passam 18mm do
+// furo) que lapeiam POR FORA das mesas conificadas — o swage afunda a mesa
+// da terça em REDc e o tab assenta NIVELADO (telha não sente). Parafuso
+// 4,8x19 por interseção, na linha central da mesa conificada, cabeça na
+// face externa. Terças todas no MESMO SENTIDO (boca down-slope): uma ponta
+// do bloqueador pega a BOCA da terça de cima do vão, a outra CRUZA a alma
+// da de baixo e pega a mesa do outro lado — modulação única p/ a máquina.
+// Mapeamento parede→água: eixo do montante→Z · curso do bloqueador→s
+// (rampante) · faces da parede→topo/fundo da cobertura (Y).
+function cobBloq(wg,dx,sL,sR,zB){
  novaPeca('bloqueador-cobertura');
- var gp=new THREE.Group();gp.rotation.z=rotLay;par.add(gp);
- var TAB=0.018,LIPR=0.0115,w=Hmc;                 // C140 CHEIO (bloqueador não é swagejado)
- gp.position.y=tc;                                // sobe p/ FORA (lado da telha) → lapeia por fora
- var esp2=L/2+Zbc;                                // meia-distância entre terças (= centro da terça)
- var zWeb=Math.max(0.05,esp2-Hmc/2-0.003);        // WEB CUT: a ALMA para ANTES da alma da terça
- var zTab=esp2+TAB;                               // MESAS seguem como TAB e lapeiam a terça
- // ALMA — só no corpo (CORTADA nas 2 pontas: é o que deixa a peça passar por fora)
- cobBox(gp,m,0,0,0,w,tc,2*zWeb);
- // MESAS — contínuas com TABS (lapeiam POR FORA da mesa da terça — a ligação é por elas)
- cobBox(gp,m,-w/2,-Fc/2,0,tc,Fc,2*zTab);
- cobBox(gp,m, w/2,-Fc/2,0,tc,Fc,2*zTab);
- // LIPS — só no corpo, recuados pelo alívio (as cunhas preenchem o grau)
- var lz=zWeb-LIPR;
- cobBox(gp,m,-w/2+Lc/2,-Fc,0,Lc,tc,2*lz);
- cobBox(gp,m, w/2-Lc/2,-Fc,0,Lc,tc,2*lz);
- // CUNHAS do lip cut nas pontas do CORPO (cheio na dobra, zero na borda livre)
- [[-zWeb,-1],[zWeb,1]].forEach(function(E){
-  var zE=E[0],dr=E[1];
-  [[Hmc/2,-1],[-Hmc/2,1]].forEach(function(F){
+ // envelope EXTERNO = o da terça (mesas do cobPiece centram em ±Hmc/2):
+ // topo/fundo reais em UPc±(Hmc/2+tc/2) — tabs nas cotas NOMINAIS da terça
+ var yLo=UPc-Hmc/2-tc/2,yHi=UPc+Hmc/2+tc/2,LIPR=0.0115,TAB=0.018;
+ var b0=sL+tc/2+0.010, b1=sR-Fc-0.010;        // corpo: 10mm da alma | 10mm da ponta da mesa
+ var dl=sL-tc/2-FWSc/2, dr=sR-tc/2-FWSc/2;    // linhas de dimple (centro da mesa conificada)
+ var t0=dl-TAB, t1=dr+TAB;                    // tabs passam 18mm do furo
+ function bx(x,y,z,sx,sy,sz){var b=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mCd);
+  b.position.set(dx*x,y,z);b.userData.p=PIECE;wg.add(b);}
+ // MESAS contínuas (t0→t1) nas DUAS faces (topo/fundo) — a ligação é por elas
+ [yLo+tc/2,yHi-tc/2].forEach(function(yc){bx((t0+t1)/2,yc,zB,t1-t0,tc,Fc);});
+ // WEB NOTCH: alma (vertical) só no corpo · LIP CUT: lips só no corpo -LIPR
+ bx((b0+b1)/2,UPc,zB+Fc/2-tc/2,b1-b0,Hmc+tc,tc);
+ [yLo+tc+Lc/2,yHi-tc-Lc/2].forEach(function(yl){
+  bx((b0+b1)/2,yl,zB-Fc/2+tc/2,(b1-LIPR)-(b0+LIPR),Lc,tc);});
+ // CUNHAS do lip cut (grau da ferramenta): cheia na DOBRA, zero na borda
+ [[b0,1],[b1,-1]].forEach(function(Ed){
+  [[yLo+tc,1],[yHi-tc,-1]].forEach(function(F){
    var sh=new THREE.Shape();
-   sh.moveTo(F[0],-(zE+dr*LIPR));sh.lineTo(F[0],-zE);
-   sh.lineTo(F[0]+F[1]*Lc,-(zE+dr*LIPR));sh.closePath();
+   sh.moveTo(dx*(Ed[0]+Ed[1]*LIPR),F[0]);sh.lineTo(dx*Ed[0],F[0]);
+   sh.lineTo(dx*(Ed[0]+Ed[1]*LIPR),F[0]+F[1]*Lc);sh.closePath();
    var g2=new THREE.ExtrudeGeometry(sh,{depth:tc,bevelEnabled:false});
-   var mm=new THREE.Mesh(g2,m);
-   mm.rotation.x=-Math.PI/2;mm.position.y=-Fc-tc/2;gp.add(mm);});});
- // DIMPLES nos TABS (parafuso tab→mesa da terça), 1 por mesa em cada ponta
- cobDimple(gp,w,esp2);cobDimple(gp,w,-esp2);
- return gp;}
+   var mm=new THREE.Mesh(g2,mCd);mm.position.z=zB-Fc/2;
+   mm.userData.p=PIECE;wg.add(mm);});});
+ // DIMPLES por interseção (= parede): 1 parafuso por FACE em cada ponta,
+ // atravessando tab + mesa conificada; cabeça fora, broca pra dentro
+ [dl,dr].forEach(function(xD){
+  screwV(dx*xD,yHi,zB,'y',-1,wg);
+  screwV(dx*xD,yLo,zB,'y',1,wg);});
+}
 // MINI-RAFTER: meia-C (um lado do portal) — conceito mpHalf do mini-pilar.
 // cuts = SO as faixas de quem chega NESTE lado (terca sempre; diagonal so
 // se o vao adjacente e contraventado) — corte so pra quem chega (Cassiano)
@@ -2872,7 +2882,8 @@ for(var wi=0;wi<2;wi++){
   for(var ti=0;ti<TS.length;ti++){
    var lip=(BR[vv]&&ti>0)?[[-0.25,0.25]]:[];   // lip cut p/ tip do V (so contraventada)
    var hold=new THREE.Group();hold.position.set(W.dx*TS[ti],UPc,zA+modulo/2);wg.add(hold);
-   var tg=cobPiece(hold,mCt,lay,TRGc,lip,true); // terca reta: SEM chamfer
+   var trg=(TRGS[vv]&&TRGS[vv][ti])?TRGS[vv][ti]:TRGc;  // baia SEM V: banda de swage p/ o bloqueador
+   var tg=cobPiece(hold,mCt,lay,trg,lip,true); // terca reta: SEM chamfer
    cobDimple(tg,SWDc,-(LTc/2-0.0225));cobDimple(tg,SWDc,(LTc/2-0.0225));}
   // CONTRAVENTAMENTO V — so baias contraventadas
   if(BR[vv]){
@@ -2891,16 +2902,13 @@ for(var wi=0;wi<2;wi++){
     [zA+DZA[di],zA+modulo-DZA[di]].forEach(function(zt){
      screwV(sU,UPc+Hmc/2+tc/2,zt,'y',-1,wg);   // broca desce (corpo entra)
      screwV(sU,UPc-Hmc/2-tc/2,zt,'y',1,wg);});}}  // broca sobe (corpo entra)
-  // ── BLOQUEADORES SECCIONADOS (Cassiano 21/07): vão SEM V invertido →
-  // liga TODAS as terças, 1 bloqueador por par de terças (desencontrado
-  // ±30mm em Z, "um em cima outro embaixo" — igual à parede LSF). Reusa
-  // cobPiece (C140) no sentido da ÁGUA (rotation.y=±90°), swage nas pontas.
+  // ── BLOQUEADORES SECCIONADOS (Cassiano 21-24/07): vão SEM V → liga
+  // TODAS as terças, 1 por par, desencontrados ±30mm (= parede). A
+  // ligação é o TRANSPLANTE do segBloq do painel validado (cobBloq).
   if(!BR[vv]){
    for(var gb=0;gb<TS.length-1;gb++){
-    var Csb=(TS[gb]+TS[gb+1])/2, zBlk=zA+modulo/2+((gb%2===0)?-0.030:0.030);
-    var hb=new THREE.Group();hb.position.set(W.dx*Csb,UPc,zBlk);
-    hb.rotation.y=W.dx*Math.PI/2;wg.add(hb);
-    cobBloq(hb,mCd,lay,BLKL);
+    var zBlk=zA+modulo/2+((gb%2===0)?-OFFBc:OFFBc);
+    cobBloq(wg,W.dx,TS[gb],TS[gb+1],zBlk);
    }
   }
  }
