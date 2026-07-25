@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Genesis · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD 7c4efa0 · 25/07/2026 11:17</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD 7bff9ef · 25/07/2026 11:50</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -1831,8 +1831,8 @@ function capote(z0c,dep,par){if(dep<0.02)return;
 var VENTZ=[],LV=3.0;
 (function(){var nL=Math.max(1,Math.round(COMPF/10));
  for(var i=0;i<nL;i++)VENTZ.push((i+1)*COMPF/(nL+1));})();
-var gVent=new THREE.Group();gVent.visible=false;FECH.add(gVent);
-var gVentOff=new THREE.Group();FECH.add(gVentOff);
+var gVent=new THREE.Group();gVent.visible=false;gVent.userData.tgl=1;FECH.add(gVent);
+var gVentOff=new THREE.Group();gVentOff.userData.tgl=1;FECH.add(gVentOff);
 var VENTAIR=[];                              // sprites de "ar quente"
 // capote: segmentos FIXOS entre lanternins + tampoes (OFF) nos gaps
 (function(){var zA=Z0-0.03,zB=Z0+WTOT+0.03,cur=zA;
@@ -1901,6 +1901,7 @@ function buildLado(gS){
  // ou nao"): gVz = recortes+molduras+laminas; gVzOff = banda CONTINUA
  // (parede fechada), escondida por padrao — o botao alterna.
  var gVz=new THREE.Group(),gVzOff=new THREE.Group();gVzOff.visible=false;
+ gVz.userData.tgl=1;gVzOff.userData.tgl=1;
  gS.add(gVz);gS.add(gVzOff);VENZG.push(gVz);VENZOFFG.push(gVzOff);
  if(VL.length){
   telhaParede(telhaShape(WLAT),y0w,y1v-y0w);
@@ -1972,6 +1973,7 @@ function buildLado(gS){
    if(LUXPTS.indexOf(zcl)<0)LUXPTS.push(zcl);});}
  // acessorio OPCIONAL: nasce DESLIGADO (cobertura toda metalica)
  var gLx=new THREE.Group(),gLxOff=new THREE.Group();gLx.visible=false;
+ gLx.userData.tgl=1;gLxOff.userData.tgl=1;
  wg.add(gLx);wg.add(gLxOff);LUXG.push(gLx);LUXOFFG.push(gLxOff);
  if(LUX.length&&typeof BEIRAL_EMPENA==='undefined'){   // beiral: cobertura toda metálica (sem prisma nesta etapa)
   telhaCob(telhaShape(WLAT),rafLen,rafLen-sM2);        // cumeeira -> topo do modulo
@@ -1996,7 +1998,7 @@ function buildLado(gS){
   screwV(s,wH/2+TT+TPH+0.0005,zc,'y',-1,wg);}});
  // SISTEMA DE AGUAS num subgrupo proprio (botao CALHA ON/OFF):
  // suportes + calha + tampas + condutores
- var gA=new THREE.Group();gA.userData.agua=true;gS.add(gA);AGUAS.push(gA);
+ var gA=new THREE.Group();gA.userData.agua=true;gA.userData.tgl=1;gS.add(gA);AGUAS.push(gA);
  // PLATIBANDA: sem calha EXTERNA no beiral (a parede sobe na frente
  // dela) — a calha embutida interna e a etapa 2. Em vez disso, RUFO DE
  // COROAMENTO no topo da platibanda (chapa chumbo tampando a parede).
@@ -2100,6 +2102,13 @@ function buildEmpena(E){
  // (venezianas ficam nas LATERAIS — Cassiano 13/07; a infra de recorte
  // por tira fica disponivel p/ vaos futuros na empena)
  var VENTS=[];
+ // grupos do toggle VENEZIANA p/ a empena (infra dormente enquanto
+ // VENTS=[]): aberta (gVzE) vs tampao fechado (gVzE_off); so entram no
+ // botao se houver veneziana de empena
+ var gVzE=new THREE.Group(),gVzE_off=new THREE.Group();
+ gVzE.userData.tgl=1;gVzE_off.userData.tgl=1;gVzE_off.visible=false;
+ FECH.add(gVzE);FECH.add(gVzE_off);
+ if(VENTS.length){VENZG.push(gVzE);VENZOFFG.push(gVzE_off);}
  novaPeca('telha-empena');
  for(var s=0;s<pE.length-1;s++){
   var u1=pE[s][0],v1=pE[s][1],u2=pE[s+1][0],v2=pE[s+1][1];
@@ -2109,7 +2118,7 @@ function buildEmpena(E){
   var brk=[xa];[cumXworld].concat(E.porta?[E.porta.a,E.porta.b]:[]).forEach(function(q){
    if(q>xa+1e-6&&q<xb-1e-6)brk.push(q);});brk.push(xb);brk.sort(function(a,b){return a-b;});
   function sOf(x){return (x-xa)/(xb-xa)*L;}
-  function mkTira(ybF,ytF){
+  function mkTira(ybF,ytF,par){
    var sh=new THREE.Shape();
    sh.moveTo(0,ybF((brk[0]+brk[1])/2));
    for(var b2=1;b2<brk.length;b2++){                // base c/ degraus da porta
@@ -2124,12 +2133,14 @@ function buildEmpena(E){
    var m=new THREE.Mesh(g,mTel);
    m.rotation.y=Math.atan2(E.dir*dv,du);            // tira segue o relevo da onda
    m.position.set(xa,0,zw-E.dir*v1);
-   m.userData.p=PIECE;FECH.add(m);}
-  // tira dentro da banda de uma veneziana: RECORTE (2 pedacos)
+   m.userData.p=PIECE;(par||FECH).add(m);}
+  // tira dentro da banda de uma veneziana: RECORTE (2 pedacos) + TAMPAO
+  // (versao fechada no grupo OFF — botao VENEZIANA cobre a empena tambem)
   var vt=null;VENTS.forEach(function(v){if(xa>=v.x1-1e-4&&xb<=v.x2+1e-4)vt=v;});
   if(vt){var yA2=vt.y1,yB2=vt.y2;
    mkTira(ybotE,function(){return yA2});
-   mkTira(function(){return yB2},ytopE);}
+   mkTira(function(){return yB2},ytopE);
+   mkTira(function(){return yA2},function(){return yB2},gVzE_off);}
   else mkTira(ybotE,ytopE);}
  // vincos: 1 linha vertical por dobra do perfil (pulando os recortes)
  (function(){var arr=[];
@@ -2150,14 +2161,14 @@ function buildEmpena(E){
   var zc0=zw-E.dir*(TT+TPH+0.019);
   var wV=v.x2-v.x1,hV=v.y2-v.y1,cxv=(v.x1+v.x2)/2,cyv=(v.y1+v.y2)/2;
   function bx2(x,y,dx,dy){var b=new THREE.Mesh(new THREE.BoxGeometry(dx,dy,0.040),mMet);
-   b.position.set(x,y,zc0);b.userData.p=PIECE;FECH.add(b);}
+   b.position.set(x,y,zc0);b.userData.p=PIECE;gVzE.add(b);}
   bx2(cxv,v.y1+0.020,wV,0.040);bx2(cxv,v.y2-0.020,wV,0.040);
   bx2(v.x1+0.020,cyv,0.040,hV-0.080);bx2(v.x2-0.020,cyv,0.040,hV-0.080);
   for(var yl=v.y1+0.058;yl<v.y2-0.048;yl+=0.070){
    var lam=new THREE.Mesh(new THREE.BoxGeometry(wV-0.084,0.0008,0.075),mRufo);
    lam.position.set(cxv,yl,zw-E.dir*(TT+TPH+0.010));
    lam.rotation.x=-E.dir*0.7;                // desce p/ FORA (agua escorre)
-   lam.userData.p=PIECE;FECH.add(lam);}});
+   lam.userData.p=PIECE;gVzE.add(lam);}});
  // ── CANTONEIRA DE ARREMATE DA PORTA (Cassiano 13/07: a MESMA peca dos
  // cantos, 150x150x0,55): 2 ombreiras verticais + verga horizontal —
  // aba por FORA da telha + aba revestindo o tunel do vao; 4,8 na
@@ -2397,7 +2408,11 @@ function mkToggle(txt,bottom,fn){var b=document.createElement('button');
   'cursor:pointer;width:120px;text-align:center';
  b.onclick=function(){var v=fn();
   b.textContent=txt+(v?': ON':': OFF');
-  b.style.background=v?'#14532d':'#333a42'};
+  b.style.background=v?'#14532d':'#333a42';
+  // arestas CAD/parafusos seguem o novo estado JÁ NO CLIQUE (25/07:
+  // elemento OFF some 100% na hora, sem esperar a câmera mexer)
+  if(typeof setFastVis==='function')setFastVis();
+  if(typeof invalidate==='function')invalidate();};
  document.body.appendChild(b);return b}
 var _bTel=mkToggle('TELHA',248,function(){FECH.visible=!FECH.visible;
  // sem telha nao ha prisma: tirar a telha APAGA a luz junto (Cassiano
@@ -2507,10 +2522,10 @@ if(VENZG.length){var _bVz=mkToggle('VENEZIANA',134,function(){
  _bVz.textContent='VENEZIANA: OFF';_bVz.style.background='#333a42';}
 var _bCal=mkToggle('CALHA',96,function(){var v=!AGUAS[0].visible;
  AGUAS.forEach(function(g){g.visible=v;});
- window.AGUA_ON=v;                 // arestas CAD do sistema de aguas somem junto
+ // (arestas CAD seguem o grupo via userData.tgl — lógica única 25/07)
  if(typeof camUpdate==='function')camUpdate();
  return v});
-if(AGUAS.length){AGUAS.forEach(function(g){g.visible=false;});window.AGUA_ON=false;
+if(AGUAS.length){AGUAS.forEach(function(g){g.visible=false;});
  _bCal.textContent='CALHA: OFF';_bCal.style.background='#333a42';}
 console.log('FECHAMENTO TOTAL: '+(TP25?'TP25':'TP36-980')+' · '+NP+' modulos/superficie · ?tp25 troca perfil');
 })();
@@ -3029,28 +3044,37 @@ for(var wi=0;wi<2;wi++){
  // cada caixa vizinha) — aresta duplicada não é desenhada. A ponta
  // REAL da peça gera 1x e fica. Funciona em qualquer orientação, sem
  // depender de id de peça (o motor lsf_core não seta userData.p).
- function coleta(root,arr,arrAgua){
+ // TOGGLE-AWARE (Cassiano 25/07 — "elemento OFF some 100%, sem linha
+ // fantasma"): cada aresta segue o GRUPO TOGGLÁVEL (userData.tgl) do seu
+ // mesh — veneziana/prisma/ventilação/calha, versões ON e OFF. As células
+ // são separadas POR GRUPO e o LOD (setFastVis) checa a visibilidade REAL
+ // do grupo na cena. Antes: arestas órfãs no FECH ficavam desenhadas com
+ // o elemento desligado (print 25/07); a calha tinha remendo próprio
+ // (userData.agua/AGUA_ON) — substituído por esta lógica única.
+ var TGS=[null];   // índice 0 = conteúdo sem toggle
+ function tgOf(o){var p=o;while(p){if(p.userData&&p.userData.tgl){
+   var i=TGS.indexOf(p);if(i<0){TGS.push(p);i=TGS.length-1;}return i;}p=p.parent;}return 0;}
+ function coleta(root,arrs){
   var seen={};
   function q(v){return Math.round(v.x*2000)+','+Math.round(v.y*2000)+','+Math.round(v.z*2000);}
-  function ehAgua(o){var p=o;while(p){if(p.userData&&p.userData.agua)return true;p=p.parent;}return false;}
   root.traverse(function(o){
    if(!o.isMesh||!o.geometry||o.geometry.type!=='BoxGeometry')return;
    if(o.userData.fastener||o.userData.fastener2)return;
-   var ag=(arrAgua&&ehAgua(o));
+   var ti=tgOf(o);
    var pr=o.geometry.parameters,hx=pr.width/2,hy=pr.height/2,hz=pr.depth/2;
    var C=[];for(var i=0;i<8;i++)C.push(new THREE.Vector3(
     (i&1)?hx:-hx,(i&2)?hy:-hy,(i&4)?hz:-hz).applyMatrix4(o.matrixWorld));
    for(var e=0;e<12;e++){var a=C[EI[e][0]],b=C[EI[e][1]];
-    var ka=q(a),kb=q(b),k=(ka<kb)?ka+'|'+kb:kb+'|'+ka;
-    if(seen[k]){seen[k].n++;}else seen[k]={n:1,a:a,b:b,ag:ag};}});
+    var ka=q(a),kb=q(b),k=ti+'#'+((ka<kb)?ka+'|'+kb:kb+'|'+ka);
+    if(seen[k]){seen[k].n++;}else seen[k]={n:1,a:a,b:b,ti:ti};}});
   for(var k2 in seen){var s=seen[k2];if(s.n>1)continue;
-   (s.ag?arrAgua:arr).push(s.a.x,s.a.y,s.a.z,s.b.x,s.b.y,s.b.z);}}
+   (arrs[s.ti]=arrs[s.ti]||[]).push(s.a.x,s.a.y,s.a.z,s.b.x,s.b.y,s.b.z);}}
  // LOD DE ARESTAS: de longe, milhares de linhas viram ruído subpixel
  // (speckle) — mesma filosofia do LOD de parafusos: o traço acende
  // quando a câmera chega perto (células de 3m, raio 12m). De longe o
  // modelo fica limpo; de perto vira desenho técnico.
  window.EDGE_CH=[];
- function monta(arr,parent,isAgua){if(!arr.length)return;
+ function monta(arr,parent,tg){if(!arr||!arr.length)return;
   var cel={};
   for(var s=0;s<arr.length;s+=6){
    var mx=(arr[s]+arr[s+3])/2,my=(arr[s+1]+arr[s+4])/2,mz=(arr[s+2]+arr[s+5])/2;
@@ -3063,14 +3087,14 @@ for(var wi=0;wi<2;wi++){
    g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(c2.a),3));
    var ls=new THREE.LineSegments(g,mEdge);ls.userData.p=-1;ls.visible=false;
    parent.add(ls);
-   EDGE_CH.push({o:ls,x:c2.x/c2.n,y:c2.y/c2.n,z:c2.z/c2.n,ag:!!isAgua});}}
- var aEstr=[],aFech=[],aAgua=[],FECHg=null;
+   EDGE_CH.push({o:ls,x:c2.x/c2.n,y:c2.y/c2.n,z:c2.z/c2.n,tg:tg||null});}}
+ var eArrs=[],fArrs=[],FECHg=null;   // arrays indexados por TGS
  scene.children.forEach(function(ch){
-  if(ch.userData&&ch.userData.fech){FECHg=ch;coleta(ch,aFech,aAgua);}
-  else coleta(ch,aEstr);});
- monta(aEstr,scene);                 // estrutura
- if(FECHg){monta(aFech,FECHg);      // fechamento: acompanha o toggle TELHA
-  monta(aAgua,FECHg,true);}         // sistema de aguas: toggle CALHA junto
+  if(ch.userData&&ch.userData.fech){FECHg=ch;coleta(ch,fArrs);}
+  else coleta(ch,eArrs);});
+ for(var t1=0;t1<TGS.length;t1++)monta(eArrs[t1],scene,TGS[t1]);   // estrutura
+ if(FECHg)for(var t2=0;t2<TGS.length;t2++)                         // fechamento:
+  monta(fArrs[t2],FECHg,TGS[t2]);   // acompanha TELHA + o toggle do conteúdo
 })();
 
 // ── QUANTITATIVO (esqueleto da lista única, 13/07): resumo por tipo.
@@ -3196,11 +3220,13 @@ function setFastVis(){var cp=camera.position;
   FAST[i].visible=(dx*dx+dy*dy+dz*dz)<FAST_R2;}
  for(var j=0;j<FAST2.length;j++){var dx2=FAST2_P[j*3]-cp.x,dy2=FAST2_P[j*3+1]-cp.y,dz2=FAST2_P[j*3+2]-cp.z;
   FAST2[j].visible=(dx2*dx2+dy2*dy2+dz2*dz2)<FAST2_R2;}
- // arestas CAD: acendem por célula a <12m; as do sistema de ÁGUAS
- // respeitam também o botão CALHA (window.AGUA_ON)
+ // arestas CAD: acendem por célula a <12m E seguem o grupo togglável do
+ // conteúdo (veneziana/prisma/ventilação/calha ON-OFF) — elemento
+ // desligado some 100%, sem linha fantasma (Cassiano 25/07)
+ function _tgVis(g){while(g){if(g.visible===false)return false;g=g.parent;}return true;}
  if(window.EDGE_CH)for(var k=0;k<EDGE_CH.length;k++){var ec=EDGE_CH[k];
   var dx3=ec.x-cp.x,dy3=ec.y-cp.y,dz3=ec.z-cp.z;
-  ec.o.visible=(dx3*dx3+dy3*dy3+dz3*dz3)<144&&(!ec.ag||window.AGUA_ON!==false);}}
+  ec.o.visible=(dx3*dx3+dy3*dy3+dz3*dz3)<144&&(!ec.tg||_tgVis(ec.tg));}}
 
 // ── AUDITOR R01 — OPT-IN (rode com ?audit na URL); off por padrão (catálogo
 // leve, sem o relatório aparecer pro cliente). O galpão modela perfis se
