@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Moderno · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD d251f25 · 25/07/2026 11:07</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD 7c4efa0 · 25/07/2026 11:23</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -1281,6 +1281,59 @@ var T0G=0;  // 1 = terça 0 é a GUIA do painel de placa (não desenhar a deitad
 var mBolt_l=new THREE.MeshLambertMaterial({color:0xe04040});
 var L_lat=modulo-2*Zb_lat;
 var swZ_lat=[[-L_lat/2,-L_lat/2+SW_lat],[L_lat/2-SW_lat,L_lat/2]];
+// ── BLOQUEADORES VERTICAIS nos vãos SEM V (R71 aplicada à parede,
+// Cassiano 25/07: "onde não tem diagonal, bloqueador — igual ao telhado").
+// TERÇA = peça principal ÍNTEGRA: ganha BANDA DE SWAGE na chegada (o CL/
+// dAtL já aceita bandas extras; corrugado acompanha). Bandas dos pares
+// desencontrados ±30mm se fundem. swZB[ti] = swZ da terça em vão sem V.
+var OFFBl=0.030,REDl=(Hm-SWD_lat)/2,FWSl=Fm-REDl;
+var swZB=[];
+for(var _ti=0;_ti<tercaY_lat.length;_ti++){
+ var _bds=[];
+ [_ti-1,_ti].forEach(function(pr){
+  if(pr<0||pr>=tercaY_lat.length-1)return;
+  if(T0G&&pr===0)return;                 // par da GUIA do painel: sem bloqueador
+  var c=(pr%2===0)?-OFFBl:OFFBl;
+  _bds.push([c-Fm/2-0.010,c+Fm/2+0.010]);});
+ _bds.sort(function(a,b){return a[0]-b[0];});
+ var _mg=[];_bds.forEach(function(B){
+  if(_mg.length&&B[0]<=_mg[_mg.length-1][1]+0.010)_mg[_mg.length-1][1]=Math.max(_mg[_mg.length-1][1],B[1]);
+  else _mg.push([B[0],B[1]]);});
+ swZB.push(swZ_lat.concat(_mg));}
+// BLOQUEADOR VERTICAL = transplante do cobBloq/segBloq (mesma família):
+// WEB NOTCH (alma só no corpo, folgas 10mm), LIP CUT c/ cunhas, TABS SÓ
+// DE MESA (18mm além do furo) POR FORA das mesas conificadas (nivelados
+// pelo swage, folga 0,2mm), 4,8x19 na linha central da mesa conificada
+// (1 por face por ponta). Mapeamento: curso→Y · faces da parede→X.
+var mBloL=new THREE.MeshLambertMaterial({color:0x28c08a});
+function wallBloq(XC,yLoT,yHiT,Zb){
+ novaPeca('bloqueador-lateral');
+ var xLo=XC-Hm/2-tm/2,xHi=XC+Hm/2+tm/2,LIPRb=0.0115,TABb=0.018;
+ var b0=yLoT+tm/2+0.010, b1=yHiT-Fm-0.010;   // corpo: 10mm da alma | 10mm da ponta da mesa
+ var dl=yLoT-tm/2-FWSl/2, dr=yHiT-tm/2-FWSl/2; // dimples (centro da mesa conificada; boca p/ baixo)
+ var t0=dl-TABb, t1=dr+TABb;                  // tabs passam 18mm do furo
+ function bxb(x,y,z,sx,sy,sz){var b=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mBloL);
+  b.position.set(x,y,z);b.userData.p=PIECE;scene.add(b);}
+ // TABS/mesas contínuas (t0→t1) nas DUAS faces da parede — a ligação é por elas
+ [xLo+tm/2,xHi-tm/2].forEach(function(xc){bxb(xc,(t0+t1)/2,Zb,tm,t1-t0,Fm);});
+ // WEB NOTCH: alma só no corpo · LIP CUT: lips só no corpo -LIPR
+ bxb(XC,(b0+b1)/2,Zb+Fm/2-tm/2,Hm+tm,b1-b0,tm);
+ [xLo+tm+Lm/2,xHi-tm-Lm/2].forEach(function(xl){
+  bxb(xl,(b0+b1)/2,Zb-Fm/2+tm/2,Lm,(b1-LIPRb)-(b0+LIPRb),tm);});
+ // CUNHAS do lip cut (grau da ferramenta): cheia na DOBRA, zero na borda
+ [[b0,1],[b1,-1]].forEach(function(Ed){
+  [[xLo+tm,1],[xHi-tm,-1]].forEach(function(F){
+   var sh=new THREE.Shape();
+   sh.moveTo(F[0],Ed[0]+Ed[1]*LIPRb);sh.lineTo(F[0],Ed[0]);
+   sh.lineTo(F[0]+F[1]*Lm,Ed[0]+Ed[1]*LIPRb);sh.closePath();
+   var g2=new THREE.ExtrudeGeometry(sh,{depth:tm,bevelEnabled:false});
+   var mm=new THREE.Mesh(g2,mBloL);mm.position.z=Zb-Fm/2;
+   mm.userData.p=PIECE;scene.add(mm);});});
+ // DIMPLES por interseção — cabeça na face externa, broca pra dentro
+ [dl,dr].forEach(function(yD){
+  screwV(xLo,yD,Zb,'x',1);
+  screwV(xHi,yD,Zb,'x',-1);});
+}
 var miniYc=3.828641,miniL=7.2133;
 var mMP_l=new THREE.MeshLambertMaterial({color:0xe54983});
 var apexZ=0.1;
@@ -1434,12 +1487,13 @@ var sides=[
 var NT=tercaY_lat.length;
 for(var si=0;si<sides.length;si++){
  var S=sides[si],XC=S.xc;
- // TERCAS horizontais
+ // TERCAS horizontais — vão SEM V: banda de swage p/ os bloqueadores (R71)
+ // e SEM o lip cut do tip do V (não há diagonal chegando)
  for(var vv=0;vv<nPorticos-1;vv++){var Zc=vv*modulo+modulo/2;
   for(var ti=0;ti<NT;ti++){
    if(T0G&&ti===0)continue;              // terça 0 = GUIA do painel (peça do parede_placa)
-   var opts={color:0x66ccff,nseg:50,swZ:swZ_lat};
-   if(ti>0)opts.lipCutZ=[-0.25,0.25];
+   var opts={color:0x66ccff,nseg:50,swZ:BRL[vv]?swZ_lat:swZB[ti]};
+   if(ti>0&&BRL[vv])opts.lipCutZ=[-0.25,0.25];
    var tgL=CL([XC,tercaY_lat[ti],Zc],0.0,L_lat,opts);}}
    // (cabecas da terca: jFull b2/b4 nas mesas do MINI, no mesmo ponto — a
    //  cabeca na mesa conificada da terca ficava ENTERRADA sob a mesa do mini)
@@ -1468,6 +1522,12 @@ for(var si=0;si<sides.length;si++){
    var lzT=((tercaY_lat[ti+1]-Fm/2)-Cy+(Fm/2)*cA2)/sA2;
    var piv=new THREE.Group();piv.position.set(XC,0,Zv);piv.rotation.y=Math.PI;scene.add(piv);
    var dB=dA.clone();dB.position.set(0,Cy,Cz-Zv);piv.add(dB);}}
+ // BLOQUEADORES VERTICAIS — vãos SEM V: liga TODOS os pares de terças,
+ // 1 por par, desencontrados ±30mm em Z (R71 — mesma família do telhado)
+ for(var vv=0;vv<nPorticos-1;vv++){if(BRL[vv])continue;var Zc=vv*modulo+modulo/2;
+  for(var pr=(T0G?1:0);pr<NT-1;pr++){
+   var Zb=Zc+((pr%2===0)?-OFFBl:OFFBl);
+   wallBloq(XC,tercaY_lat[pr],tercaY_lat[pr+1],Zb);}}
  // (cabecas das juncoes: nas MESAS DO MINI (receptor, b2/b4) — o entrante
  //  conificado fica POR DENTRO delas; cabeca nele ficaria enterrada.
  //  Verificado no navegador 03/07: b2/b4 sao as faces visiveis do no.)
