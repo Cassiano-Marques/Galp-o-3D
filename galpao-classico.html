@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Clássico · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD ab6681a · 24/07/2026 17:39</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD d251f25 · 25/07/2026 11:07</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -1274,6 +1274,7 @@ var zA_mp=0.005775,zM_mp=0.02905,Zb_lat=0.00655,dYb_lat=0.08,dYt_lat=0.001;
 var tercaY_lat=[0.297, 2.2053, 4.1136, 6.0219];
 var angD_lat=[0.65359909, 0.65359909, 0.65359909],LA_lat=[3.005192, 3.005192, 3.005192],ztip_lat=[2.392374, 2.392374, 2.392374],dimoff_lat=[0.068892, 0.068892, 0.068892];
 var YbD_lat=[0.377, 2.2853, 4.1936];   // base efetiva das diagonais (platibanda: elevada)
+var BRL=[1, 0, 0, 1];       // vãos contraventados (regra 25/07 — MESMA lista da cobertura)
 var MP_CUTS=[[0.242, 0.307], [0.2775, 0.4215], [2.1503, 2.2153], [2.1858, 2.3298], [4.0586, 4.1236], [4.0941, 4.2381], [5.9669, 6.0319]];
 var MP_SEGS=[[0.345446, 0.240892], [2.228496, 0.291392], [4.136796, 0.291392], [5.958263, 0.117725]],MP_BOLTS=[[0.261, 0.415892], [2.1328, 2.324192], [4.0411, 4.232492], []],MP_CENTRAL=[1.25115, 3.15945],refX_lat=0.1;
 var T0G=0;  // 1 = terça 0 é a GUIA do painel de placa (não desenhar a deitada)
@@ -1442,8 +1443,9 @@ for(var si=0;si<sides.length;si++){
    var tgL=CL([XC,tercaY_lat[ti],Zc],0.0,L_lat,opts);}}
    // (cabecas da terca: jFull b2/b4 nas mesas do MINI, no mesmo ponto — a
    //  cabeca na mesa conificada da terca ficava ENTERRADA sob a mesa do mini)
- // DIAGONAIS em V invertido
- for(var vv=0;vv<nPorticos-1;vv++){var Z0=vv*modulo,Zv=Z0+modulo/2;
+ // DIAGONAIS em V invertido — SÓ nos vãos contraventados (regra 25/07:
+ // parede e cobertura na MESMA modulação; extremos sempre + uniformes)
+ for(var vv=0;vv<nPorticos-1;vv++){if(!BRL[vv])continue;var Z0=vv*modulo,Zv=Z0+modulo/2;
   for(var ti=0;ti<NT-1;ti++){
    var Yb=YbD_lat[ti],Yt=tercaY_lat[ti+1]-dYt_lat;
    var Zt=Z0+ztip_lat[ti],Cy=(Yb+Yt)/2,Cz=(Z0+Zb_lat+Zt)/2;
@@ -1548,9 +1550,9 @@ for(var si=0;si<sides.length;si++){
    if(pp>0)jFull(_o1,_o4,Ym,zBN);}
   for(var ti=0;ti<NT-1;ti++){var Yd=YbD_lat[ti]-dYb_lat+dimoff_lat[ti];
    var _p1=(Yd>_pTopJ)?S.b2:S.b1,_p4=(Yd>_pTopJ)?S.b5:S.b4;
-   if(pp<nPorticos-1)jFull(_p1,_p4,Yd,zB);
-   if(pp>0)jFull(_p1,_p4,Yd,zBN);}
-  if(pp<nPorticos-1){var Zv2=Zp+modulo/2;
+   if(pp<nPorticos-1&&BRL[pp])jFull(_p1,_p4,Yd,zB);      // base da diagonal: so vao com V
+   if(pp>0&&BRL[pp-1])jFull(_p1,_p4,Yd,zBN);}
+  if(pp<nPorticos-1&&BRL[pp]){var Zv2=Zp+modulo/2;      // apex: so vao com V
    for(var ti=0;ti<NT-1;ti++){var Ya=tercaY_lat[ti+1]-Fm/2;
     jFull(S.a1,S.a4,Ya,Zv2-apexZ);jFull(S.a1,S.a4,Ya,Zv2+apexZ);}}}
 }
