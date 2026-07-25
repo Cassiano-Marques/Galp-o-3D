@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Clássico · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD 7bff9ef · 25/07/2026 11:52</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD 6829a93 · 25/07/2026 12:52</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -1353,13 +1353,16 @@ function CL(C,ang,L,o){o=o||{};
  var m=new THREE.MeshLambertMaterial({color:o.color});var nseg=o.nseg||50;
  var CHc=o.chamfer?0.0135:0, zlo=-L/2+CHc, zhi=L/2-CHc;
  var LIPR=0.0115;                                   // alivio do lip cut (83-60)/2
+ // lipCutZ aceita UMA banda [a,b] (formato original) ou LISTA [[a,b],...]
+ // (25/07: a guia da empena recebe VARIOS perfis entrantes — 1 corte cada)
+ var LCZ=o.lipCutZ?((typeof o.lipCutZ[0]==='number')?[o.lipCutZ]:o.lipCutZ):[];
  // FRONTEIRAS EXATAS (regra mestra): fatias quebram nos limites das zonas
  // de swage (+rampas) e do lip cut — sem amostragem grossa, a largura cheia
  // NUNCA invade a zona do receptor (antes a fatia de 48mm invadia ate 24mm).
  var bps=[];
  if(o.swZ){var rgS=(o.swZ.length>0&&Array.isArray(o.swZ[0]))?o.swZ:[o.swZ];
   rgS.forEach(function(R){bps.push(R[0]-0.005,R[0],R[1],R[1]+0.005);});}
- if(o.lipCutZ){bps.push(o.lipCutZ[0]-LIPR,o.lipCutZ[1]+LIPR);}
+ LCZ.forEach(function(C){bps.push(C[0]-LIPR,C[1]+LIPR);});
  bps.sort(function(a,b){return a-b;});
  for(var i=0;i<nseg;i++){var zc0=-L/2+i*L/nseg,zc1=zc0+L/nseg;
   var pts=[zc0];
@@ -1367,7 +1370,8 @@ function CL(C,ang,L,o){o=o||{};
   pts.push(zc1);
   for(var p2=0;p2<pts.length-1;p2++){
    var s0=pts[p2],s1=pts[p2+1],zc=(s0+s1)/2;
-   var d=dAtL(zc,o.swZ);var lc=o.lipCutZ&&zc>o.lipCutZ[0]-LIPR&&zc<o.lipCutZ[1]+LIPR;
+   var d=dAtL(zc,o.swZ);
+   var lc=LCZ.some(function(C){return zc>C[0]-LIPR&&zc<C[1]+LIPR;});
    var a0=Math.max(s0,zlo),a1=Math.min(s1,zhi);
    if(a1<=a0)continue;
    var ac=(a0+a1)/2,ad=a1-a0;
@@ -1375,8 +1379,8 @@ function CL(C,ang,L,o){o=o||{};
    grp.add(locBox(m,-d/2,-Fm/2,ac,tm,Fm,ad));grp.add(locBox(m,d/2,-Fm/2,ac,tm,Fm,ad));
    if(!lc){grp.add(locBox(m,-d/2+Lm/2,-Fm,ac,Lm,tm,ad));grp.add(locBox(m,d/2-Lm/2,-Fm,ac,Lm,tm,ad));}}}
  // CUNHAS do lip cut (alivio 60->83): cheia na DOBRA, zero na borda livre
- if(o.lipCutZ){
-  [[o.lipCutZ[0],-1],[o.lipCutZ[1],1]].forEach(function(E){
+ LCZ.forEach(function(LC){
+  [[LC[0],-1],[LC[1],1]].forEach(function(E){
    var zE=E[0],dr=E[1];
    [[Hm/2,-1],[-Hm/2,1]].forEach(function(F){
     var sh=new THREE.Shape();
@@ -1384,7 +1388,7 @@ function CL(C,ang,L,o){o=o||{};
     sh.lineTo(F[0]+F[1]*Lm,-(zE+dr*LIPR));sh.closePath();
     var g2=new THREE.ExtrudeGeometry(sh,{depth:tm,bevelEnabled:false});
     var mm=new THREE.Mesh(g2,m);
-    mm.rotation.x=-Math.PI/2;mm.position.y=-Fm-tm/2;grp.add(mm);});});}
+    mm.rotation.x=-Math.PI/2;mm.position.y=-Fm-tm/2;grp.add(mm);});});});
  // CORRUGADO DO SWAGE: DOIS corrugados LONGITUDINAIS na alma, um perto de
  // cada canto junto a mesa (foto da peca real, corrigido pelo Cassiano)
  if(o.swZ){var regsS=(o.swZ.length>0&&Array.isArray(o.swZ[0]))?o.swZ:[o.swZ];
@@ -2542,7 +2546,7 @@ function yTopo(x){var d=Math.min(x-(-wH/2),(cumXworld*2+wH/2)-x);
  return pilTopo-quedaRaf+tanT*(d)-0.020;}
 function box(gr,cx,cy,cz,sx,sy,sz,m){var b=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),m);
  b.position.set(cx,cy,cz);b.userData.p=PIECE;gr.add(b);return b;}
-var T=[[0.157, 2.693, 0.297, 9000000000.0, 0, 0.0, 0.2753, 0.06], [0.157, 2.693, 2.2053, 9000000000.0, 0, 0.0, 2.1836, 0.06], [0.157, 2.693, 4.1136, 9000000000.0, 0, 0.0, 4.0919, 0.06], [1.2141, 2.693, 6.0219, 9000000000.0, -1, 1.0423, 6.0002, 0.0756], [3.007, 6.693, 0.297, 9000000000.0, 0, 0.0, 0.2753, 0.06], [3.007, 6.693, 2.2053, -0.1097, 0, 0.0, 2.1836, 0.06], [3.007, 6.693, 4.1136, -0.1097, 0, 0.0, 4.0919, 0.06], [3.007, 6.693, 6.0219, -0.1097, 0, 0.0, 6.0002, 0.06], [7.007, 9.543, 0.297, 9000000000.0, 0, 0.0, 0.2753, 0.06], [7.007, 9.543, 2.2053, 9000000000.0, 0, 0.0, 2.1836, 0.06], [7.007, 9.543, 4.1136, 9000000000.0, 0, 0.0, 4.0919, 0.06], [7.007, 8.4859, 6.0219, 9000000000.0, 1, 8.6577, 6.0002, 0.0756]], R=[], D=[[1.2906, 3.8737, 0.811783, 2.5186, 0.06, 0.0706, 4.85, 0.297], [3.1989, 3.8737, 0.811783, 2.5186, 0.06, 0.0706, 4.85, 2.2053], [5.1072, 3.8737, 0.811783, 2.5186, 0.06, 0.0706, 4.85, 4.1136]], GG=[[5.8151, 0.2888, 0.226068, 0.213, null], [6.1737, 1.848, 0.226068, 1.6869, null], [6.6546, 3.939, 0.226068, 1.8655, null], [6.6546, 5.761, -0.226068, 1.8655, null], [6.1737, 7.852, -0.226068, 1.6869, null], [5.8151, 9.4112, -0.226068, 0.213, null], [5.5638, 0.5989, 0.785398, 1.1001, null, 0.0438], [5.5638, 9.1011, -0.785398, 1.1001, null, 0.0438]], MM=[[0.0, 1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [0.0, 1, 2.1828, 0.2, [2.2578, 2.1078], [[2.1503, 2.2153]]], [0.0, 1, 4.0911, 0.2, [4.1661, 4.0161], [[4.0586, 4.1236]]], [2.85, -1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [2.85, -1, 2.1828, 0.2, [2.2578, 2.1078], [[2.1503, 2.2153]]], [2.85, -1, 4.0911, 0.2, [4.1661, 4.0161], [[4.0586, 4.1236]]], [2.85, -1, 5.9994, 0.2, [6.0744, 5.9244], [[5.9669, 6.0319]]], [2.85, 1, 0.3257, 0.288, [0.4447, 0.2067], [[0.242, 0.307], [0.2608, 0.4344]]], [2.85, 1, 2.234, 0.288, [2.3531, 2.115], [[2.1503, 2.2153], [2.1691, 2.3427]]], [2.85, 1, 4.1424, 0.288, [4.2614, 4.0234], [[4.0586, 4.1236], [4.0774, 4.251]]], [2.85, 1, 5.9994, 0.2, [6.0744, 5.9244], [[5.9669, 6.0319]]], [6.85, -1, 0.3257, 0.288, [0.4447, 0.2067], [[0.242, 0.307], [0.2608, 0.4344]]], [6.85, -1, 2.234, 0.288, [2.3531, 2.115], [[2.1503, 2.2153], [2.1691, 2.3427]]], [6.85, -1, 4.1424, 0.288, [4.2614, 4.0234], [[4.0586, 4.1236], [4.0774, 4.251]]], [6.85, -1, 5.9994, 0.2, [6.0744, 5.9244], [[5.9669, 6.0319]]], [6.85, 1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [6.85, 1, 2.1828, 0.2, [2.2578, 2.1078], [[2.1503, 2.2153]]], [6.85, 1, 4.0911, 0.2, [4.1661, 4.0161], [[4.0586, 4.1236]]], [6.85, 1, 5.9994, 0.2, [6.0744, 5.9244], [[5.9669, 6.0319]]], [9.7, -1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [9.7, -1, 2.1828, 0.2, [2.2578, 2.1078], [[2.1503, 2.2153]]], [9.7, -1, 4.0911, 0.2, [4.1661, 4.0161], [[4.0586, 4.1236]]]];
+var T=[[0.157, 2.693, 0.297, 9000000000.0, 0.2753, [], [0.1795, 2.6705]], [0.157, 2.693, 2.2053, 9000000000.0, 2.1836, [], [0.1795, 2.6705]], [0.157, 2.693, 4.1136, 9000000000.0, 4.0919, [], [0.1795, 2.6705]], [1.3878, 2.693, 6.0219, 9000000000.0, 6.0002, [[-1, 1.4058, 0.2128, 1]], [2.6705]], [3.007, 6.693, 0.297, 9000000000.0, 0.2753, [], [3.0295, 6.6705]], [3.007, 6.693, 2.2053, -0.1097, 2.1836, [], [3.0295, 6.6705]], [3.007, 6.693, 4.1136, -0.1097, 4.0919, [], [3.0295, 6.6705]], [3.007, 6.693, 6.0219, -0.1097, 6.0002, [], [3.0295, 6.6705]], [7.007, 9.543, 0.297, 9000000000.0, 0.2753, [], [7.0295, 9.5205]], [7.007, 9.543, 2.2053, 9000000000.0, 2.1836, [], [7.0295, 9.5205]], [7.007, 9.543, 4.1136, 9000000000.0, 4.0919, [], [7.0295, 9.5205]], [7.007, 8.3122, 6.0219, 9000000000.0, 6.0002, [[1, 8.2942, 0.2128, 1]], [7.0295]]], R=[], D=[[1.2906, 3.8737, 0.811783, 2.5186, 0.06, 0.0706, 4.85, 0.297, [[0.3784, 3.0382], [2.173, 4.7406]]], [3.1989, 3.8737, 0.811783, 2.5186, 0.06, 0.0706, 4.85, 2.2053, [[2.2867, 3.0382], [4.0813, 4.7406]]], [5.1072, 3.8737, 0.811783, 2.5186, 0.06, 0.0706, 4.85, 4.1136, [[4.195, 3.0382], [5.9896, 4.7406]]]], GG=[[5.8151, 0.2888, 0.226068, 0.213, null], [6.1737, 1.848, 0.226068, 1.6869, [[-0.4537, 0.1124]]], [6.6546, 3.939, 0.226068, 1.8655, null], [6.6546, 5.761, -0.226068, 1.8655, null], [6.1737, 7.852, -0.226068, 1.6869, [[0.4537, 0.1124]]], [5.8151, 9.4112, -0.226068, 0.213, null], [5.5638, 0.5989, 0.785398, 1.1001, null], [5.5638, 9.1011, -0.785398, 1.1001, null]], MM=[[0.0, 1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [0.0, 1, 2.1828, 0.2, [2.2578, 2.1078], [[2.1503, 2.2153]]], [0.0, 1, 4.0911, 0.2, [4.1661, 4.0161], [[4.0586, 4.1236]]], [2.85, -1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [2.85, -1, 2.1828, 0.2, [2.2578, 2.1078], [[2.1503, 2.2153]]], [2.85, -1, 4.0911, 0.2, [4.1661, 4.0161], [[4.0586, 4.1236]]], [2.85, -1, 5.9994, 0.2, [6.0744, 5.9244], [[5.9669, 6.0319]]], [2.85, 1, 0.3257, 0.288, [0.4447, 0.2067], [[0.242, 0.307], [0.2608, 0.4344]]], [2.85, 1, 2.234, 0.288, [2.3531, 2.115], [[2.1503, 2.2153], [2.1691, 2.3427]]], [2.85, 1, 4.1424, 0.288, [4.2614, 4.0234], [[4.0586, 4.1236], [4.0774, 4.251]]], [2.85, 1, 5.9994, 0.2, [6.0744, 5.9244], [[5.9669, 6.0319]]], [6.85, -1, 0.3257, 0.288, [0.4447, 0.2067], [[0.242, 0.307], [0.2608, 0.4344]]], [6.85, -1, 2.234, 0.288, [2.3531, 2.115], [[2.1503, 2.2153], [2.1691, 2.3427]]], [6.85, -1, 4.1424, 0.288, [4.2614, 4.0234], [[4.0586, 4.1236], [4.0774, 4.251]]], [6.85, -1, 5.9994, 0.2, [6.0744, 5.9244], [[5.9669, 6.0319]]], [6.85, 1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [6.85, 1, 2.1828, 0.2, [2.2578, 2.1078], [[2.1503, 2.2153]]], [6.85, 1, 4.0911, 0.2, [4.1661, 4.0161], [[4.0586, 4.1236]]], [6.85, 1, 5.9994, 0.2, [6.0744, 5.9244], [[5.9669, 6.0319]]], [9.7, -1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [9.7, -1, 2.1828, 0.2, [2.2578, 2.1078], [[2.1503, 2.2153]]], [9.7, -1, 4.0911, 0.2, [4.1661, 4.0161], [[4.0586, 4.1236]]]];
 var mMPe=new THREE.MeshLambertMaterial({color:0xe54983});   // rosa (mini)
 // monta um oitao no plano zP; dirIn = +1 (frente, interior a +z) / -1 (fundo)
 // portao = {h} (frente) ou null (fundo 100% fechado)
@@ -2617,38 +2621,39 @@ function oitao(zP,dirIn,portao){
  // kit, a empena monta so a parte independente (pilares, viga, porta,
  // cantoneira, telha via EMP com T/G vazios) e PULA o painel.
  if(typeof window.KIT_LAT==='undefined'){T=[];R=[];D=[];GG=[];MM=[];}
+ // REVISÃO 25/07 (Cassiano — padrão único da lateral em TODAS as ligações
+ // dos 140 da empena): T=[u1,u2,y,lo,y_mt,edges,dims].
+ //  · edges: pontas que ENTRAM numa guia (MF ou do RAFTER) — chanfro +
+ //    swage angular (regra universal) + 2×4,8 na interseção das linhas
+ //    centrais das mesas (±0,0685, cabeça fora, broca pra dentro);
+ //  · dims: pontas no CANAL DO MINI — 4,8 a 22,5mm do end face, no centro
+ //    da mesa (R60.1/R07 — a mesma junta terça×mini da lateral/cobertura).
+ var zc0=zP-XCE;
+ function dimPar(u,ym){[0.0685,-0.0685].forEach(function(zo){
+  screwV(u,ym,zc0+zo,'z',(zo>0?-1:1),scene);});}
  T.forEach(function(t){
   if(portao&&t[2]<portao.h+0.14&&vaoPorta((t[0]+t[1])/2))return;  // FRENTE: acima da porta
   var L=t[1]-t[0],Zc=(t[0]+t[1])/2;
-  // swage: ponta que ENTRA na guia da MF usa comprimento pelo ângulo
-  // (t[7]); a outra ponta segue o flat padrão. mfEdge<0 entra em -L/2
-  // (u1), mfEdge>0 em +L/2 (u2). Senão a terça colide com a guia (45°).
-  var swA=0.0600,swB=0.0600;
-  if(t[4]){var swE=(t[7]!=null)?t[7]:0.0600;if(t[4]<0)swA=swE;else swB=swE;}
+  var swA=0.0600,swB=0.0600,cham=0;
+  (t[5]||[]).forEach(function(E){if(E[0]<0)swA=E[2];else swB=E[2];cham=1;});
   var o={color:0x66ccff,nseg:40,swZ:[[-L/2,-L/2+swA],[L/2-swB,L/2]]};
   if(t[3]<8e8)o.lipCutZ=[t[3]-0.25,t[3]+0.25];
-  // CHANFRO na terça que ENTRA na guia da MF (t[4]!=0, Cassiano 18/07):
-  // mesmo kit da diagonal-na-terça (swage+chanfro no entrante).
-  if(t[4])o.chamfer=1;
+  if(cham)o.chamfer=1;
   var gk=KIT_LAT.CL([XCE,t[2],Zc],0,L,o);scene.remove(gk);W.add(gk);
-  // 2x AUTOBROCANTE 4,8x19 na INTERSEÇÃO das linhas centrais das mesas
-  // (Cassiano 18/07, regra geral p/ CSV — nao importa o grau): t[5]=x da
-  // intersecao, t[6]=y no centro da mesa; z=+-0,068 (as 2 mesas). NAO na
-  // alma. Atravessa mesa-da-terca + mesa-da-guia encostadas.
-  if(t[4]){var zc0=zP-XCE;
-   [0.0685,-0.0685].forEach(function(zo){
-    screwV(t[5],t[6],zc0+zo,'z',(zo>0?-1:1),scene);});}});
- R.forEach(function(t){var L=t[1]-t[0],Zc=(t[0]+t[1])/2;
-  // REMATE MF->pilar: mesma peca, swage nas 2 pontas (regra R53 >=200mm)
-  var o={color:0x66ccff,nseg:20,swZ:[[-L/2,-L/2+0.0600],[L/2-0.0600,L/2]]};
-  var gk=KIT_LAT.CL([XCE,t[2],Zc],0,L,o);scene.remove(gk);W.add(gk);});
+  (t[5]||[]).forEach(function(E){if(E[3])dimPar(E[1],t[4]);});
+  (t[6]||[]).forEach(function(u){dimPar(u,t[4]);});});
  D.forEach(function(d){
   if(portao&&d[7]<portao.h+0.14&&vaoPorta(d[6]))return;           // FRENTE: V acima da porta
   var o={color:0x28c08a,nseg:40,chamfer:1,
          swZ:[[-d[3]/2,-d[3]/2+d[4]],[d[3]/2-d[5],d[3]/2]]};
   var dA=KIT_LAT.CL([XCE,d[0],d[1]],d[2],d[3],o);scene.remove(dA);W.add(dA);
   var piv=new THREE.Group();piv.position.set(XCE,0,d[6]);piv.rotation.y=Math.PI;W.add(piv);
-  var dB=dA.clone();dB.position.set(0,d[0],d[1]-d[6]);piv.add(dB);});
+  var dB=dA.clone();dB.position.set(0,d[0],d[1]-d[6]);piv.add(dB);
+  // DIMPLES da diagonal (25/07): base (canal do mini) + tip (mesa da terça
+  // superior), 22,5mm do end face no centro da mesa — par (y,z) pronto do
+  // Python + espelho da diagonal B (z'=2·centro−z)
+  (d[8]||[]).forEach(function(pd){
+   dimPar(pd[1],pd[0]);dimPar(2*d[6]-pd[1],pd[0]);});});
  // GUIA INCLINADA CONTINUA (1 por agua): contorno superior + costura da
  // telha da empena. Conexao PADRAO (Cassiano 13/07): SWAGE nas 2 pontas
  // + AUTOBROCANTE 4,8x19 vertical (dimple) alma-da-guia -> mesa do
@@ -2657,10 +2662,10 @@ function oitao(zP,dirIn,portao){
  GG.forEach(function(gd){
   var L=gd[3];
   var o={color:0x66ccff,nseg:40,swZ:[[-L/2,-L/2+0.0600],[L/2-0.0600,L/2]]};
-  // LIP CUT onde a terça entra na guia da MF (gd[4]=Z local centrado no
-  // CENTRO DA MESA da terça; gd[5]=meia-largura cobrindo a altura do
-  // perfil na guia inclinada; Cassiano 15/07, alinhamento 21/07).
-  if(gd[4]!=null){var lh=(gd[5]!=null)?gd[5]:0.030;o.lipCutZ=[gd[4]-lh,gd[4]+lh];}
+  // LIP CUTS onde perfis ENTRAM nesta guia (25/07: LISTA — a guia da MF
+  // recebe terça interna + remate por nível; a guia do RAFTER recebe as
+  // terças clampadas). gd[4] = [[posLocal, meiaLargura], ...]
+  if(gd[4]!=null)o.lipCutZ=gd[4].map(function(c){return [c[0]-c[1],c[0]+c[1]];});
   var gk=KIT_LAT.CL([XCE,gd[0],gd[1]],gd[2],L,o);scene.remove(gk);W.add(gk);
   var eB=0.030/L,nB=Math.max(2,Math.round(L/1.0)+1);
   for(var k=0;k<nB;k++){var fr=-0.5+eB+k*(1-2*eB)/(nB-1);
