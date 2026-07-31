@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Clássico · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD beee0a3 · 25/07/2026 13:32</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD d7c63f8 · 31/07/2026 17:52</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -171,6 +171,9 @@ var matGnd   =new THREE.MeshLambertMaterial({color:0x070d07});
 
 // ── Variáveis calculadas pelos módulos Python ──
 var t=0.0025,r=0.0025,wH=0.3,fW=0.075,lL=0.02,refX=0.1;
+// PERFIS do projeto (27/07): nome + peso POR TABELA Rev 04 (kg/m; null =
+// combinação fora da tabela) — fonte única do futuro orçamento/romaneio
+var PERFIS={pilar:{nome:'C300-75-20-2.5',t_mm:2.5,desenv_mm:470,kg_m:9.4},terca:{nome:'C140-45-12-1.55',t_mm:1.55,desenv_mm:240,kg_m:2.98}};
 var pz1=0.00375,pz2=-0.00375;
 var theta=0.2260683879938839,cosT=0.9745551866148996,sinT=0.2241476929214269,tanT=0.22999999999999998;
 var cx=-0.11665803067793774,cy=-0.14496508400896632;
@@ -2554,6 +2557,18 @@ function oitao(zP,dirIn,portao){
  var gr=new THREE.Group();scene.add(gr);
  // R58: pilares da empena EXATAMENTE na projecao dos nos da travessa
  var P1=travCx-travComp/2, P2=travCx+travComp/2;
+ // ── POSICAO DA PORTA (31/07): pilares FLANQUEADORES do vao da porta.
+ // CONVENCAO: esquerda/direita DE QUEM OLHA A FACHADA DE FORA (cliente
+ // em frente ao galpao, z<0 olhando +Z): esquerda do observador = +X.
+ // centro: P1..P2 (historico) · esquerda: P2..UU · direita: canto(0)..P1.
+ // Nos cantos a verga usa a MESMA receita (almas entram wH/2; no pilar de
+ // canto elas SOBREPOEM alma-com-alma as almas do portico — R70.2 — e os
+ // 3x 1/2" caem nas linhas de maquina como hoje). pa/pb = folga 175mm.
+ var UU=cumXworld*2;
+ var PPOS='centro';
+ var pilE=(PPOS==='esquerda')?P2:(PPOS==='direita')?0:P1;
+ var pilD=(PPOS==='esquerda')?UU:(PPOS==='direita')?P1:P2;
+ var pa=pilE+0.175,pb=pilD-0.175;
  function pilarEmpena(x){buildSapata(x,zP);
   var uLow=Math.min(yTopo(x-0.16),yTopo(x+0.16))+0.020;
   // MESA DO PILAR QUASE ENCOSTA NO RAFTER — 5mm de folga (REGRA,
@@ -2567,8 +2582,7 @@ function oitao(zP,dirIn,portao){
                       slp:(x<cumXworld)?tanT:-tanT,   // agua: rafter sobe/desce
                       fTopPos:fPos,fTopNeg:fNeg});}
  pilarEmpena(P1);pilarEmpena(P2);
- if(portao){                                  // porta central entre os pilares
-  var pa=P1+0.175,pb=P2-0.175;                // R58: largura = travComp-0,35
+ if(portao){                                  // porta entre os pilares FLANQUEADORES (pilE/pilD)
   // VIGA DA FRENTE = LONGARINA DO MEZANINO (Cassiano 13/07: "nao crie
   // nova solucao, copie o componente aprovado"): par de C, almas
   // ENTRANDO wH/2 na boca de cada pilar (receita do buildViga:
@@ -2578,14 +2592,14 @@ function oitao(zP,dirIn,portao){
   // mezanino da regra R60, slp=0). Substitui a verga-caixa laranja.
   novaPeca('viga-frente');
   var vY=portao.h+wH/2;                       // base da viga = topo da porta
-  var fSt=P1+wH/2+0.005,fEn=P2-wH/2-0.005,fLn=fEn-fSt,fCx=(fSt+fEn)/2;
+  var fSt=pilE+wH/2+0.005,fEn=pilD-wH/2-0.005,fLn=fEn-fSt,fCx=(fSt+fEn)/2;
   // COR/GRAFISMO = VIGA ESTRUTURAL (Cassiano 13/07): mesmo material dos
   // pilares/rafter/MF (nao a cor de terca) + linhas de maquina brancas
   // (-refX/0/+refX) + tracejado do end face da alma dentro do pilar
   var vg=new THREE.Group();vg.position.set(0,vY,zP);scene.add(vg);
-  var vA=P1-wH/2,vB=P2+wH/2;                  // extremos das almas (boca dos pilares)
+  var vA=pilE-wH/2,vB=pilD+wH/2;              // extremos das almas (boca/alma dos pilares)
   function bVF(sg){
-   mkBox(vg,(P1+P2)/2,0,sg*t/2,(P2-P1)+wH,wH,t,matPilar);
+   mkBox(vg,(pilE+pilD)/2,0,sg*t/2,(pilD-pilE)+wH,wH,t,matPilar);
    mkBox(vg,fCx,+(wH/2-t/2),sg*(t+fW/2),fLn,t,fW,matPilar);
    mkBox(vg,fCx,-(wH/2-t/2),sg*(t+fW/2),fLn,t,fW,matPilar);
    mkCyl(vg,fCx,+(wH/2),sg*(t+r),r,fLn,'x',matRad);
@@ -2603,7 +2617,7 @@ function oitao(zP,dirIn,portao){
   [[vA,0.85],[vB,0.85]].forEach(function(ef){
    mkDash(vg,[new V3(ef[0],+wH/2,t+0.001),new V3(ef[0],-wH/2,t+0.001)],0x4a9ad8,ef[1]);
    mkDash(vg,[new V3(ef[0],+wH/2,-t-0.001),new V3(ef[0],-wH/2,-t-0.001)],0x4a9ad8,0.75);});
-  [P1,P2].forEach(function(px){[-refX,0,refX].forEach(function(bx){
+  [pilE,pilD].forEach(function(px){[-refX,0,refX].forEach(function(bx){
    bolt12(px+bx,bx,0,'z',t*4,vg);});});}
  // ── PAINEL REAL num wrapper girado ──
  // rotation.y=+PI/2: zLocal -> +x mundo (posicao ao longo da fachada);
@@ -2614,7 +2628,7 @@ function oitao(zP,dirIn,portao){
  // kit: -0,080..+0,060 -> centro do CL a 10mm do eixo, LADO DE DENTRO.
  var W=new THREE.Group();W.position.set(0,0,zP);W.rotation.y=Math.PI/2;scene.add(W);
  var XCE=(dirIn>0)?0.010:-0.010;
- function vaoPorta(u){return portao&&u>P1+0.01&&u<P2-0.01;}
+ function vaoPorta(u){return portao&&u>pilE+0.01&&u<pilD-0.01;}
  // GUARDA (13/07, bug do itie): sem parede lateral (B81=0) o KIT_LAT
  // nao existe — o TypeError daqui abortava o SCRIPT INTEIRO (matava o
  // LOD/FAST, window.EMP e a telha das empenas, silenciosamente). Sem o
@@ -2709,7 +2723,7 @@ function oitao(zP,dirIn,portao){
   // Cassiano 13/07: "copiados do outro lado"). Somem TODOS ate o topo
   // da verga; ACIMA dela ficam (as tercas sobre a porta precisam do
   // receptor).
-  if(portao&&((Math.abs(e-P1)<0.01&&sd>0)||(Math.abs(e-P2)<0.01&&sd<0))
+  if(portao&&((Math.abs(e-pilE)<0.01&&sd>0)||(Math.abs(e-pilD)<0.01&&sd<0))
      &&(yc-Ls/2<portao.h+0.32))return;
   novaPeca('mini-pilar');
   var za=e+sd*(0.150+tmE/2);                          // alma na face da mesa (0,150)
@@ -2738,8 +2752,8 @@ function oitao(zP,dirIn,portao){
  // pontas ENCOSTAM na cantoneira da LATERAL (aba vertical dela em
  // x=+-0,150) — Cassiano 13/07: "nada aberto, ali vai telha"
  var ctSegs;
- if(portao){var pa2=P1+0.175,pb2=P2-0.175;
-  ctSegs=[[-0.150,pa2],[pb2,cumXworld*2+0.150]];}
+ if(portao){
+  ctSegs=[[-0.150,pa],[pb,cumXworld*2+0.150]];}
  else ctSegs=[[-0.150,P1-0.001],[P1+0.001,P2-0.001],[P2+0.001,cumXworld*2+0.150]];
  var ctv=0.120,cth=0.075,ctt=0.0025;
  var zF=zP-dirIn*(0.080+ctt/2);                       // aba vertical na face externa
@@ -2762,7 +2776,7 @@ function oitao(zP,dirIn,portao){
  // só nasce onde existe perfil atrás (R01, sem duplicar a lógica aqui)
  window.EMP=window.EMP||[];
  window.EMP.push({zP:zP,dir:dirIn,T:T,G:GG,P1:P1,P2:P2,
-                  porta:portao?{a:P1+0.175,b:P2-0.175,h:portao.h}:null});
+                  porta:portao?{a:pa,b:pb,h:portao.h}:null});
  return gr;}
 // FUNDO: 100% fechado
 oitao((nPorticos-1)*modulo,-1,null);
