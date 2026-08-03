@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Moderno · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD ba2a6d0 · 03/08/2026 20:04</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD 60c4e5a · 03/08/2026 20:29</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -2555,6 +2555,12 @@ var mMPe=new THREE.MeshLambertMaterial({color:0xe54983});   // rosa (mini)
 // portao = {h} (frente) ou null (fundo 100% fechado)
 function oitao(zP,dirIn,portao){
  var gr=new THREE.Group();scene.add(gr);
+ // BUGFIX Cassiano 03/08 ("parafusos voando na porta"): a costura da
+ // telha (fechamento) parafusava pela lista TEORICA de tercas — que
+ // inclui as que o filtro da porta PULA no desenho. T_REAL coleta so
+ // as tercas DESENHADAS e e o que a EMP exporta: parafuso so onde ha
+ // perfil REAL atras (R01), qualquer posicao/largura de porta.
+ var T_REAL=[];
  // R58: pilares da empena EXATAMENTE na projecao dos nos da travessa
  var P1=travCx-travComp/2, P2=travCx+travComp/2;
  // ── POSICAO DA PORTA (31/07): pilares FLANQUEADORES do vao da porta.
@@ -2658,6 +2664,7 @@ function oitao(zP,dirIn,portao){
   screwV(u,ym,zc0+zo,'z',(zo>0?-1:1),scene);});}
  T.forEach(function(t){
   if(portao&&t[2]<portao.h+0.14&&t[1]>pa-0.165&&t[0]<pb+0.165)return;  // FRENTE: TOCA a porta -> sai (nada atravessa)
+  T_REAL.push(t);                      // terca DESENHADA -> vale p/ costura
   var L=t[1]-t[0],Zc=(t[0]+t[1])/2;
   var swA=0.0600,swB=0.0600,cham=0;
   (t[5]||[]).forEach(function(E){if(E[0]<0)swA=E[2];else swB=E[2];cham=1;});
@@ -2783,7 +2790,7 @@ function oitao(zP,dirIn,portao){
  // guias com os clamps REAIS (MF, rafter, verga) — a costura da telha
  // só nasce onde existe perfil atrás (R01, sem duplicar a lógica aqui)
  window.EMP=window.EMP||[];
- window.EMP.push({zP:zP,dir:dirIn,T:T,G:GG,P1:P1,P2:P2,
+ window.EMP.push({zP:zP,dir:dirIn,T:T_REAL,G:GG,P1:P1,P2:P2,
                   porta:portao?{a:pa,b:pb,h:portao.h}:null});
  return gr;}
 // FUNDO: 100% fechado
