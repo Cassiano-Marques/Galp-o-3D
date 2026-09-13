@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Moderno · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD dae623f · 19/08/2026 22:59</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD a7c990f · 13/09/2026 02:10</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -72,6 +72,50 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
 </style>
 
 <button id="vistaBtn" onclick="togglePanel()">👁<br>VISTAS</button>
+<!-- GERAL (Cassiano 09/09/2026): 1 clique volta à visão geral padrão — a MESMA
+     vista 0 do painel (setView(0)), sem abrir Vistas. Fluxo de inspeção:
+     GERAL → duplo clique num ponto → órbita livre → GERAL → outro ponto… -->
+<style>
+/* BARRA DE MODOS (09/09/2026): ÓRBITA | CAMINHAR | GERAL.
+   Ancorada no TOPO-ESQUERDO: presa ao bottom (1ª versão) ela saía da tela em
+   monitor/janela mais baixo que ~700px — o Cassiano não achava o CAMINHAR. */
+#modoBar{
+  position:fixed; top:52px; left:18px; z-index:100;
+  display:flex; gap:6px; align-items:flex-start; font-family:monospace;
+}
+.mdBtn{
+  background:rgba(20,40,20,0.8); color:#c8e0a8; border:1px solid #2a4a2a;
+  border-radius:8px; padding:7px 11px; font-size:11px; letter-spacing:1px;
+  cursor:pointer; font-family:monospace; text-align:center; white-space:nowrap;
+  box-shadow:0 2px 10px rgba(0,0,0,0.45);
+}
+.mdBtn:hover{background:rgba(70,138,61,0.5); color:#fff;}
+.mdBtn.on{background:#468a3d; color:#fff; border-color:#7ada6a;}
+#passoHud{
+  position:fixed; top:92px; left:18px; z-index:100; display:none;
+  color:#c8e0a8; background:rgba(6,10,16,0.9); border:1px solid #2a4a2a;
+  border-radius:8px; padding:7px 11px; font-size:11px; line-height:1.7;
+  font-family:monospace; letter-spacing:0.5px; box-shadow:0 2px 10px rgba(0,0,0,0.45);
+}
+#passoHud b{color:#7ada6a;}
+#passoHud .av{color:#ffcc55;}
+</style>
+<div id="modoBar">
+  <button id="btOrb" class="mdBtn on" title="Duplo clique fixa o pivô; arraste orbita" onclick="setModo('orbita')">🔄 ÓRBITA</button>
+  <button id="btCam" class="mdBtn" title="SEGURE W/S/A/D/Q/E para andar · arraste = olhar · roda = velocidade · Esc sai" onclick="setModo('caminhar')">🚶 CAMINHAR</button>
+  <button id="geralBtn" class="mdBtn" title="Voltar à visão geral do galpão" onclick="irGeral()">🌐 GERAL</button>
+</div>
+<div id="passoHud"></div>
+<script>
+function irGeral(){
+  // saída rápida: se estava CAMINHANDO, volta pra ÓRBITA (a vista 0 já traz
+  // target/camR/camT/camP prontos — não há o que recalcular pelo olhar).
+  if(typeof MODO!=='undefined'&&MODO==='caminhar'){MODO='orbita';_pintaModo();}
+  var b=document.querySelector('#vistaPanel .vBtn');          // botão "Geral" do painel
+  sv(0,b);                                                     // mesma vista 0 (câmera/target/raio)
+  document.getElementById('vistaPanel').classList.remove('open');
+}
+</script>
 
 <div id="vistaPanel">
   <div class="vGrp">── GERAL ──</div>
@@ -170,7 +214,7 @@ var matGnd   =new THREE.MeshLambertMaterial({color:0x070d07});
  function(m){m.polygonOffset=true;m.polygonOffsetFactor=1;m.polygonOffsetUnits=1;});
 
 // ── Variáveis calculadas pelos módulos Python ──
-var t=0.0025,r=0.0025,wH=0.3,fW=0.075,lL=0.02,refX=0.1;
+var t=0.0025,r=0.0025,wH=0.3,fW=0.075,lL=0.02,refX=0.077;
 // PERFIS do projeto (27/07): nome + peso POR TABELA Rev 04 (kg/m; null =
 // combinação fora da tabela) — fonte única do futuro orçamento/romaneio
 var PERFIS={pilar:{nome:'C300-75-20-2.5',t_mm:2.5,desenv_mm:470,kg_m:9.4},terca:{nome:'C140-45-12-1.55',t_mm:1.55,desenv_mm:240,kg_m:2.98}};
@@ -187,7 +231,7 @@ var fSupStartMF=0.3692031021678297,fSupEndMF=0.8032057641678833;
 var fInfStartMF=0.06920310216782971,fInfEndMF=1.2824265433886624;
 var fInfStartMF_aba=0.08120310216782971,fInfEndMF_aba=1.2704265433886623;
 var travBx=3.351947714756531,travCy=0.6063662630469592;
-var travBolt1=3.786730323452183,travBolt2=3.7980821304029777;
+var travBolt1=3.686730323452183,travBolt2=3.6954712148042947;
 var travWX=3.1499999999999995,travDirX=6.55;
 var travComp=3.4000000000000004,travCx=4.85;
 var fTravLen=3.2910000000000004,fLipLen=3.2110000000000003;
@@ -214,15 +258,16 @@ var fInfStartM=0.000000,fInfEndM=0.000000;
 var fInfStartAbaM=0.000000,fInfEndAbaM=0.000000;
 
 // ── Cortes do lip do pilar (parede lateral) — calculado pelo modulo ──
-var LAT_CUTS=[[0.242, 0.307], [0.2618, 0.438], [2.0078, 2.0728], [2.0276, 2.2038], [3.7736, 3.8386], [3.7934, 3.9696], [5.5395, 5.6045], [5.5592, 5.7354]];
+var LAT_CUTS=[[0.2412, 0.3078], [0.248, 0.4422], [2.007, 2.0736], [2.0138, 2.208], [3.7729, 3.8394], [3.7796, 3.9738], [5.5387, 5.6052], [5.5454, 5.7397]];
+var LAT_CUTS_K=[];   // pontas do K da parede mista (só metade local negativa — bPC)
 // Parede lateral ativa? Se sim, o mini-pilar solidariza as almas (nos niveis
 // de terca/diagonal) e os pontos fixos 2000/4000 do pilar saem.
 var latAtivo=1;var PLATIBANDA=1;var PLAT_TOPO=7.376283;
 // ── Cobertura: bandas de corte do lip SUPERIOR do rafter ──
-var RAF_CUTS_T=[[0.3777, 0.4427], [1.8437, 1.9087], [3.3098, 3.3748], [4.7758, 4.8408]];
-var RAF_CUTS_D=[[0.4096, 0.5631], [1.8757, 2.0292], [3.3417, 3.4952]];
+var RAF_CUTS_T=[[0.3769, 0.4434], [1.843, 1.9095], [3.309, 3.3756], [4.7751, 4.8416]];
+var RAF_CUTS_D=[[0.3997, 0.5665], [1.8658, 2.0325], [3.3318, 3.4986]];
 var COB_BRACED=[1, 0, 0, 1];
-var RAF_CUT_BEIRAL=0.0845;   // R51b: lip sup do rafter cortado na ponta do beiral
+var RAF_CUT_BEIRAL=0.0832;   // R51b: lip sup do rafter cortado na ponta do beiral
 
 // ── Helpers ──
 var V3=THREE.Vector3;
@@ -474,7 +519,16 @@ function buildPilar(ox,oz,hh,emp,lados,ligY){novaPeca('pilar');
     // Corte funcional EXPANDIDO pelo alivio (83-60)/2; pontas em CUNHA
     // (cheia na DOBRA em -wH/2, zero na borda livre) — regra do lip cut.
     var LIPR=0.0115;
-    var LCh=(pz>0?lad.pos:lad.neg)?LC:[];  // corte so na metade com vao
+    // K-BRACE da parede mista (09/09/2026, achado do Cassiano): as pontas do
+    // K entram no canal do montante-mini, que vive DENTRO da boca do pilar,
+    // e cruzam o lip do pilar. O K termina no FIM do painel, que nas duas
+    // paredes (pelo espelho do pilar direito) e a metade local NEGATIVA —
+    // janela SO nela, e so se ha vao desse lado. LAT_CUTS_K vazio = nada.
+    // (so pilares da LATERAL — com emp (pilar da empena) nao ha painel de placa
+    //  chegando: sem isso a janela do K caia no lip do pilar da empena sobre o
+    //  mini de la, medido na auditoria)
+    var LCk=(!emp&&pz<0&&lad.neg&&typeof LAT_CUTS_K!=='undefined')?LAT_CUTS_K:[];
+    var LCh=((pz>0?lad.pos:lad.neg)?LC:[]).concat(LCk);  // corte so na metade com vao
     var LCm=mergeBands(LCh,2*LIPR+0.001);  // aberturas unicas (regra mestra)
     var LCe=LCm.map(function(C){return [C[0]-LIPR,C[1]+LIPR];});
     var zlip=pz+sign*(t/2+fW-t/2);
@@ -722,7 +776,7 @@ function buildRafter(ox,oz,mirrorSwap,semTrav){novaPeca('rafter');
         return (b>0.01&&b>a)?[a,b]:null;};
       // -0.0765 = montante do portico; travCx-travComp/2 = pilar da
       // EMPENA no prumo REAL (agua dir e espelhada -> P1 acerta os 2)
-      var _xs=[-0.0765]; if(semTrav)_xs.push(travCx-travComp/2);
+      var _xs=[-0.0775]; if(semTrav)_xs.push(travCx-travComp/2);
       _xs.forEach(function(xr){var s=_winAt(xr,wH/2);if(s)_winSup.push(s);});
     }
     if(_winSup.length){
@@ -897,8 +951,18 @@ function buildTravessa(oz){novaPeca('travessa');
 // é INVERTIDA — boca pra DENTRO, ALMA lisa (faceada) alinhada ao endface (face
 // +X da alma em flgEndMez) → acabamento liso pra fora, igual ao montante
 // invertido do painel. Retorna {x, inv} por travessa.
-// FOLGA DO CORTE viga×pilar de empena (Cassiano 03/08 — constante ÚNICA):
+// FOLGA DO CORTE viga×pilar de empena (Cassiano 03/08): recuo do CORTE DE
+// MESA em relação à face do pilar — "mesa cortada chega a 5mm do receptor".
+// NÃO é o vão entre longarinas; os dois papeis eram a MESMA constante até
+// 12/09/2026 e por isso não davam para regular em separado.
 var FOLGA_VIGA_EMP=0.005;
+// R112 (Cassiano 12/09/2026): VÃO DA EMENDA DAS LONGARINAS DO MEZANINO.
+// Onde duas longarinas se encontram sobre o EIXO de um pilar, cada uma
+// termina FOLGA_EMENDA_MEZ antes do eixo — 1mm por lado, 2mm de vão total
+// (antes: 5+5 = 10mm). O eixo do pilar segue sendo a referência e as duas
+// peças nunca se sobrepõem. Vale para pilar INTERMEDIÁRIO e de EMPENA, em
+// qualquer posição do mezanino (início/meio/fundo) e qualquer dimensão.
+var FOLGA_EMENDA_MEZ=0.001;
 function mezTravPos(){
   var vt0=(typeof MZV!=='undefined')?MZV.t:t, vfW0=(typeof MZV!=='undefined')?MZV.fW:fW;
   var P=[];
@@ -916,28 +980,38 @@ function mezTravPos(){
     if(mezPorticos.indexOf(1)>=0&&typeof QF1!=='undefined'){QAg=QF1;QBg=QF2;}
     QUEB.push([QAg+wH/2,wH],[QBg+wH/2,wH]);
   }
-  if(mezAtivo&&nMezPilares>0){
-    var wHc=(typeof MZC!=='undefined')?MZC.wH:wH;
-    // R91: posições dos INTERMEDIÁRIOS no VÃO REAL do mez (lateral =
-    // avulso da borda ↔ parede); vão inteiro = contas idênticas.
-    var _qA=mezOnSide?(mezPlus?mezPilarX:0):0;
-    var _qB=mezOnSide?(mezPlus?cumXworld*2:mezPilarX):cumXworld*2;
-    for(var mq=1;mq<=nMezPilares;mq++)
-      QUEB.push([_qA+(_qB-_qA)*mq/(nMezPilares+1)+wH/2,wHc]);
-  }
+  // R114 (Cassiano 12/09/2026): o pilar INTERMEDIÁRIO do mez NÃO quebra a
+  // grade. Ele chega só até o mezanino e é ELE quem recebe o corte de mesa
+  // (connTop) para a longarina passar inteira — na região da travessa o que
+  // cruza é essencialmente a ALMA dele. Criar zona proibida ali era tratá-lo
+  // como pilar de empena: abria um vão de 477mm e enfiava uma travessa a
+  // 90mm do vizinho (medido no 12×25 com 2 intermediários). Só o pilar de
+  // EMPENA, que é completo e contínuo, quebra a grade.
   if(mezOnSide) QUEB=QUEB.filter(function(q){return q[0]>tgS+0.02&&q[0]<tgE-0.02;});  // R83: só quebras dentro da lateral do mez
+  // R114 + R116: as travessas INTERNAS mantêm a orientação da primeira
+  // (inv:false — boca para +X, ou seja para DENTRO do mezanino). A última NÃO
+  // segue essa orientação: R116 (Cassiano 12/09/2026) — a BOCA de uma travessa
+  // de EXTREMIDADE nunca pode ficar voltada para FORA do galpão. Na ponta de X
+  // alto, boca para dentro = boca para −X, logo a última é INVERTIDA.
+  // Invertida, a peça ocupa [x−t/2−fW, x+t/2]: o limite físico da posição dela
+  // passa a ser x = tgE − t/2 (a FACE lisa para em tgE, o limite do pilar de
+  // empena). A distribuição da R114 não muda de regra — só preenche o vão útil
+  // até este limite, que é o da peça na orientação correta.
+  var ESP_MAX=0.440;                 // R114: máximo aceito c/c
+  var xUlt=tgE-vt0/2;                // R116: limite da ÚLTIMA, que é invertida
+  function trecho(a,b){
+    var L=b-a; if(L<0.05){P.push({x:a,inv:false});return;}
+    // R114: nominal 400 c/c; a divisão real do vão pode chegar a ~440.
+    // Passou de 440 -> entra MAIS UMA travessa e o trecho INTEIRO é
+    // redistribuído por igual (nunca um último intervalo residual).
+    var nV=Math.max(1,Math.round(L/0.400)); var esp=L/nV;
+    if(esp>ESP_MAX+1e-9){nV=Math.ceil(L/ESP_MAX);esp=L/nV;}
+    for(var k2=0;k2<=nV;k2++)P.push({x:a+k2*esp,inv:false});
+  }
   if(!QUEB.length){
-    var xi=tgS;
-    while(xi<=tgE+0.001){P.push({x:xi,inv:false}); xi+=0.400;}
+    trecho(tgS,xUlt);           // R114: vão útil inteiro, sem resíduo
   } else {
     QUEB.sort(function(a,b){return a[0]-b[0];});
-    var fInv0=tgE-vt0/2, startInv0=fInv0-(vt0/2+vfW0);
-    function trecho(a,b){
-      var L=b-a; if(L<0.05){P.push({x:a,inv:false});return;}
-      var nV=Math.max(1,Math.round(L/0.400)); var esp=L/nV;
-      if(esp>0.500+1e-9){nV=Math.ceil(L/0.500);esp=L/nV;}
-      for(var k2=0;k2<=nV;k2++)P.push({x:a+k2*esp,inv:false});
-    }
     // FOLGA REAL de 50mm ate a PECA da travessa (correcao 03/08 — a
     // BOCA aponta +X): a travessa a ESQUERDA do pilar avanca a mesa
     // (t/2+fW) alem do eixo -> eixo esquerdo recua isso; a da DIREITA
@@ -947,13 +1021,14 @@ function mezTravPos(){
     QUEB.forEach(function(qq){var q=qq[0],wp=qq[1];
       trecho(xs0, q-(wp/2+0.050+vt0/2+vfW0));
       xs0=q+(wp/2+0.050+vt0/2);});
-    trecho(xs0,startInv0-0.002);
+    trecho(xs0,xUlt);
   }
-  var fInv=tgE-vt0/2;          // alma (face +X) flush no endface
-  var startInv=fInv-(vt0/2+vfW0);    // borda interna do mesa do fechamento (boca p/ dentro)
-  // guarda anti-sobreposição: a grade não pode invadir o mesa do fechamento
-  while(P.length&&(P[P.length-1].x+vt0/2+vfW0)>startInv-0.001)P.pop();
-  P.push({x:fInv,inv:true});
+  // trechos vizinhos compartilham a borda -> tira repetidos (1mm)
+  P.sort(function(a,b){return a.x-b.x;});
+  P=P.filter(function(o,i,A){return i===0||o.x-A[i-1].x>0.001;});
+  // R116: EXTREMIDADES com a boca para DENTRO. A primeira (X baixo) já está
+  // certa com inv:false (boca p/ +X). A última (X alto) INVERTE: boca p/ −X.
+  if(P.length>1)P[P.length-1].inv=true;
   if(mezOnSide){   // R83: a travessa de BORDA faceia o FIM da viga (plano
     // cornerX) — end face da travessa alinhado ao da viga e à face da
     // coluna. loEnd = borda da porta no lado de X baixo (porta à direita).
@@ -962,6 +1037,9 @@ function mezTravPos(){
     // pilar da empena (não na linha da alma/centro) e apoia na MESA da viga
     // do mez. Sua face que encara o pilar recua 5mm da FACE do pilar
     // (mezVL0±wH/2), NÃO do centro. Quem entra no pilar é só a viga.
+    // R116: a travessa de BORDA é de EXTREMIDADE -> boca para DENTRO. Em X
+    // baixo (loEnd) isso é inv:false; em X alto é inv:true, e aí o eixo não
+    // recua a mesa (a peça invertida a joga para −X).
     var xB=loEnd?(mezVL0+wH/2+0.005+vt0/2):(mezVL1-wH/2-0.005-vt0/2);
     P=P.filter(function(o){return loEnd?(o.x>xB+0.03):(o.x<xB-0.03);});
     P.push({x:xB,inv:!loEnd});
@@ -1034,9 +1112,9 @@ function buildViga(oz,cutNeg,cutPos){novaPeca('viga-mezanino');
       EMD.push(_eA+(_eB-_eA)*mp2/(nMezPilares+1)+wH/2);
     // PILAR INTERMEDIARIO (Cassiano 03/08 v2): mesas+lips da longarina
     // PRESERVADOS ate o end face — o PILAR ja corta os flanges dele p/
-    // receber a viga (connTop). Corte = so o GAP da emenda (5mm+5mm).
+    // receber a viga (connTop). Corte = so o GAP da emenda (R112: 1mm+1mm).
     EMD.forEach(function(ex){
-      BQe.push([ex-FOLGA_VIGA_EMP,ex+FOLGA_VIGA_EMP]);});
+      BQe.push([ex-FOLGA_EMENDA_MEZ,ex+FOLGA_EMENDA_MEZ]);});
   }
   if(mezOnSide){   // R83: descarta emendas/cortes fora da lateral do mez
     EMD=EMD.filter(function(ex){return ex>vL0+0.02&&ex<vL1-0.02;});
@@ -1072,13 +1150,13 @@ function buildViga(oz,cutNeg,cutPos){novaPeca('viga-mezanino');
   function bV(sg){
     if(EMD.length){
       // EMENDA v2 em SERIE (LEI R77): em cada pilar do caminho os
-      // segmentos terminam FOLGA_VIGA_EMP (5mm) ANTES da linha central
-      // — end faces SIMETRICOS (10mm entre eles), pilar INTEIRO no
+      // segmentos terminam FOLGA_EMENDA_MEZ (R112: 1mm) ANTES da linha
+      // central — end faces SIMETRICOS (2mm entre eles), pilar INTEIRO no
       // meio. Tracejados nas faces do par + "raio-x" nas faces do
       // pacote do pilar (a junta fica DENTRO do pilar).
       var xs=vL0;
       EMD.forEach(function(ex){
-        var eA=ex-FOLGA_VIGA_EMP,eB=ex+FOLGA_VIGA_EMP;
+        var eA=ex-FOLGA_EMENDA_MEZ,eB=ex+FOLGA_EMENDA_MEZ;
         mkBox(vg,(xs+eA)/2,0,sg*vt/2,eA-xs,vwH,vt,matV);
         [vt+0.001,-vt-0.001,pz1+t/2+0.0015,pz2-t/2-0.0015].forEach(function(zd){
           mkDash(vg,[new V3(eA,+vwH/2,zd),new V3(eA,-vwH/2,zd)],0x4a9ad8,0.85);
@@ -1140,10 +1218,16 @@ function buildViga(oz,cutNeg,cutPos){novaPeca('viga-mezanino');
   }
   function buildAba(sg,corta){
     var lipZ = sg*(vt/2+vfW);
-    var CUTS=(corta?FCT:[]).concat(BQ);
+    // R111 (Cassiano 12/09/2026): na banda do PILAR DE EMPENA (BQ) a MESA ja e
+    // cortada (fSegs) e o corte de mesa LEVA o lip junto, RETO (C12) - nao e
+    // operacao de LIP CUT: sem alivio, sem cunha. O kit do lip cut (janela
+    // funcional + cunhas) fica SO onde uma TRAVESSA chega (FCT). BQe (gap da
+    // emenda) segue reto como antes.
+    var CUTS=(corta?FCT:[]);
     var MRG = mergeBands(CUTS, 2*LIPR+0.001);
     var EXP = MRG.map(function(C){return [C[0]-LIPR, C[1]+LIPR];});
-    var segs = (EXP.length||BQe.length) ? vSegs(abaA,abaB,EXP.concat(BQe)) : [[abaA,abaB]];
+    var RETO = BQe.concat(BQ);
+    var segs = (EXP.length||RETO.length) ? vSegs(abaA,abaB,EXP.concat(RETO)) : [[abaA,abaB]];
     segs.forEach(function(s){
       if(s[1]-s[0] < 0.006) return;            // sliver <6mm não se fabrica
       var sl=s[1]-s[0];
@@ -1309,7 +1393,17 @@ function buildPilarMez(ox,oz){novaPeca('pilar-mezanino');
       mkCyl(pg,-(wH/2-r),flgCY,pz+sign*(t/2+fW),r,flangeH,'y',matRad);
     }
   }
-  bPC(pz1,+1,matPilar); bPC(pz2,-1,matPilar);
+  // R115 (Cassiano 12/09/2026): o pilar INTERMEDIÁRIO do mez é COLUNA
+  // COMPOSTA BACK-TO-BACK — os dois perfis encostam ALMA COM ALMA e sobem
+  // assim. Na altura da longarina as mesas já são cortadas (flangeH), então
+  // o que sobe é só o pacote das duas almas, que ENTRA no vão entre os dois
+  // perfis da longarina. É o caso INVERSO dos outros dois nós: na empena, no
+  // canto e no pilar lateral da ponta é a LONGARINA que recebe o corte de
+  // mesa e entra no pilar (pz1/pz2, que o par do pórtico abre).
+  // Antes usava pz1/pz2 e desenhava o pilar ABRAÇANDO a longarina — montagem
+  // fisicamente diferente da peça real.
+  var pzB=t/2;                       // almas encostadas no eixo da longarina
+  bPC(-pzB,-1,matPilar); bPC(+pzB,+1,matPilar);
 
   // Parafusos de ligação à sapata — Y=60,120,180mm (base)
   [0.060,0.120,0.180].forEach(function(hy){[-refX,0,refX].forEach(function(hx){
@@ -1358,7 +1452,15 @@ function buildTravessaMez(oz){novaPeca('travessa-mezanino');
   var swFlat=fW+0.010, swRamp=0.010;
   // CONIFICAÇÃO (gravada): chapa + 0.2mm/lado — mesma fórmula da parede
   var SWM=wH-2*(t+0.0002);   // 294.6mm nesta no canal de wH-2t=295mm
-  var fWs=fW-(t+0.0002);     // mesa conificada 72.3mm
+  // R110 (Cassiano 12/09/2026): o SWAGE atua SÓ na dimensão da ALMA —
+  // igual ao C140 já correto no galpão (140->136,5 com a mesa firme em 45).
+  // A versão de 12/06 encolhia a mesa JUNTO (75->72,3) e a peça saía com as
+  // DUAS dimensões da seção compactadas, o que a perfiladeira não faz (a
+  // tira vem da bobina com largura única). A invasão do flange da viga que
+  // motivou aquilo é no eixo Y (a mesa ficava na altura CHEIA) e já é
+  // resolvida por SWM, que reposiciona a mesa; a largura dela, no eixo X,
+  // nunca teve papel nesse encaixe (sobram 21,5mm até o lip da viga).
+  var fWs=fW;                // mesa com a largura NOMINAL da tabela
 
   var bodyLen=tLen-2*(swFlat+swRamp);
 
@@ -1580,12 +1682,14 @@ var LAT_PECAS=1;   // 0 = só o construtor (empena usa); peças da lateral não 
 var Hm=0.14,Fm=0.045,Lm=0.012,tm=0.00155;
 var SW_lat=0.06,SWD_lat=0.1365;
 var zA_mp=0.005775,zM_mp=0.02905,Zb_lat=0.00655,dYb_lat=0.08,dYt_lat=0.001;
+var dytef_lat=[-0.004378, -0.004378, -0.004378, -0.004378];   // recuo EFETIVO do tip por nivel (folga fisica alma x alma, 07/09)
+var ybef_lat=[0.372915, 2.138736, 3.904557, 5.670377],zbef_lat=[0.000764, 0.000764, 0.000764, 0.000764];   // ponta EFETIVA da base (regra comum de terminacao chanfrada, 07/09)
 var tercaY_lat=[0.297, 2.062821, 3.828642, 5.594462, 7.360283];
-var angD_lat=[0.61476605, 0.61476605, 0.61476577, 0.61476605],LA_lat=[2.921145, 2.921145, 2.921144, 2.921145],ztip_lat=[2.392858, 2.392858, 2.392858, 2.392858],dimoff_lat=[0.068343, 0.068343, 0.068343, 0.068343];
+var angD_lat=[0.61476605, 0.61476605, 0.61476577, 0.61476605],LA_lat=[2.937553, 2.937553, 2.937552, 2.937553],ztip_lat=[2.400475, 2.400475, 2.400475, 2.400475],dimoff_lat=[0.068343, 0.068343, 0.068343, 0.068343],tipdz_lat=[2.401416, 2.401416, 2.401416, 2.401416];
 var YbD_lat=[0.377, 2.142821, 3.908642, 5.674462];   // base efetiva das diagonais (platibanda: elevada)
 var BRL=[1, 0, 0, 1];       // vãos contraventados (regra 25/07 — MESMA lista da cobertura)
-var MP_CUTS=[[0.242, 0.307], [0.281, 0.4188], [2.0078, 2.0728], [2.0468, 2.1846], [3.7736, 3.8386], [3.8126, 3.9504], [5.5395, 5.6045], [5.5784, 5.7162], [7.3053, 7.3703]];
-var MP_SEGS=[[0.345171, 0.240343], [2.085743, 0.290843], [3.851564, 0.290843], [6.417122, 1.890321]],MP_BOLTS=[[0.261, 0.415343], [1.990321, 2.181164], [3.756142, 3.946985], [5.521962]],MP_CENTRAL=[1.179911, 2.945731],refX_lat=0.1;
+var MP_CUTS=[[0.2412, 0.3078], [0.2672, 0.423], [2.007, 2.0736], [2.033, 2.1888], [3.7729, 3.8394], [3.7988, 3.9546], [5.5387, 5.6052], [5.5646, 5.7205], [7.3045, 7.3711]];
+var MP_SEGS=[[0.345171, 0.240343], [2.085743, 0.290843], [3.851564, 0.290843], [6.417122, 1.890321]],MP_BOLTS=[[0.261, 0.415343], [1.990321, 2.181164], [3.756142, 3.946985], [5.521962]],MP_CENTRAL=[1.179911, 2.945731],refX_lat=0.077;
 var T0G=0;  // 1 = terça 0 é a GUIA do painel de placa (não desenhar a deitada)
 var mBolt_l=new THREE.MeshLambertMaterial({color:0xe04040});
 var L_lat=modulo-2*Zb_lat;
@@ -1618,7 +1722,9 @@ var mBloL=new THREE.MeshLambertMaterial({color:0x28c08a});
 function wallBloq(XC,yLoT,yHiT,Zb){
  novaPeca('bloqueador-lateral');
  var xLo=XC-Hm/2-tm/2,xHi=XC+Hm/2+tm/2,LIPRb=0.0115,TABb=0.018;
- var b0=yLoT+tm/2+0.010, b1=yHiT-Fm-0.010;   // corpo: 10mm da alma | 10mm da ponta da mesa
+ // corpo: FOLGA_LIPCUT da face da alma de baixo | FOLGA_LIPCUT da face
+ // INFERIOR do lip da terça de cima (y-Fm-tm/2; era -Fm → 9,2 mm reais)
+ var b0=yLoT+tm/2+0.01, b1=yHiT-Fm-tm/2-0.01;
  var dl=yLoT-tm/2-FWSl/2, dr=yHiT-tm/2-FWSl/2; // dimples (centro da mesa conificada; boca p/ baixo)
  var t0=dl-TABb, t1=dr+TABb;                  // tabs passam 18mm do furo
  function bxb(x,y,z,sx,sy,sz){var b=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mBloL);
@@ -1660,8 +1766,11 @@ function CL(C,ang,L,o){o=o||{};
  novaPeca(Math.abs(ang)>0.01?'diagonal-lateral':'terca-lateral');
  var grp=new THREE.Group();grp.position.set(C[0],C[1],C[2]);grp.rotation.x=-ang;
  var m=new THREE.MeshLambertMaterial({color:o.color});var nseg=o.nseg||50;
- var CHc=o.chamfer?0.0135:0, zlo=-L/2+CHc, zhi=L/2-CHc;
- var LIPR=0.0115;                                   // alivio do lip cut (83-60)/2
+ var CHc=o.chamfer?0.0135:0;   // recuo do chanfro = fonte comum (geometria)
+ // chanfro POR PONTA (07/09/2026): o.chamferEnds=[a,b] escolhe; sem ele, as duas (diagonais — comportamento original)
+ var CHa=(CHc>0&&(!o.chamferEnds||o.chamferEnds[0]))?CHc:0,CHb=(CHc>0&&(!o.chamferEnds||o.chamferEnds[1]))?CHc:0;
+ var zlo=-L/2+CHa, zhi=L/2-CHb;
+ var LIPR=0.0115;                        // alivio do lip cut (83-60)/2 — fonte comum
  // lipCutZ aceita UMA banda [a,b] (formato original) ou LISTA [[a,b],...]
  // (25/07: a guia da empena recebe VARIOS perfis entrantes — 1 corte cada)
  var LCZ=o.lipCutZ?((typeof o.lipCutZ[0]==='number')?[o.lipCutZ]:o.lipCutZ):[];
@@ -1702,17 +1811,17 @@ function CL(C,ang,L,o){o=o||{};
  // cada canto junto a mesa (foto da peca real, corrigido pelo Cassiano)
  if(o.swZ){var regsS=(o.swZ.length>0&&Array.isArray(o.swZ[0]))?o.swZ:[o.swZ];
   var mCo=new THREE.MeshLambertMaterial({color:new THREE.Color(o.color).multiplyScalar(0.72)});
-  var bLo=-L/2+CHc+0.002,bHi=L/2-CHc-0.002;
+  var bLo=-L/2+CHa+0.002,bHi=L/2-CHb-0.002;
   regsS.forEach(function(R){
    var c0=Math.max(R[0],bLo),c1=Math.min(R[1],bHi);
    if(c1-c0<0.008)return;
    var zc2=(c0+c1)/2,ld=c1-c0;
    [-(SWD_lat/2-0.008),(SWD_lat/2-0.008)].forEach(function(xr){
     grp.add(locBox(mCo,xr,0,zc2,0.006,tm+0.0008,ld));});});}
- if(CHc>0){var dE=dAtL(-L/2+0.001,o.swZ);
+ if(CHa>0||CHb>0){var dE=dAtL(-L/2+0.001,o.swZ);
   var mkCh=function(tipZ,dir){
    var zb=tipZ-dir*CHc;
-   var yA=-(Fm/2-0.009),yB=-(Fm/2+0.009);            // tira central de 18mm
+   var yA=-(Fm/2-0.009),yB=-(Fm/2+0.009);            // tira central de 18mm (fonte comum)
    var sh=new THREE.Shape();
    sh.moveTo(-zb,0);sh.lineTo(-tipZ,yA);             // canto da alma recua
    sh.lineTo(-tipZ,yB);                              // 18mm retos na ponta
@@ -1721,7 +1830,7 @@ function CL(C,ang,L,o){o=o||{};
    [-dE/2,dE/2].forEach(function(xm){
     var mm=new THREE.Mesh(g2,m);
     mm.rotation.y=Math.PI/2;mm.position.x=xm-tm/2;grp.add(mm);});};
-  mkCh(L/2,1);mkCh(-L/2,-1);}
+  if(CHb>0)mkCh(L/2,1);if(CHa>0)mkCh(-L/2,-1);}
  scene.add(grp);return grp;}
 function mpSegs(yBot,yTop,cuts){var v=[[yBot,yTop]];for(var c=0;c<cuts.length;c++){var nv=[],a=cuts[c][0],e=cuts[c][1];for(var i=0;i<v.length;i++){var s=v[i][0],tt=v[i][1];if(e<=s||a>=tt){nv.push([s,tt]);}else{if(a>s)nv.push([s,a]);if(e<tt)nv.push([e,tt]);}}v=nv;}return v;}
 var LIPR_mp=0.0115;   // alivio do lip cut (83-60)/2
@@ -1795,8 +1904,8 @@ var cxR=cumXworld*2;
 // b6 = mesa OPOSTA do pilar (lado de dentro do galpao): furo SIMETRICO de
 // calibracao (regra do rafter levada ao pilar — mesmo longitudinal da juncao)
 var sides=[
- {xc:-0.076,b1:-0.15,b2:-0.1451,b5:-0.1468,b6:0.1503,b3:-0.0073,b4:-0.0056,a1:-0.14663,a2:-0.14198,a3:-0.00913,a4:-0.00448},
- {xc:cxR+0.076,b1:cxR+0.15,b2:cxR+0.1451,b5:cxR+0.1468,b6:cxR-0.1503,b3:cxR+0.0073,b4:cxR+0.0056,a1:cxR+0.14663,a2:cxR+0.14198,a3:cxR+0.00913,a4:cxR+0.00448}];
+ {xc:-0.077,b1:-0.15,b2:-0.1461,b5:-0.1478,b6:0.1503,b3:-0.0083,b4:-0.0066,a1:-0.14763,a2:-0.14298,a3:-0.01013,a4:-0.00548},
+ {xc:cxR+0.077,b1:cxR+0.15,b2:cxR+0.1461,b5:cxR+0.1478,b6:cxR-0.1503,b3:cxR+0.0083,b4:cxR+0.0066,a1:cxR+0.14763,a2:cxR+0.14298,a3:cxR+0.01013,a4:cxR+0.00548}];
 var NT=tercaY_lat.length;
 for(var si=0;si<(LAT_PECAS?sides.length:0);si++){
  var S=sides[si],XC=S.xc;
@@ -1806,7 +1915,43 @@ for(var si=0;si<(LAT_PECAS?sides.length:0);si++){
   for(var ti=0;ti<NT;ti++){
    if(T0G&&ti===0)continue;              // terça 0 = GUIA do painel (peça do parede_placa)
    var opts={color:0x66ccff,nseg:50,swZ:BRL[vv]?swZ_lat:swZB[ti]};
-   if(ti>0&&BRL[vv])opts.lipCutZ=[-0.25,0.25];
+   // LIP CUT pela INTERFERÊNCIA FÍSICA (09/09/2026) — era [-0.25,0.25],
+   // meio metro cravado, sem relação com o que precisa passar. O lip só
+   // precisa liberar o corpo da diagonal que o atravessa, + FOLGA_LIB de
+   // cada lado; a folga é a MESMA já usada no comprimento do swage logo
+   // abaixo ("+10mm de folga", regra do Cassiano) — fonte única.
+   // Geometria: a folga é medida do CORPO FÍSICO da diagonal (não do eixo)
+   // no plano do lip. Como a perna é inclinada e se afasta do apex ao
+   // descer, o ponto mais próximo da borda do corte fica na face INFERIOR
+   // do lip; e o material mais externo da perna swagada é a face do
+   // corrugado (tm/2 + CORR/2 além do eixo). A gêmea do V é o espelho.
+   if(ti>0&&BRL[vv]){
+    var jd=ti-1;                                   // diagonal cujo TIP chega aqui
+    var aD=angD_lat[jd],sD=Math.sin(aD),cD=Math.cos(aD);
+    var YtD=tercaY_lat[jd+1]-dytef_lat[jd],CyD=(ybef_lat[jd]+YtD)/2;
+    var Z0L=Zc-modulo/2;                           // início do vão
+    var CzD=(Z0L+zbef_lat[jd]+Z0L+ztip_lat[jd])/2;
+    var Ybot=tercaY_lat[ti]-Fm-tm/2;               // face INFERIOR do lip
+    var wOut=tm/2+0.0008/2;       // face externa do corrugado
+    // mesma transformação do CL (rotation.x = −aD): ponto local (w, u) →
+    // Y = Cy + w·cos + u·sin ; Z = Cz − w·sin + u·cos. Resolvendo Y=Ybot
+    // para a face w=+wOut: Z = Cz + (Ybot−Cy)·cot − wOut/sin.
+    var zOut=CzD+((Ybot-CyD)*cD)/sD-wOut/sD;       // extremo FÍSICO da perna esq.
+    var zOut2=2*Zc-zOut;                           // perna direita (V espelhado)
+    // FOLGA = distância MÍNIMA 3D entre a borda do corte e o corpo (regra
+    // do Cassiano, 09/09). A borda do lip é paralela à mesa e a face da
+    // perna chega inclinada em aD: a distância mínima é a PERPENDICULAR à
+    // face = folga_no_plano·sin(aD). Logo, no plano do lip, o corte recua
+    // FOLGA/sin(aD) de cada extremo do corpo (10 mm no plano dariam só
+    // 10·sin(25,9°) ≈ 4,4 mm reais — medido 4,77 na cena).
+    var gIn=0.01/sD;
+    // JANELA FUNCIONAL (o que a ferramenta remove por inteiro) = corpo +
+    // gIn de cada lado. O ALÍVIO (rampa de 11,5 por borda) fica FORA da
+    // janela — dentro dela o material remanescente da rampa encostava a
+    // 0,58 mm da perna (medido no C). Material removido = janela + 2·alívio.
+    var fLo=Math.min(zOut,zOut2)-gIn, fHi=Math.max(zOut,zOut2)+gIn;
+    opts.lipCutZ=[fLo-Zc,fHi-Zc];
+   }
    var tgL=CL([XC,tercaY_lat[ti],Zc],0.0,L_lat,opts);}}
    // (cabecas da terca: jFull b2/b4 nas mesas do MINI, no mesmo ponto — a
    //  cabeca na mesa conificada da terca ficava ENTERRADA sob a mesa do mini)
@@ -1814,8 +1959,8 @@ for(var si=0;si<(LAT_PECAS?sides.length:0);si++){
  // parede e cobertura na MESMA modulação; extremos sempre + uniformes)
  for(var vv=0;vv<nPorticos-1;vv++){if(!BRL[vv])continue;var Z0=vv*modulo,Zv=Z0+modulo/2;
   for(var ti=0;ti<NT-1;ti++){
-   var Yb=YbD_lat[ti],Yt=tercaY_lat[ti+1]-dYt_lat;
-   var Zt=Z0+ztip_lat[ti],Cy=(Yb+Yt)/2,Cz=(Z0+Zb_lat+Zt)/2;
+   var Yb=ybef_lat[ti],Yt=tercaY_lat[ti+1]-dytef_lat[ti];   // pontas pela folga FISICA (regra comum 07/09)
+   var Zt=Z0+ztip_lat[ti],Cy=(Yb+Yt)/2,Cz=(Z0+zbef_lat[ti]+Zt)/2;
    // REGRA UNIVERSAL DO SWAGE nas DUAS pontas (sem swage suficiente, o
    // entrante colide com o receptor — "tudo tudo tudo", Cassiano):
    // BASE (pilar): alcance da mesa do C300 em Z / cos(ang) + margem
@@ -1823,8 +1968,8 @@ for(var si=0;si<(LAT_PECAS?sides.length:0);si++){
    // REGRA DO COMPRIMENTO (Cassiano): pelo angulo de entrada, da ALMA do
    // receptor ate SAIR DA MESA, medido ao longo do entrante, + 10mm de folga
    var mesaReach=fW+0.005;
-   var swBase=(mesaReach-Zb_lat)/Math.cos(angD_lat[ti])+0.010;
-   var swTip=(Fm-dYt_lat)/Math.sin(angD_lat[ti])+0.010;
+   var swBase=(mesaReach-zbef_lat[ti])/Math.cos(angD_lat[ti])+0.010;   // desde a ponta EFETIVA da base
+   var swTip=(Fm-dytef_lat[ti])/Math.sin(angD_lat[ti])+0.010;   // acompanha o tip avancado
    var swD=[[-LA_lat[ti]/2,-LA_lat[ti]/2+swBase],[LA_lat[ti]/2-swTip,LA_lat[ti]/2]];
    var dA=CL([XC,Cy,Cz],angD_lat[ti],LA_lat[ti],{color:0x28c08a,nseg:50,swZ:swD,chamfer:1});
    // dimples do entrante na INTERSECAO das linhas centrais (regra do
@@ -1847,7 +1992,7 @@ for(var si=0;si<(LAT_PECAS?sides.length:0);si++){
  // MINI-PILARES SEGMENTADOS (um segmento por terca, lips seccionados)
  // + furacao 1/2" nos niveis de terca/diagonal: -refX 4 pecas, +refX 2 almas pilar
  var outward=(si===0)?-1:1;          // lado externo da parede
- var PC=XC-outward*0.076;            // centro do pilar
+ var PC=XC-outward*0.077;            // centro do pilar
  var outerX=PC+outward*refX_lat;     // linha externa (-refX, lado da telha)
  var innerX=PC-outward*refX_lat;     // linha interna (+refX, perto do centro)
  for(var pp=0;pp<nPorticos;pp++){var Zp=pp*modulo;
@@ -1927,7 +2072,9 @@ for(var si=0;si<(LAT_PECAS?sides.length:0);si++){
    if(pp>0&&BRL[pp-1])jFull(_p1,_p4,Yd,zBN);}
   if(pp<nPorticos-1&&BRL[pp]){var Zv2=Zp+modulo/2;      // apex: so vao com V
    for(var ti=0;ti<NT-1;ti++){var Ya=tercaY_lat[ti+1]-Fm/2;
-    jFull(S.a1,S.a4,Ya,Zv2-apexZ);jFull(S.a1,S.a4,Ya,Zv2+apexZ);}}}
+    // tip do V: DIMPLE na INTERSECAO REAL das linhas centrais das mesas (tipdz_lat, R08 07/09);
+    // perna direita = espelho do clone em Zv2 -> Zp+modulo-tipdz. (era Zv2 +- apexZ nominal)
+    jFull(S.a1,S.a4,Ya,Zp+tipdz_lat[ti]);jFull(S.a1,S.a4,Ya,Zp+modulo-tipdz_lat[ti]);}}}
 }
 // KIT DA LATERAL exposto p/ as EMPENAS (v3b, 13/07): a parede do fundo/
 // frente REUSA a mesma peca CL (terca/diagonal com swage, lip cut,
@@ -3070,7 +3217,7 @@ function yTopo(x){var d=Math.min(x-(-wH/2),(cumXworld*2+wH/2)-x);
  return pilTopo-quedaRaf+tanT*(d)-0.020;}
 function box(gr,cx,cy,cz,sx,sy,sz,m){var b=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),m);
  b.position.set(cx,cy,cz);b.userData.p=PIECE;gr.add(b);return b;}
-var T=[[0.157, 2.993, 0.297, 9000000000.0, 0.2753, [], [0.174, 2.9759]], [0.157, 2.993, 2.0628, 9000000000.0, 2.0411, [], [0.174, 2.9759]], [0.157, 2.993, 3.8286, 9000000000.0, 3.8069, [], [0.174, 2.9759]], [0.157, 0.6328, 5.5945, 9000000000.0, 5.5727, [[1, 0.6148, 0.0756, 0]], [0.174]], [0.5968, 2.993, 5.5945, 9000000000.0, 5.5727, [[-1, 0.6148, 0.0756, 1]], [2.9759]], [3.307, 6.393, 0.297, 9000000000.0, 0.2753, [], [3.324, 6.3759]], [3.307, 6.393, 2.0628, -0.1104, 2.0411, [], [3.324, 6.3759]], [3.307, 6.393, 3.8286, -0.1104, 3.8069, [], [3.324, 6.3759]], [3.307, 6.393, 5.5945, -0.1104, 5.5727, [], [3.324, 6.3759]], [6.707, 9.543, 0.297, 9000000000.0, 0.2753, [], [6.7241, 9.5259]], [6.707, 9.543, 2.0628, 9000000000.0, 2.0411, [], [6.7241, 9.5259]], [6.707, 9.543, 3.8286, 9000000000.0, 3.8069, [], [6.7241, 9.5259]], [9.0672, 9.543, 5.5945, 9000000000.0, 5.5727, [[-1, 9.0852, 0.0756, 0]], [9.5259]], [6.707, 9.1032, 5.5945, 9000000000.0, 5.5727, [[1, 9.0852, 0.0756, 1]], [6.7241]]], R=[], D=[[1.2194, 4.0233, 0.86613, 2.2116, 0.06, 0.0678, 4.85, 0.297, [[0.3635, 3.324], [2.0411, 4.7505]]], [2.9852, 4.0233, 0.86613, 2.2116, 0.06, 0.0678, 4.85, 2.0628, [[2.1293, 3.324], [3.8069, 4.7505]]], [4.7511, 4.0233, 0.86613, 2.2116, 0.06, 0.0678, 4.85, 3.8286, [[3.8952, 3.324], [5.5727, 4.7505]]]], GG=[[5.8151, 0.2888, 0.226068, 0.213, null], [6.2082, 1.998, 0.226068, 1.9948, null], [6.6891, 4.089, 0.226068, 1.5576, null], [6.6891, 5.611, -0.226068, 1.5576, null], [6.2082, 7.702, -0.226068, 1.9948, null], [5.8151, 9.4112, -0.226068, 0.213, null], [5.5638, 0.5989, 0.785398, 1.1001, [[0.0126, 0.0438]]], [5.5638, 9.1011, -0.785398, 1.1001, [[0.0126, 0.0438]]]], MM=[[0.0, 1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [0.0, 1, 2.0403, 0.2, [2.1153, 1.9653], [[2.0078, 2.0728]]], [0.0, 1, 3.8061, 0.2, [3.8811, 3.7311], [[3.7736, 3.8386]]], [3.15, -1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [3.15, -1, 2.0403, 0.2, [2.1153, 1.9653], [[2.0078, 2.0728]]], [3.15, -1, 3.8061, 0.2, [3.8811, 3.7311], [[3.7736, 3.8386]]], [3.15, -1, 5.572, 0.2, [5.647, 5.497], [[5.5395, 5.6045]]], [3.15, 1, 0.3257, 0.288, [0.4447, 0.2067], [[0.242, 0.307], [0.2537, 0.4399]]], [3.15, 1, 2.0916, 0.288, [2.2106, 1.9726], [[2.0078, 2.0728], [2.0195, 2.2057]]], [3.15, 1, 3.8574, 0.288, [3.9764, 3.7384], [[3.7736, 3.8386], [3.7853, 3.9716]]], [3.15, 1, 5.572, 0.2, [5.647, 5.497], [[5.5395, 5.6045]]], [6.55, -1, 0.3257, 0.288, [0.4447, 0.2067], [[0.242, 0.307], [0.2537, 0.4399]]], [6.55, -1, 2.0916, 0.288, [2.2106, 1.9726], [[2.0078, 2.0728], [2.0195, 2.2057]]], [6.55, -1, 3.8574, 0.288, [3.9764, 3.7384], [[3.7736, 3.8386], [3.7853, 3.9716]]], [6.55, -1, 5.572, 0.2, [5.647, 5.497], [[5.5395, 5.6045]]], [6.55, 1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [6.55, 1, 2.0403, 0.2, [2.1153, 1.9653], [[2.0078, 2.0728]]], [6.55, 1, 3.8061, 0.2, [3.8811, 3.7311], [[3.7736, 3.8386]]], [6.55, 1, 5.572, 0.2, [5.647, 5.497], [[5.5395, 5.6045]]], [9.7, -1, 0.2745, 0.2, [0.3495, 0.1995], [[0.242, 0.307]]], [9.7, -1, 2.0403, 0.2, [2.1153, 1.9653], [[2.0078, 2.0728]]], [9.7, -1, 3.8061, 0.2, [3.8811, 3.7311], [[3.7736, 3.8386]]]];
+var T=[[0.157, 2.993, 0.297, 9000000000.0, 0.2753, [], [0.174, 2.9759]], [0.157, 2.993, 2.0628, 9000000000.0, 2.0411, [], [0.174, 2.9759]], [0.157, 2.993, 3.8286, 9000000000.0, 3.8069, [], [0.174, 2.9759]], [0.157, 0.6328, 5.5945, 9000000000.0, 5.5727, [[1, 0.6148, 0.0756, 0]], [0.174]], [0.5968, 2.993, 5.5945, 9000000000.0, 5.5727, [[-1, 0.6148, 0.0756, 1]], [2.9759]], [3.307, 6.393, 0.297, 9000000000.0, 0.2753, [], [3.324, 6.3759]], [3.307, 6.393, 2.0628, -0.1104, 2.0411, [], [3.324, 6.3759]], [3.307, 6.393, 3.8286, -0.1104, 3.8069, [], [3.324, 6.3759]], [3.307, 6.393, 5.5945, -0.1104, 5.5727, [], [3.324, 6.3759]], [6.707, 9.543, 0.297, 9000000000.0, 0.2753, [], [6.7241, 9.5259]], [6.707, 9.543, 2.0628, 9000000000.0, 2.0411, [], [6.7241, 9.5259]], [6.707, 9.543, 3.8286, 9000000000.0, 3.8069, [], [6.7241, 9.5259]], [9.0672, 9.543, 5.5945, 9000000000.0, 5.5727, [[-1, 9.0852, 0.0756, 0]], [9.5259]], [6.707, 9.1032, 5.5945, 9000000000.0, 5.5727, [[1, 9.0852, 0.0756, 1]], [6.7241]]], R=[], D=[[1.2161, 4.0205, 0.86613, 2.2386, 0.0967, 0.0769, 4.85, 0.297, [[0.3635, 3.324], [2.0411, 4.7505]]], [2.9819, 4.0205, 0.86613, 2.2386, 0.0967, 0.0769, 4.85, 2.0628, [[2.1293, 3.324], [3.8069, 4.7505]]], [4.7477, 4.0205, 0.86613, 2.2386, 0.0967, 0.0769, 4.85, 3.8286, [[3.8952, 3.324], [5.5727, 4.7505]]]], GG=[[5.8151, 0.2888, 0.226068, 0.213, null, [0.0, 0.0]], [6.2082, 1.998, 0.226068, 1.9948, null, [0.0, 0.0]], [6.6891, 4.089, 0.226068, 1.5576, null, [0.0, 0.0]], [6.6891, 5.611, -0.226068, 1.5576, null, [0.0, 0.0]], [6.2082, 7.702, -0.226068, 1.9948, null, [0.0, 0.0]], [5.8151, 9.4112, -0.226068, 0.213, null, [0.0, 0.0]], [5.5638, 0.5989, 0.785398, 1.1001, [[0.0126, 0.0438]], [0.0, 0.0]], [5.5638, 9.1011, -0.785398, 1.1001, [[0.0126, 0.0438]], [0.0, 0.0]]], MM=[[0.0, 1, 0.2745, 0.2, [0.3495, 0.1995], [[0.2412, 0.3078]]], [0.0, 1, 2.0403, 0.2, [2.1153, 1.9653], [[2.007, 2.0736]]], [0.0, 1, 3.8061, 0.2, [3.8811, 3.7311], [[3.7729, 3.8394]]], [3.15, -1, 0.2745, 0.2, [0.3495, 0.1995], [[0.2412, 0.3078]]], [3.15, -1, 2.0403, 0.2, [2.1153, 1.9653], [[2.007, 2.0736]]], [3.15, -1, 3.8061, 0.2, [3.8811, 3.7311], [[3.7729, 3.8394]]], [3.15, -1, 5.572, 0.2, [5.6469, 5.497], [[5.5387, 5.6052]]], [3.15, 1, 0.3257, 0.288, [0.4447, 0.2067], [[0.2412, 0.3078], [0.2217, 0.4481]]], [3.15, 1, 2.0916, 0.288, [2.2106, 1.9726], [[2.007, 2.0736], [1.9875, 2.2139]]], [3.15, 1, 3.8574, 0.288, [3.9764, 3.7384], [[3.7729, 3.8394], [3.7533, 3.9797]]], [3.15, 1, 5.572, 0.2, [5.6469, 5.497], [[5.5387, 5.6052]]], [6.55, -1, 0.3257, 0.288, [0.4447, 0.2067], [[0.2412, 0.3078], [0.2217, 0.4481]]], [6.55, -1, 2.0916, 0.288, [2.2106, 1.9726], [[2.007, 2.0736], [1.9875, 2.2139]]], [6.55, -1, 3.8574, 0.288, [3.9764, 3.7384], [[3.7729, 3.8394], [3.7533, 3.9797]]], [6.55, -1, 5.572, 0.2, [5.6469, 5.497], [[5.5387, 5.6052]]], [6.55, 1, 0.2745, 0.2, [0.3495, 0.1995], [[0.2412, 0.3078]]], [6.55, 1, 2.0403, 0.2, [2.1153, 1.9653], [[2.007, 2.0736]]], [6.55, 1, 3.8061, 0.2, [3.8811, 3.7311], [[3.7729, 3.8394]]], [6.55, 1, 5.572, 0.2, [5.6469, 5.497], [[5.5387, 5.6052]]], [9.7, -1, 0.2745, 0.2, [0.3495, 0.1995], [[0.2412, 0.3078]]], [9.7, -1, 2.0403, 0.2, [2.1153, 1.9653], [[2.007, 2.0736]]], [9.7, -1, 3.8061, 0.2, [3.8811, 3.7311], [[3.7729, 3.8394]]]];
 var HAS_MONT=0;   // R82: 1 = porta com montantes (montante solidariza a viga); 0 = solidarização central
 var mMPe=new THREE.MeshLambertMaterial({color:0xe54983});   // rosa (mini)
 // monta um oitao no plano zP; dirIn = +1 (frente, interior a +z) / -1 (fundo)
@@ -3266,7 +3413,19 @@ function oitao(zP,dirIn,portao){
  // no canal do mini do pilar como qualquer terça. Flag t[8]===1.
  function gmInv(t){
   var L8=t[1]-t[0],Zc8=(t[0]+t[1])/2;
-  var o8={color:0x66ccff,nseg:40,swZ:[[-L8/2,-L8/2+0.0600],[L8/2-0.0600,L8/2]]};
+  // SWAGE so na ponta que ENTRA em outro perfil (12/09/2026, regra da guia do
+  // oitao de 07/09): t[9]=[swA,swB] do Python (0 = ponta apoiada na viga,
+  // fixa pela alma; sem t[9] = as 2 pontas, comportamento anterior)
+  var sw9=t[9]||[0.0600,0.0600],swl8=[];
+  if(sw9[0]>0)swl8.push([-L8/2,-L8/2+sw9[0]]);if(sw9[1]>0)swl8.push([L8/2-sw9[1],L8/2]);
+  // R109: a guia sem mini na ponta continua sendo TERCA RECEPTORA - o
+  // bloqueador que chega no meio do comprimento exige swage LOCALIZADO ali
+  // (t[7], mesma banda da lateral/cobertura/empena).
+  if(t[7])swl8=swl8.concat(t[7]);
+  // o flip x=PI espelha o eixo LOCAL z: as bandas acima estao em offset de
+  // MUNDO (medidas de Zc8) -> converter para local negando e trocando.
+  swl8=swl8.map(function(b){return [-b[1],-b[0]];});
+  var o8={color:0x66ccff,nseg:40};if(swl8.length)o8.swZ=swl8;
   // flip x=PI: alma (local [0,+t]) desce → p/ repousar em [t[2], t[2]+t]
   // a LINHA sobe +t; mesas passam a subir (boca pra cima).
   var gk8=KIT_LAT.CL([XCE,t[2]+0.00155,Zc8],0,L8,o8);
@@ -3280,11 +3439,17 @@ function oitao(zP,dirIn,portao){
   T_REAL.push(t);                      // terca DESENHADA -> vale p/ costura
   if(t[8]===1){gmInv(t);return;}       // R90: guia invertida colada sobre a viga do mez
   var L=t[1]-t[0],Zc=(t[0]+t[1])/2;
-  var swA=0.0600,swB=0.0600,cham=0;
-  (t[5]||[]).forEach(function(E){if(E[0]<0)swA=E[2];else swB=E[2];cham=1;});
-  var o={color:0x66ccff,nseg:40,swZ:[[-L/2,-L/2+swA],[L/2-swB,L/2]]};
+  var swA=0.0600,swB=0.0600,chA=0,chB=0;
+  // t[9]=[swA,swB] (12/09/2026): contorno do mez - 0 na ponta apoiada na viga
+  // (fixa pela alma, nao entra em perfil). Sem t[9]: comportamento aprovado.
+  if(t[9]){swA=t[9][0];swB=t[9][1];}
+  (t[5]||[]).forEach(function(E){if(E[0]<0){swA=E[2];chA=1;}else{swB=E[2];chB=1;}});
+  var o={color:0x66ccff,nseg:40};
+  if(t[9]){var swl9=[];if(swA>0)swl9.push([-L/2,-L/2+swA]);if(swB>0)swl9.push([L/2-swB,L/2]);if(swl9.length)o.swZ=swl9;}
+  else o.swZ=[[-L/2,-L/2+swA],[L/2-swB,L/2]];
   if(t[3]<8e8)o.lipCutZ=[t[3]-0.25,t[3]+0.25];
-  if(cham)o.chamfer=1;
+  // chanfro SO na ponta que entra na guia (07/09/2026): a ponta do MINI (90 graus) fica RETA (R60 — terca reta nao leva)
+  if(chA||chB){o.chamfer=1;o.chamferEnds=[chA,chB];}
   var gk=KIT_LAT.CL([XCE,t[2],Zc],0,L,o);scene.remove(gk);W.add(gk);
   (t[5]||[]).forEach(function(E){if(E[3])dimPar(E[1],t[4]);});
   (t[6]||[]).forEach(function(u){dimPar(u,t[4]);});});
@@ -3307,7 +3472,9 @@ function oitao(zP,dirIn,portao){
  // (antes: pontas cruas + sextavado 1/2" — perfiladeira nao fura ali)
  GG.forEach(function(gd){
   var L=gd[3];
-  var o={color:0x66ccff,nseg:40,swZ:[[-L/2,-L/2+0.0600],[L/2-0.0600,L/2]]};
+  // SWAGE so na ponta que ENTRA em outro perfil (gd[5]=[swA,swB], 07/09): ponta LIVRE fica com a alma inteira
+  var swg=gd[5]||[0.0600,0.0600],swl=[];if(swg[0]>0)swl.push([-L/2,-L/2+swg[0]]);if(swg[1]>0)swl.push([L/2-swg[1],L/2]);
+  var o={color:0x66ccff,nseg:40};if(swl.length)o.swZ=swl;
   // LIP CUTS onde perfis ENTRAM nesta guia (25/07: LISTA — a guia da MF
   // recebe terça interna + remate por nível; a guia do RAFTER recebe as
   // terças clampadas). gd[4] = [[posLocal, meiaLargura], ...]
@@ -3362,13 +3529,32 @@ function oitao(zP,dirIn,portao){
   var za=e+sd*(0.150+tmE/2);                          // alma na face da mesa (0,150)
   mb(XCE,yc,za,0.140,Ls,tmE);                         // alma (140 na normal)
   // LIPS SEGMENTADOS: abertura na banda da terca/diagonal que entra no
-  // canal (mini_cuts da lateral replicado)
-  var lipSegs=lipSegsP(m[5],yc-Ls/2,yc+Ls/2);
+  // canal (mini_cuts da lateral replicado). PADRAO CANONICO do lip cut
+  // (19/08, auditoria dos cortes retos): merge das bandas + corte
+  // funcional EXPANDIDO pelo alivio (83-60)/2 + CUNHAS do grau (cheia na
+  // DOBRA, zero na borda livre) — igual buildPilar/CL/mpWedges. Antes o
+  // lip terminava RETO (sem o grau da ferramenta) nas janelas.
+  var LIPRe=0.0115;
+  var mCutsE=mergeBands(m[5],2*LIPRe+0.001);
+  var mExpE=mCutsE.map(function(C){return [C[0]-LIPRe,C[1]+LIPRe];});
+  var lipSegs=lipSegsP(mExpE,yc-Ls/2,yc+Ls/2);
   [-1,1].forEach(function(sx){
    var xm=XCE+sx*(0.070-tmE/2);
    mb(xm,yc,za+sd*(tmE/2+FmE/2),tmE,Ls,FmE);          // mesas: canal pro vao
+   var zlipE=za+sd*(tmE/2+FmE-tmE/2);
    lipSegs.forEach(function(sg){var a=sg[0],b=sg[1];if(b-a<0.006)return;
-    mb(XCE+sx*(0.070-LmE/2),(a+b)/2,za+sd*(tmE/2+FmE-tmE/2),LmE,b-a,tmE);});});
+    mb(XCE+sx*(0.070-LmE/2),(a+b)/2,zlipE,LmE,b-a,tmE);});
+   var xDob=XCE+sx*0.070,xLiv=XCE+sx*(0.070-LmE);
+   mCutsE.forEach(function(C){
+    [[C[0],-1],[C[1],1]].forEach(function(E){
+     var yE=E[0],dr=E[1];
+     if(yE<yc-Ls/2||yE>yc+Ls/2)return;
+     var sh=new THREE.Shape();
+     sh.moveTo(xDob,yE+dr*LIPRe);sh.lineTo(xDob,yE);
+     sh.lineTo(xLiv,yE+dr*LIPRe);sh.closePath();
+     var g2=new THREE.ExtrudeGeometry(sh,{depth:tmE,bevelEnabled:false});
+     var mmW=new THREE.Mesh(g2,mMPe);mmW.position.z=zlipE-tmE/2;
+     mmW.userData.p=PIECE;W.add(mmW);});});});
   // 4x AUTOBROCANTE 4,8x19 (2 em cima + 2 embaixo, linhas +-47,5 do
   // C140), cabeca na face externa da alma do mini, broca atravessando
   // alma do mini -> mesa do pilar — mesmo screwV do resto do galpao
@@ -3424,13 +3610,13 @@ if(window.FECH_EMPENA)window.EMP.forEach(window.FECH_EMPENA);
 (function(){
 var tc=0.00155,Fc=0.045,Lc=0.012,Hmc=0.14,SWDc=0.1365;
 var TS=[0.432672, 1.898726, 3.36478, 4.830833],BR=[1, 0, 0, 1],NB=nPorticos-1;
-var MRS=[[0.454943, 0.289541], [1.920996, 0.289541], [3.38705, 0.289541], [4.808333, 0.2]],MRB=[[0.360172, 0.549713], [1.826226, 2.015767], [3.29228, 3.481821], [4.758333, 4.858333]],MRS_S=[[0.410172, 0.2], [1.876226, 0.2], [3.34228, 0.2], [4.808333, 0.2]],MRB_S=[[0.360172, 0.460172], [1.826226, 1.926226], [3.29228, 3.39228], [4.758333, 4.858333]],MRCT=[[0.3777, 0.4427], [1.8437, 1.9087], [3.3098, 3.3748], [4.7758, 4.8408]],MRCD=[[0.424, 0.5488], [1.89, 2.0148], [3.3561, 3.4809]];
+var MRS=[[0.454943, 0.289541], [1.920996, 0.289541], [3.38705, 0.289541], [4.808333, 0.2]],MRB=[[0.360172, 0.549713], [1.826226, 2.015767], [3.29228, 3.481821], [4.758333, 4.858333]],MRS_S=[[0.410172, 0.2], [1.876226, 0.2], [3.34228, 0.2], [4.808333, 0.2]],MRB_S=[[0.360172, 0.460172], [1.826226, 1.926226], [3.29228, 3.39228], [4.758333, 4.858333]],MRCT=[[0.3769, 0.4434], [1.843, 1.9095], [3.309, 3.3756], [4.7751, 4.8416]],MRCD=[[0.414, 0.5521], [1.8801, 2.0182], [3.3461, 3.4843]];
 var zAm=0.005775,zMm=0.02905;
 var DMT=[0.410172, 1.876226, 3.34228, 4.808333],DMD=[0.499713, 1.965767, 3.431821],DIMZ=0.02905;
-var ANGc=[0.52569801, 0.52569801, 0.52569769],LAc=[2.760079, 2.760079, 2.760078],ZTc=[2.393946, 2.393946, 2.393946],SBc=[0.512672, 1.978726, 3.44478],STc=[1.897726, 3.36378, 4.829833];
-var DLB=[-1.36708, -1.36708, -1.36708],DLT=[1.375978, 1.375978, 1.375978],DZA=[2.401724, 2.401724, 2.401724];
-var TRGc=[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]],DRGA=[[[-1.38004, -1.318015, 0.1365], [-1.318015, -1.313015, 0.13825], [-1.313015, 1.277359, 0.14], [1.277359, 1.282359, 0.13825], [1.282359, 1.38004, 0.1365]], [[-1.38004, -1.318015, 0.1365], [-1.318015, -1.313015, 0.13825], [-1.313015, 1.277359, 0.14], [1.277359, 1.282359, 0.13825], [1.282359, 1.38004, 0.1365]], [[-1.380039, -1.318014, 0.1365], [-1.318014, -1.313014, 0.13825], [-1.313014, 1.277358, 0.14], [1.277358, 1.282358, 0.13825], [1.282358, 1.380039, 0.1365]]],DRGB=[[[-1.38004, -1.282359, 0.1365], [-1.282359, -1.277359, 0.13825], [-1.277359, 1.313015, 0.14], [1.313015, 1.318015, 0.13825], [1.318015, 1.38004, 0.1365]], [[-1.38004, -1.282359, 0.1365], [-1.282359, -1.277359, 0.13825], [-1.277359, 1.313015, 0.14], [1.313015, 1.318015, 0.13825], [1.318015, 1.38004, 0.1365]], [[-1.380039, -1.282358, 0.1365], [-1.282358, -1.277358, 0.13825], [-1.277358, 1.313014, 0.14], [1.313014, 1.318014, 0.13825], [1.318014, 1.380039, 0.1365]]];
-var LTc=4.9869,Zbc=0.00655,UPc=0.076;
+var ANGc=[0.52569801, 0.52569801, 0.52569769],LAc=[2.774225, 2.774225, 2.774225],ZTc=[2.401408, 2.401408, 2.401408],SBc=[0.509902, 1.975956, 3.44201],STc=[1.902055, 3.368109, 4.834162],ZBEc=[0.001775, 0.001775, 0.001775];
+var DLB=[-1.368634, -1.368634, -1.368634],DLT=[1.374424, 1.374424, 1.374424],DZA=[2.401724, 2.401724, 2.401724];
+var TRGc=[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]],DRGA=[[[-1.387112, -1.319568, 0.1365], [-1.319568, -1.314568, 0.13825], [-1.314568, 1.275805, 0.14], [1.275805, 1.280804, 0.13825], [1.280804, 1.387112, 0.1365]], [[-1.387112, -1.319568, 0.1365], [-1.319568, -1.314568, 0.13825], [-1.314568, 1.275805, 0.14], [1.275805, 1.280804, 0.13825], [1.280804, 1.387112, 0.1365]], [[-1.387112, -1.319568, 0.1365], [-1.319568, -1.314568, 0.13825], [-1.314568, 1.275805, 0.14], [1.275805, 1.280804, 0.13825], [1.280804, 1.387112, 0.1365]]],DRGB=[[[-1.387112, -1.280804, 0.1365], [-1.280804, -1.275805, 0.13825], [-1.275805, 1.314568, 0.14], [1.314568, 1.319568, 0.13825], [1.319568, 1.387112, 0.1365]], [[-1.387112, -1.280804, 0.1365], [-1.280804, -1.275805, 0.13825], [-1.275805, 1.314568, 0.14], [1.314568, 1.319568, 0.13825], [1.319568, 1.387112, 0.1365]], [[-1.387112, -1.280804, 0.1365], [-1.280804, -1.275805, 0.13825], [-1.275805, 1.314568, 0.14], [1.314568, 1.319568, 0.13825], [1.319568, 1.387112, 0.1365]]];
+var LTc=4.9869,Zbc=0.00655,UPc=0.077;
 var BEIR=0.0,TRGb=[],LZb=(nPorticos-1)*modulo;   // beiral empena (Clássico): terça em balanço
 var TRGS=[null, [[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0075, 0.13825], [0.0075, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0675, 0.13825], [0.0675, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0675, 0.13825], [0.0675, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0075, 0.13825], [0.0075, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]], [[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0075, 0.13825], [0.0075, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0675, 0.13825], [0.0675, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0675, 0.13825], [0.0675, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0075, 0.13825], [0.0075, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]], null],FWSc=0.04325,OFFBc=0.03;   // ligação do bloqueador (= parede): bandas de swage na terça + mesa conificada
 var mCt=new THREE.MeshLambertMaterial({color:0x66ccff});
@@ -3451,7 +3637,7 @@ function cobPiece(par,m,rotLay,regs,lipCuts,semChamfer){
  novaPeca(semChamfer?'terca-cobertura':'diagonal-cobertura'); // 1 cobPiece = 1 peça
  var gp=new THREE.Group();gp.rotation.z=rotLay;par.add(gp);
  var zMin=regs[0][0],zMax=regs[regs.length-1][1];
- var CH=0.0135;                                  // recuo dos cantos da MESA: (45-18)/2
+ var CH=0.0135;                                  // recuo dos cantos da MESA: (45-18)/2 — fonte comum (geometria)
  var LIPR=0.0115;                                // alivio do lip cut: (83-60)/2
  var chZ=semChamfer?[]:[[zMin,zMin+CH],[zMax-CH,zMax]];
  // lips: corte funcional EXPANDIDO pelo alivio (as cunhas preenchem o alivio)
@@ -3502,7 +3688,7 @@ function cobPiece(par,m,rotLay,regs,lipCuts,semChamfer){
  var wE=regs[0][2];
  function chamferEnd(tipZ,dir){
   var zb=tipZ-dir*CH;                          // lado do corpo da zona
-  var yA=-(Fc/2-0.009),yB=-(Fc/2+0.009);       // tira central de 18mm
+  var yA=-(Fc/2-0.009),yB=-(Fc/2+0.009);       // tira central de 18mm (fonte comum)
   var sh=new THREE.Shape();
   sh.moveTo(-zb,0);sh.lineTo(-tipZ,yA);        // canto da alma recua (45)
   sh.lineTo(-tipZ,yB);                         // 18mm retos na ponta
@@ -3535,7 +3721,9 @@ function cobBloq(wg,dx,sL,sR,zB){
  // envelope EXTERNO = o da terça (mesas do cobPiece centram em ±Hmc/2):
  // topo/fundo reais em UPc±(Hmc/2+tc/2) — tabs nas cotas NOMINAIS da terça
  var yLo=UPc-Hmc/2-tc/2,yHi=UPc+Hmc/2+tc/2,LIPR=0.0115,TAB=0.018;
- var b0=sL+tc/2+0.010, b1=sR-Fc-0.010;        // corpo: 10mm da alma | 10mm da ponta da mesa
+ // corpo: FOLGA_LIPCUT da face da alma da terça de baixo | FOLGA_LIPCUT da
+ // face EXTERNA do lip da de cima (s-Fc-tc/2; era -Fc → 9,2 mm reais)
+ var b0=sL+tc/2+0.01, b1=sR-Fc-tc/2-0.01;
  var dl=sL-tc/2-FWSc/2, dr=sR-tc/2-FWSc/2;    // linhas de dimple (centro da mesa conificada)
  var t0=dl-TAB, t1=dr+TAB;                    // tabs passam 18mm do furo
  function bx(x,y,z,sx,sy,sz){var b=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mCd);
@@ -3612,7 +3800,25 @@ for(var wi=0;wi<2;wi++){
   var zA=vv*modulo;
   // TERCAS (todas as baias)
   for(var ti=0;ti<TS.length;ti++){
-   var lip=(BR[vv]&&ti>0)?[[-0.25,0.25]]:[];   // lip cut p/ tip do V (so contraventada)
+   // LIP CUT p/ o tip do V (só baia contraventada) pela INTERFERÊNCIA FÍSICA
+   // (09/09/2026) — era [-0.25,0.25] cravado (16 mm reais, meio metro sem
+   // função). Mesma regra da terça lateral: perna di=ti-1 chega nesta
+   // terça; corpo no plano EXTERNO do lip (face down-slope, s=TS-Fc-tc/2,
+   // onde o V está mais aberto); extremos pelas DUAS faces da seção (alma+
+   // corrugado e ponta do lip da perna) → vale p/ qualquer orientação do C;
+   // gêmea = espelho em Zc; + FOLGA_LIPCUT/sin(a) de cada lado (distância
+   // mínima 3D = FOLGA na face inclinada). Coordenada LOCAL da terça (hold).
+   var lip=[];
+   if(BR[vv]&&ti>0){
+    var di=ti-1,aD=ANGc[di],sD=Math.sin(aD),cD=Math.cos(aD);
+    var Cs=(SBc[di]+STc[di])/2,CzA=zA+(ZBEc[di]+ZTc[di])/2,Zc=zA+modulo/2;
+    var sLip=TS[ti]-Fc-tc/2,wOut=tc/2+0.0008/2,zs=[];
+    // ponto local (w,u) da perna → s = Cs + u·sin + w·cos ; z = CzA + u·cos − w·sin
+    // em s = sLip: z = CzA + (sLip−Cs)·cot − w/sin
+    [wOut,-(Fc+tc/2)].forEach(function(w){var z=CzA+(sLip-Cs)*cD/sD-w/sD;zs.push(z,2*Zc-z);});
+    var gIn=0.01/sD;
+    lip=[[Math.min.apply(null,zs)-gIn-Zc,Math.max.apply(null,zs)+gIn-Zc]];
+   }
    var hold=new THREE.Group();hold.position.set(W.dx*TS[ti],UPc,zA+modulo/2);wg.add(hold);
    var trg=(TRGS[vv]&&TRGS[vv][ti])?TRGS[vv][ti]:TRGc;  // baia SEM V: banda de swage p/ o bloqueador
    var tg=cobPiece(hold,mCt,lay,trg,lip,true); // terca reta: SEM chamfer
@@ -3621,7 +3827,7 @@ for(var wi=0;wi<2;wi++){
   if(BR[vv]){
    for(var di=0;di<ANGc.length;di++){
     var Cs=(SBc[di]+STc[di])/2,Lh=LAc[di];
-    var CzA=zA+(Zbc+ZTc[di])/2,CzB=zA+modulo-(Zbc+ZTc[di])/2;
+    var CzA=zA+(ZBEc[di]+ZTc[di])/2,CzB=zA+modulo-(ZBEc[di]+ZTc[di])/2;   // base EFETIVA (regra comum 07/09)
     var wrA=new THREE.Group();wrA.position.set(W.dx*Cs,UPc,CzA);wrA.rotation.y=W.dx*ANGc[di];wg.add(wrA);
     var dgA=cobPiece(wrA,mCd,lay,DRGA[di],[]);
     var wrB=new THREE.Group();wrB.position.set(W.dx*Cs,UPc,CzB);wrB.rotation.y=-W.dx*ANGc[di];wg.add(wrB);
@@ -5357,6 +5563,8 @@ function setFastVis(){var cp=camera.position;
 // SOBREPONDO nos nós (modelo visual), então o auditor estrito acusa muitos
 // pares intencionais — usar só como ferramenta de investigação. ──
 if(location.search.indexOf('audit')>=0){document.getElementById('hud').style.display='';auditorGlobal();}
+// deep link de inspeção (07/09): ?vista=N abre direto na vista N do menu (mesmo sv do botão)
+var _mv=/[?&]vista=(\d+)/.exec(location.search);if(_mv){setTimeout(function(){sv(parseInt(_mv[1],10),null);},400);}
 
 // ── Câmera ──
 var centerX=cumXworld,centerY=pilTopo*0.45,centerZ=10.00;
@@ -5366,16 +5574,56 @@ var target=new THREE.Vector3(centerX,centerY,centerZ);
 // enquadramento de sempre (alvo no centro, mesmo raio/elevacao), com
 // camT ESPELHADO (PI-0.55) — camera do lado da porta.
 var camR=26.0,camT=Math.PI-0.55,camP=1.10;
+// ÓRBITA LIVRE (09/09/2026, portada do Mensageiro C — só câmera, geometria
+// intocada): camP é o ângulo polar SEM clamp. Passando dos polos, sin(camP)
+// fica negativo = câmera "do outro lado"; o UP inverte junto e o lookAt
+// continua contínuo (sem flip) — dá a volta completa, inclusive por baixo.
 function camUpdate(){
+  var sp=Math.sin(camP),cp=Math.cos(camP);
+  if(Math.abs(sp)<1e-4){camP+=1e-4;sp=Math.sin(camP);cp=Math.cos(camP);}   // polo exato degenera o lookAt
+  camera.up.set(0,sp>=0?1:-1,0);
   camera.position.set(
-    target.x+camR*Math.sin(camP)*Math.sin(camT),
-    target.y+camR*Math.cos(camP),
-    target.z+camR*Math.sin(camP)*Math.cos(camT));
+    target.x+camR*sp*Math.sin(camT),
+    target.y+camR*cp,
+    target.z+camR*sp*Math.cos(camT));
+  // NEAR/FAR pela distância (mesma regra do C): near fixo em 0,05 cortava a
+  // peça ao entrar na ligação; proporcional mantém a razão far/near sã.
+  // No CAMINHAR camR é só o pivô fantasma (30-60cm) e não mede a cena: near
+  // fixo pequeno + far pela diagonal do galpão (razão ~3000:1, longe dos
+  // 300000:1 que destruíram o depth buffer em 13/07).
+  var nr,fr;
+  if(MODO==='caminhar'){nr=0.02;fr=DIAG*2+40;}
+  else{nr=Math.max(0.003,Math.min(0.5,camR/220));fr=camR*8+40;}
+  if(camera.near!==nr||camera.far!==fr){camera.near=nr;camera.far=fr;camera.updateProjectionMatrix();}
   camera.lookAt(target);
   setFastVis();   // depois de posicionar a câmera (distância real)
   if(typeof invalidate==='function')invalidate();   // render sob demanda
 }
-cv.addEventListener('dblclick',function(){camR=26.0;camT=Math.PI-0.55;camP=1.10;target.set(centerX,centerY,centerZ);camUpdate();});
+// DUPLO CLIQUE = NOVO PIVÔ (09/09/2026): raycast na geometria sob o cursor;
+// o ponto EXATO atingido vira o target (centro da órbita e do zoom) — em
+// qualquer peça, em qualquer lugar, sem depender de vista. Só malhas
+// VISÍVEIS contam (linhas brancas/rótulos/peças isoladas ficam fora).
+// Duplo clique no vazio = enquadramento inicial (comportamento antigo).
+var _pickRay=new THREE.Raycaster(),_pickM=new THREE.Vector2();
+function _visivel(o){for(var q=o;q;q=q.parent){if(q.visible===false)return false;}return true;}
+cv.addEventListener('dblclick',function(e){
+  var r=cv.getBoundingClientRect();
+  _pickM.x=((e.clientX-r.left)/r.width)*2-1;_pickM.y=-((e.clientY-r.top)/r.height)*2+1;
+  camera.updateMatrixWorld();                 // render sob demanda: garante matriz fresca p/ o raio
+  _pickRay.setFromCamera(_pickM,camera);
+  var hits=_pickRay.intersectObjects(scene.children,true),h=null;
+  for(var i=0;i<hits.length;i++){if(hits[i].object.isMesh&&_visivel(hits[i].object)){h=hits[i];break;}}
+  // no CAMINHAR, duplo clique no vazio NÃO teleporta p/ a visão geral
+  // (seria um pulo no meio do percurso) — só o GERAL faz isso.
+  if(!h){if(MODO==='caminhar')return;
+    camR=26.0;camT=Math.PI-0.55;camP=1.10;target.set(centerX,centerY,centerZ);camUpdate();return;}
+  target.copy(h.point);                       // ponto físico exato sob o cursor
+  camR=Math.max(0.12,Math.min(camR,0.9));     // aproxima p/ inspeção sem atravessar a peça
+  // caminhando, o duplo clique é o gesto que devolve à ÓRBITA já com ESTA
+  // ligação como pivô (o ponto clicado manda — não recalcula pelo centro).
+  if(MODO==='caminhar'){MODO='orbita';_pintaModo();}
+  camUpdate();
+});
 
 function setView(i){
   var d=1.4;
@@ -5431,9 +5679,9 @@ function setView(i){
     {tx:-0.08, ty:1.1799, tz:5.000, r:0.80, camT:Math.PI*0.95, camP:1.10}, // 24 MINI-PILAR DENTRO
     {tx:-0.08, ty:2.0628, tz:2.500, r:0.80, camT:Math.PI*0.95, camP:1.10}, // 25 APEX V
     {tx:4.850, ty:6.176, tz:10.000, r:16.0, camT:0.85, camP:0.55}, // 26 COBERTURA GERAL
-    {tx:3.1455, ty:6.7083, tz:10.000, r:0.55, camT:2.60, camP:0.50}, // 27 NO TERCA x RAFTER
-    {tx:3.1455, ty:6.7083, tz:10.000, r:0.30, camT:2.95, camP:0.42}, // 28 MINI-RAFTER + PARAFUSOS
-    {tx:1.0023, ty:6.2154, tz:2.500, r:0.90, camT:2.70, camP:0.40}, // 29 APEX V COBERTURA
+    {tx:3.1452, ty:6.7093, tz:10.000, r:0.55, camT:2.60, camP:0.50}, // 27 NO TERCA x RAFTER
+    {tx:3.1452, ty:6.7093, tz:10.000, r:0.30, camT:2.95, camP:0.42}, // 28 MINI-RAFTER + PARAFUSOS
+    {tx:1.0021, ty:6.2164, tz:2.500, r:0.90, camT:2.70, camP:0.40}, // 29 APEX V COBERTURA
     {tx:4.850, ty:7.176, tz:10.000, r:1.80, camT:0.65, camP:0.38}, // 30 CUMEEIRA + TERCAS
     {tx:-0.150, ty:0.08, tz:7.500, r:0.70, camT:Math.PI*0.92, camP:1.25}, // 31 CANTONEIRA ARRANQUE
     {tx:cumXworld, ty:3.300, tz:0, r:13.5, camT:Math.PI, camP:1.30}, // 32 EMPENA GERAL (frente, de fora)
@@ -5447,16 +5695,35 @@ function setView(i){
 camUpdate();
 
 var drag=false,lx=0,ly=0;
-cv.addEventListener('mousedown',function(e){drag=true;lx=e.clientX;ly=e.clientY;cv.style.cursor='grabbing';});
+cv.addEventListener('mousedown',function(e){drag=true;lx=e.clientX;ly=e.clientY;cv.style.cursor='grabbing';
+  // clicar no 3D dá foco de teclado (o CAMINHAR depende disso)
+  try{cv.tabIndex=0;cv.style.outline='none';cv.focus({preventScroll:true});}catch(_e){}
+});
 window.addEventListener('mouseup',function(){drag=false;cv.style.cursor='grab';});
 window.addEventListener('mousemove',function(e){
   if(!drag)return;
-  camT-=(e.clientX-lx)*0.005;
-  camP+=(e.clientY-ly)*0.005;
-  lx=e.clientX;ly=e.clientY;camUpdate();
+  var _dx=e.clientX-lx,_dy=e.clientY-ly;lx=e.clientX;ly=e.clientY;
+  if(MODO==='caminhar'){
+    // OLHAR (cabeça): o OLHO fica parado e o alvo gira em volta dele — o
+    // inverso da órbita. Pitch travado perto dos polos p/ não capotar
+    // enquanto se anda (a órbita segue SEM clamp, como aprovado).
+    var _eye=camera.position.clone();
+    camT-=_dx*0.005;camP=Math.max(0.06,Math.min(Math.PI-0.06,camP+_dy*0.005));
+    target.copy(_eye).addScaledVector(_dirOlhar(),camR);
+    camUpdate();return;
+  }
+  // do outro lado dos polos o arrasto horizontal inverte (como no C)
+  camT-=_dx*0.005*(Math.sin(camP)>=0?1:-1);
+  camP+=_dy*0.005;                            // SEM clamp: volta completa, inclusive por baixo
+  camUpdate();
 });
 cv.addEventListener('wheel',function(e){
-  camR=Math.max(0.5,Math.min(200,camR*(e.deltaY>0?1.08:0.93)));
+  if(MODO==='caminhar'){                      // roda = VELOCIDADE (não zoom)
+    VEL=Math.max(0.05,Math.min(VEL_MAX,VEL*(e.deltaY>0?0.8:1.25)));
+    _pintaModo();e.preventDefault();return;
+  }
+  // mínimo 30 mm (era 0,5 m): entra na ligação e vê entre os perfis
+  camR=Math.max(0.03,Math.min(200,camR*(e.deltaY>0?1.08:0.93)));
   camUpdate();e.preventDefault();
 },{passive:false});
 var touches={},lastPinch=0;
@@ -5482,6 +5749,126 @@ cv.addEventListener('touchmove',function(e){
   }
 },{passive:false});
 cv.style.cursor='grab';
+
+// ══ MODO CAMINHAR (Cassiano 09/09/2026) ═══════════════════════════════════
+// SEM segunda câmera e SEM controlador novo: caminhar é TRANSLADAR O TARGET.
+// A câmera continua derivada de target/camR/camT/camP — o contrato que as
+// vistas, o GERAL, o duplo-clique e as páginas INSPECAO-* (que dirigem a
+// câmera por fora, via iframe) usam. Por isso trocar de modo NÃO move a
+// câmera: o olho é recalculado idêntico (pos = target + camR·u e
+// target = olho + direção·camR se anulam).
+//   ÓRBITA   : o alvo fica parado e o olho gira em volta dele.
+//   CAMINHAR : o olho fica parado e o alvo gira em volta dele (cabeça); as
+//              teclas arrastam o par olho+alvo pelo espaço. W/S seguem a
+//              DIREÇÃO DO OLHAR (olhou pra ligação, W vai até ela).
+// Atravessar perfil é INTENCIONAL — inspeção técnica, não simulação física.
+var MODO='orbita';
+var _NP=(typeof nPorticos!=='undefined')?nPorticos:5,_MOD=(typeof modulo!=='undefined')?modulo:5;
+var DIAG=Math.hypot(cumXworld*2,pilTopo*1.4,_MOD*Math.max(_NP-1,1))||20;
+var VEL=Math.max(0.6,Math.min(3.0,DIAG*0.10)),VEL_MAX=Math.max(6,DIAG*0.5);
+var KEYS={},walkRAF=0,tPrev=0,_brk=null,_AL=null;
+function _dirOlhar(){var sp=Math.sin(camP);   // unitário do olho para o alvo
+  return new THREE.Vector3(-sp*Math.sin(camT),-Math.cos(camP),-sp*Math.cos(camT));}
+function _alvos(){  // lista estrutural (sem fixadores/decor): raycast ~2ms
+  if(!_AL){_AL=[];scene.traverse(function(o){
+    if(o.isMesh&&o.userData&&o.userData.p>=1&&!o.userData.fastener&&!o.userData.fastener2)_AL.push(o);});}
+  return _AL;}
+function _rayCentro(){
+  camera.updateMatrixWorld();
+  _pickRay.setFromCamera(new THREE.Vector2(0,0),camera);
+  var hs=_pickRay.intersectObjects(_alvos(),false);
+  for(var i=0;i<hs.length;i++){if(_visivel(hs[i].object))return hs[i];}
+  return null;}
+var _kOk=false,_kTimer=0;      // já chegou tecla neste modo? (diagnóstico de foco)
+function _pintaModo(){
+  var a=document.getElementById('btOrb'),b=document.getElementById('btCam'),h=document.getElementById('passoHud');
+  if(a)a.classList.toggle('on',MODO==='orbita');
+  if(b)b.classList.toggle('on',MODO==='caminhar');
+  if(h){h.style.display=(MODO==='caminhar')?'block':'none';
+    // instrução EXPLÍCITA: um toque na tecla anda 2cm e parece que "não
+    // funciona" — o que anda é SEGURAR. (Cassiano não conseguiu usar, 09/09)
+    h.innerHTML='<b>SEGURE</b> W/S frente-trás · A/D lados · Q/E desce-sobe<br>'+
+      'arraste = olhar · roda = velocidade (<b>'+VEL.toFixed(2).replace('.',',')+' m/s</b>) · Shift 5× · Alt fino<br>'+
+      'duplo clique numa peça = fixa o pivô e volta à ÓRBITA · Esc = sair'+
+      (_kOk?'':'<br><span class="av">se as teclas não responderem, clique uma vez sobre o 3D</span>');}
+  cv.style.cursor=(MODO==='caminhar')?'crosshair':'grab';}
+function setModo(m){
+  if(m===MODO){_pintaModo();return;}
+  var eye=camera.position.clone();               // olho ANTES da troca
+  if(m==='caminhar'){
+    camR=Math.max(0.30,Math.min(camR,0.60));     // pivô fantasma logo à frente
+  }else{
+    var h=_rayCentro();                          // sai mirando o que está no centro
+    camR=Math.max(0.15,Math.min(60,h?h.distance:3.0));
+  }
+  MODO=m;
+  target.copy(eye).addScaledVector(_dirOlhar(),camR);   // olho e direção IGUAIS: zero salto
+  for(var k in KEYS)KEYS[k]=false;
+  if(m==='caminhar'){
+    // o teclado só chega se o documento tiver foco (clicar no botão já dá,
+    // mas dentro de iframe/depois de mexer noutra janela pode não ter)
+    try{cv.tabIndex=0;cv.focus({preventScroll:true});window.focus();}catch(_e){}
+    _kOk=false;clearTimeout(_kTimer);
+    _kTimer=setTimeout(function(){if(MODO==='caminhar')_pintaModo();},2500);
+  }
+  _pintaModo();camUpdate();}
+function _vel(){
+  var v=VEL;
+  if(KEYS.shift)v*=5;
+  if(KEYS.alt)v*=0.12;
+  // FREIO — NÃO é colisão: chegando perto, o passo encolhe sozinho e dá
+  // controle milimétrico; NUNCA zera (piso de 4%), então atravessar o perfil
+  // continua possível. Só no avanço, e Shift ignora o freio.
+  if(!KEYS.shift&&KEYS.w&&_brk!==null)v=Math.min(v,Math.max(_brk*1.5,VEL*0.04));
+  return v;}
+function _andando(){return !!(KEYS.w||KEYS.s||KEYS.a||KEYS.d||KEYS.q||KEYS.e);}
+function walkTick(ts){
+  walkRAF=0;
+  // dt REAL (não por quadro): a vista geral do galpão desenha a 1-15 fps
+  // conforme a máquina, e um teto curto fazia a velocidade cair junto com o
+  // fps ("anda travado"). Teto de 0,25s = salto máximo de 0,35m no passo
+  // normal, só para o caso de a aba ter ficado congelada.
+  var dt=tPrev?Math.min(0.25,(ts-tPrev)/1000):0.016;tPrev=ts;
+  var f=_dirOlhar(),r=new THREE.Vector3().crossVectors(f,new THREE.Vector3(0,1,0));
+  if(r.lengthSq()<1e-8)r.set(1,0,0);
+  r.normalize();
+  var mv=new THREE.Vector3();
+  if(KEYS.w)mv.add(f);
+  if(KEYS.s)mv.sub(f);
+  if(KEYS.d)mv.add(r);
+  if(KEYS.a)mv.sub(r);
+  if(KEYS.e)mv.y+=1;
+  if(KEYS.q)mv.y-=1;
+  if(mv.lengthSq()>1e-9){
+    if(KEYS.w){var hb=_rayCentro();_brk=hb?hb.distance:null;}   // 1 raio (~2ms) só ao avançar
+    target.addScaledVector(mv.normalize(),_vel()*dt);
+    camUpdate();                       // invalida → render contínuo SÓ enquanto anda
+  }
+  if(MODO==='caminhar'&&_andando())walkRAF=requestAnimationFrame(walkTick);
+  else{tPrev=0;_brk=null;}           // parado: volta ao render SOB DEMANDA
+}
+function _mapK(e){var k=(e.key||'').toLowerCase();
+  if(k==='arrowup')k='w';if(k==='arrowdown')k='s';
+  if(k==='arrowleft')k='a';if(k==='arrowright')k='d';
+  return (k.length===1&&'wasdqe'.indexOf(k)>=0)?k:null;}
+window.addEventListener('keydown',function(e){
+  var tg=(e.target&&e.target.tagName)||'';
+  if(tg==='INPUT'||tg==='TEXTAREA'||tg==='SELECT')return;
+  KEYS.shift=e.shiftKey;KEYS.alt=e.altKey;
+  if((e.key||'')==='Escape'&&MODO==='caminhar'){setModo('orbita');return;}
+  if(MODO!=='caminhar')return;
+  var k=_mapK(e);if(!k)return;
+  KEYS[k]=true;e.preventDefault();     // segura atalhos do navegador (Alt+D etc.)
+  if(!_kOk){_kOk=true;_pintaModo();} // chegou tecla: some o aviso de foco
+  if(!walkRAF){tPrev=0;walkRAF=requestAnimationFrame(walkTick);}
+});
+window.addEventListener('keyup',function(e){
+  KEYS.shift=e.shiftKey;KEYS.alt=e.altKey;
+  var k=_mapK(e);if(k)KEYS[k]=false;
+});
+window.addEventListener('blur',function(){for(var k in KEYS)KEYS[k]=false;});
+_pintaModo();
+
 // RENDER SOB DEMANDA (Cassiano 11/07: "meu computador quase trava") —
 // a cena é ESTÁTICA: só redesenha quando algo muda (câmera/botão/resize).
 // Parado = zero GPU. Qualquer clique invalida (cobre TELHA ON/OFF, vistas
