@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Genesis · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD c5dd41c · 18/09/2026 20:51</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD 939fbce · 18/09/2026 22:53</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -1756,13 +1756,18 @@ function buildMFviga(ox,oz,dir){novaPeca('mf-mezanino');
   // do eixo (a perfiladeira nao fura fora da calibracao).
   var _dxP=refX*(1-sinMFM)/cosMFM;          // pe: furo -refX desliza p/ a linha do pilar
   var _dxV=refX*(1-cosMFM)/sinMFM;          // topo: furos +-refX deslizam p/ as linhas da viga
+  // +refX da MF -> linha CENTRAL da viga: Y(x,+refX) = Y(mfLenMez,0) da
+  // x = mfLenMez - refX*cotg(ang). Mesma familia de deslizamento dos outros.
+  var _dxC=refX*cosMFM/sinMFM;
   bolt12(0,0,0,'z',t*4,mg);                 // pe: linha CENTRAL (pilar)
   bolt12(_dxP,-refX,0,'z',t*4,mg);          // pe: -refX -> linha do pilar
-  // TOPO (longarina) — 2 PONTOS (Cassiano 18/09/2026): o terceiro furo, na linha
-  // +refX, caia a 8,11mm da PONTA da MF (u=1147,55 de L=1155,66) — perto demais da
-  // borda para ferragem e sem funcao na ligacao. Ele DEIXA DE EXISTIR: a MF NAO e
-  // alongada para acomoda-lo. Mesma decisao do pe (R54b), no outro extremo.
-  bolt12(mfLenMez,0,0,'z',t*4,mg);          // topo: linha CENTRAL (viga)
+  // TOPO (longarina) — 2 PONTOS. Historico: ate 18/09/2026 eram 3, e o furo da linha
+  // +refX caia a 8,11mm da PONTA (u=1147,55 de L=1155,66) — perto demais da borda para
+  // ferragem; ele DEIXA DE EXISTIR e a MF NAO e alongada (mesma decisao do pe, R54b).
+  // R124 v2 (Cassiano 18/09/2026, SUBSTITUI a 1a configuracao aprovada): dos dois que
+  // ficaram, o de linha CENTRAL x CENTRAL sai e da lugar a +refX da MF x linha CENTRAL
+  // da viga. Continuam 2 pontos; o -refX x inferior segue exatamente onde estava.
+  bolt12(mfLenMez-_dxC,refX,0,'z',t*4,mg);  // topo: +refX -> linha CENTRAL da viga
   bolt12(mfLenMez-_dxV,-refX,0,'z',t*4,mg); // topo: -refX -> linha da viga
   // Costura CENTRAL da MF do mezanino (Cassiano 11/07): 1/2" no centro
   // geometrico (meio do comprimento, linha 0) unindo as duas almas do par
