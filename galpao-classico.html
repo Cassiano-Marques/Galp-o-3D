@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Clássico · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD a7c990f · 13/09/2026 02:10</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD c5dd41c · 18/09/2026 20:51</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -280,6 +280,15 @@ var PIECE=0;   // id da peça corrente (R01: auditor ignora pares da MESMA peça
 // espelhados da água direita reusam o p do original (contar 2x no
 // quantitativo dos elementos de pórtico espelhados).
 var PECAS=[];
+// Lista de TODOS os 1/2" desenhados (18/09/2026). A costura do par sobreposto
+// conta os parafusos que ja existem, seja qual for a ligacao que os criou —
+// precisa existir nos DOIS modos, instrumentado ou nao. So registro.
+window.BOLTS12=[];
+// Rastro da costura: por pacote, as fixacoes que a regra VIU e os INDEX que ela inseriu.
+window.COSTURA_LOG=[];
+// Rastro do no pilar x rafter: por no, quais intersecoes da grade ficaram livres e
+// qual combinacao foi escolhida.
+window.NOS_LOG=[];
 // ⚠️ id é 1-BASED (PIECE++ antes do push): lookup SEMPRE via pecaDe()
 // — PECAS[userData.p] lê o registro SEGUINTE (off-by-one que trocou
 // as etiquetas nas sondas de 05/08; raiz achada 06/08 no orçamento).
@@ -393,6 +402,16 @@ function bolt12(x,y,z,axis,grip,par){
  var zc2=ze+wT+nH+tail;
  cyl(sR,zc2-(zb-wT),((zb-wT)+zc2)/2,14);           // núcleo da haste (atravessa tudo)
  for(var zr=ze+wT+nH+0.0012;zr<zc2-0.0004;zr+=0.002)cyl(0.0072,0.0014,zr,12);  // rosca da sobra
+ // REGISTRO DOS 1/2" (18/09/2026): a costura do par sobreposto conta os parafusos que
+ // JA EXISTEM, seja qual for a ligacao que os criou. Guardar aqui e a unica forma de a
+ // regra ser MEDIDA e nao enumerada familia por familia. So lista; nao muda geometria.
+ // Guarda a posicao LOCAL e o grupo. A conversao para mundo e feita no passe final da
+ // costura, e nao aqui: varias pecas (a agua direita do rafter, os clones do espelho)
+ // nascem com a transformacao provisoria e so depois recebem a definitiva — em mundo,
+ // agora, a posicao seria a errada.
+ if(window.BOLTS12)window.BOLTS12.push({par:(par||scene),x:x,y:y,z:z,grip:grip,g:g,
+  ax:(axis==='x')?[1,0,0]:((axis==='y')?[0,1,0]:[0,0,1])});
+ g.userData.grip12=grip;
  g.userData.fastener2=true;return g;}
 
 // R01/R35/R36 — AUDITOR GLOBAL DE COLISÃO (AABB rápido + OBB/SAT 15 eixos).
@@ -477,6 +496,371 @@ function mergeBands(cuts,tol){
     if(s[i][0]<=Lz[1]+tol){if(s[i][1]>Lz[1])Lz[1]=s[i][1];}
     else out.push(s[i]);}
   return out;}
+// ── POSICAO DOS 1/2" DO NO PILAR x RAFTER (18/09/2026) ──────────────────────
+// Ate aqui a posicao saia so da GRADE: as 3 linhas de maquina do pilar cruzadas
+// com as 3 do rafter, em diagonal (R76). Geometria pura das duas pecas — o
+// calculo nao olhava o que MAIS existe no no. Resultado medido no 10x20: em
+// todo no principal a arruela do parafuso CENTRAL batia na MESA do mini-pilar,
+// que passa a 6,2 mm do eixo e se projeta 45 mm fora da face (invasao 7,3 mm).
+//
+// CRITERIO (Cassiano 18/09, corrigindo a leitura anterior): atravessar o mini
+// NAO invalida — ali o parafuso prende pilar + rafter + mini, e a ligacao de
+// tres pecas e desejada. O que nao pode e CABECA, ARRUELA ou PORCA baterem em
+// peca que a haste nao atravessa: nesse caso a arruela nao assenta e a chave
+// nao entra. Entao a regra e:
+//
+//   a ferragem so pode encostar no que a propria haste atravessa.
+//
+// ESCOLHA: continua UMA posicao por linha de maquina do pilar (a distribuicao
+// da ligacao nao muda) — o que muda e QUAL das 3 intersecoes daquela linha.
+// Entre as combinacoes livres vale a de maior distancia MINIMA entre parafusos
+// (grupo espalhado, nunca quase colinear). Empate: fica a que preserva mais
+// parafusos onde ja estavam.
+//
+// SO MEXE NO NO QUE TEM CONFLITO. No sem conflito fica byte a byte como estava.
+//
+// PASSE FINAL, como a costura: quando buildRafter roda, o mini, a terca e a
+// parede ainda nao existem — o no parece vazio.
+var NOS=[];
+var NO_ARR=0.0135;              // arruela O27 — maior diametro da ferragem
+var NO_CAB=0.011, NO_PONTA=0.023, NO_HASTE=0.003;   // ferragem e haste (lsf_core)
+var NO_TOL=0.00005;             // 0,05 mm — contato de projeto, nao invasao
+var _noM=new THREE.Matrix4(), _noA=new THREE.Vector3(), _noB=new THREE.Vector3();
+
+// frame  grupo em que os parafusos deste no vivem
+// grade  as 9 intersecoes, em coordenada LOCAL do frame: {lx,ly,x,y}
+// gs     os 3 grupos de parafuso ja criados, na ordem de `atuais`
+// atuais indices em `grade` das posicoes de hoje
+// grip   aperto dos parafusos deste no
+function noRegistra(frame, grade, gs, atuais, grip) {
+  NOS.push({fr: frame, gr: grade, gs: gs, at: atuais, grip: grip, peca: PIECE});
+}
+
+function _noCaixas() {
+  // AABB barata (sem varrer vertice): centro da matriz + projecao das semi-extensoes
+  var L = [];
+  scene.updateMatrixWorld(true);
+  scene.traverse(function (o) {
+    if (!o.isMesh || !o.geometry || o.geometry.type !== 'BoxGeometry') return;
+    if (!(o.userData && o.userData.p >= 1)) return;
+    var q = o.geometry.parameters, m = o.matrixWorld.elements, e = [], h = [];
+    var d = [q.width, q.height, q.depth];
+    for (var k = 0; k < 3; k++) {
+      var v = [m[k * 4], m[k * 4 + 1], m[k * 4 + 2]];
+      var n = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) || 1;
+      e.push([v[0] / n, v[1] / n, v[2] / n]);
+      h.push(d[k] * n / 2);
+    }
+    var c = [m[12], m[13], m[14]], r = [0, 0, 0];
+    for (var i = 0; i < 3; i++)
+      for (var j = 0; j < 3; j++) r[i] += h[j] * Math.abs(e[j][i]);
+    L.push({p: o.userData.p, c: c, e: e, h: h, r: r});
+  });
+  return L;
+}
+
+function _noSat(A, B) {
+  var d = [B.c[0] - A.c[0], B.c[1] - A.c[1], B.c[2] - A.c[2]];
+  var ax = A.e.concat(B.e), i, j;
+  for (i = 0; i < 3; i++) for (j = 0; j < 3; j++) {
+    var u = A.e[i], v = B.e[j];
+    var w = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+    var n = Math.sqrt(w[0] * w[0] + w[1] * w[1] + w[2] * w[2]);
+    if (n > 1e-9) ax.push([w[0] / n, w[1] / n, w[2] / n]);
+  }
+  var menor = 1e9;
+  for (i = 0; i < ax.length; i++) {
+    var L = ax[i], ra = 0, rb = 0, k;
+    for (k = 0; k < 3; k++) ra += A.h[k] * Math.abs(A.e[k][0] * L[0] + A.e[k][1] * L[1] + A.e[k][2] * L[2]);
+    for (k = 0; k < 3; k++) rb += B.h[k] * Math.abs(B.e[k][0] * L[0] + B.e[k][1] * L[1] + B.e[k][2] * L[2]);
+    var ov = ra + rb - Math.abs(d[0] * L[0] + d[1] * L[1] + d[2] * L[2]);
+    if (ov <= 0) return 0;
+    if (ov < menor) menor = ov;
+  }
+  return menor;
+}
+
+// caixa de um cilindro de raio R, do ponto a ate b (ambos em mundo)
+function _noCil(a, b, R) {
+  var d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+  var L = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]) || 1;
+  var w = [d[0] / L, d[1] / L, d[2] / L];
+  var t = (Math.abs(w[0]) < 0.9) ? [1, 0, 0] : [0, 1, 0];
+  var u = [w[1] * t[2] - w[2] * t[1], w[2] * t[0] - w[0] * t[2], w[0] * t[1] - w[1] * t[0]];
+  var n = Math.sqrt(u[0] * u[0] + u[1] * u[1] + u[2] * u[2]) || 1;
+  u = [u[0] / n, u[1] / n, u[2] / n];
+  var v = [w[1] * u[2] - w[2] * u[1], w[2] * u[0] - w[0] * u[2], w[0] * u[1] - w[1] * u[0]];
+  var c = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+  var r = [0, 0, 0], e = [u, v, w], h = [R, R, L / 2];
+  for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) r[i] += h[j] * Math.abs(e[j][i]);
+  return {c: c, e: e, h: h, r: r};
+}
+
+function nosExecuta() {
+  if (!NOS.length) return;
+  var CX = _noCaixas();
+  for (var q = 0; q < NOS.length; q++) {
+    var N = NOS[q];
+    N.fr.updateMatrixWorld();
+    var MW = N.fr.matrixWorld;
+    // eixo do parafuso = +z local do frame, em mundo
+    var dir = new THREE.Vector3(0, 0, 1).transformDirection(MW);
+    var meiaH = N.grip / 2, cand = [];
+    var perto = null, cw = null;
+    for (var i = 0; i < N.gr.length; i++) {
+      var g = N.gr[i];
+      var P = new THREE.Vector3(g.x, g.y, 0).applyMatrix4(MW);
+      var w = [P.x, P.y, P.z];
+      if (!cw) { cw = w; }
+      var ha = [w[0] - dir.x * (meiaH + NO_HASTE), w[1] - dir.y * (meiaH + NO_HASTE), w[2] - dir.z * (meiaH + NO_HASTE)];
+      var hb = [w[0] + dir.x * (meiaH + NO_PONTA), w[1] + dir.y * (meiaH + NO_PONTA), w[2] + dir.z * (meiaH + NO_PONTA)];
+      var fa = [w[0] - dir.x * (meiaH + NO_CAB), w[1] - dir.y * (meiaH + NO_CAB), w[2] - dir.z * (meiaH + NO_CAB)];
+      // A peca so conta como ATRAVESSADA quando o EIXO do parafuso passa por dentro dela
+      // — e essa a definicao de furo, e e a mesma do segFix() do fab_finaliza. Usar o
+      // envelope O12,7 aqui dava falso positivo: no no principal a haste RASPA 0,15 mm na
+      // mesa do mini, e a regra concluia que aquele parafuso a furava de proposito.
+      cand.push({g: g, w: w, haste: _noCil(ha, hb, 0.0005), fer: _noCil(fa, hb, NO_ARR)});
+    }
+    // vizinhanca: so as caixas que podem alcancar o no
+    var viz = [], RAIO = 0.45;
+    for (i = 0; i < CX.length; i++) {
+      var B = CX[i], dentro = false;
+      for (var k = 0; k < cand.length && !dentro; k++) {
+        var W = cand[k].w;
+        if (Math.abs(B.c[0] - W[0]) <= B.r[0] + RAIO &&
+            Math.abs(B.c[1] - W[1]) <= B.r[1] + RAIO &&
+            Math.abs(B.c[2] - W[2]) <= B.r[2] + RAIO) dentro = true;
+      }
+      if (dentro) viz.push(B);
+    }
+    // livre? a ferragem so pode encostar no que a HASTE atravessa
+    for (i = 0; i < cand.length; i++) {
+      var C = cand[i], fura = {}, bate = false;
+      for (k = 0; k < viz.length; k++) if (_noSat(C.haste, viz[k]) > NO_TOL) fura[viz[k].p] = 1;
+      for (k = 0; k < viz.length; k++) {
+        if (fura[viz[k].p]) continue;
+        if (_noSat(C.fer, viz[k]) > NO_TOL) { bate = true; break; }
+      }
+      C.fura = fura;
+      C.livre = !bate;
+    }
+    // O CANDIDATO TEM DE PEGAR AS DUAS PECAS. Nem toda intersecao da grade cai dentro da
+    // sobreposicao das duas almas — algumas passam acima do topo do pilar ou alem da
+    // chegada do rafter. A exigencia sai da propria ligacao, sem nomear familia: as pecas
+    // que os TRES parafusos de hoje atravessam EM COMUM sao as que a ligacao une; um
+    // candidato so vale se atravessar todas elas.
+    var obrig = null;
+    for (i = 0; i < N.at.length; i++) {
+      var F = cand[N.at[i]].fura;
+      if (obrig === null) { obrig = {}; for (k in F) obrig[k] = 1; }
+      else { for (k in obrig) if (!F[k]) delete obrig[k]; }
+    }
+    for (i = 0; i < cand.length; i++) {
+      for (k in (obrig || {})) if (!cand[i].fura[k]) { cand[i].livre = false; break; }
+    }
+    var atual = {}, algumRuim = false;
+    for (i = 0; i < N.at.length; i++) {
+      atual[N.at[i]] = 1;
+      if (!cand[N.at[i]].livre) algumRuim = true;
+    }
+    if (!algumRuim) continue;              // no limpo: fica exatamente como esta
+    // escolhe UMA posicao livre por linha de maquina do pilar
+    var linhas = [], vistos = {};
+    for (i = 0; i < N.gr.length; i++) {
+      var lx = N.gr[i].lx;
+      if (vistos[lx] === undefined) { vistos[lx] = linhas.length; linhas.push([]); }
+      if (cand[i].livre) linhas[vistos[lx]].push(i);
+    }
+    var usaveis = [];
+    for (i = 0; i < linhas.length; i++) if (linhas[i].length) usaveis.push(linhas[i]);
+    if (usaveis.length < 2) { N.semSolucao = true; continue; }
+    // combinacao de maior distancia MINIMA; empate -> preserva mais posicoes atuais
+    function dist(a, b) {
+      var A = cand[a].w, B2 = cand[b].w;
+      return Math.sqrt((A[0] - B2[0]) * (A[0] - B2[0]) + (A[1] - B2[1]) * (A[1] - B2[1]) +
+                       (A[2] - B2[2]) * (A[2] - B2[2]));
+    }
+    var melhor = null;
+    (function combina(ix, atual2) {
+      if (ix === usaveis.length) {
+        var dmin = 1e9, mant = 0, a, b, cc = [0, 0, 0];
+        for (a = 0; a < atual2.length; a++) {
+          if (atual[atual2[a]]) mant++;
+          for (b = 0; b < 3; b++) cc[b] += cand[atual2[a]].w[b] / atual2.length;
+          for (b = a + 1; b < atual2.length; b++) dmin = Math.min(dmin, dist(atual2[a], atual2[b]));
+        }
+        // DISPERSAO do grupo (momento polar em torno do centroide): desempata o que a
+        // distancia minima nao resolve. Sem isto, no no de empena o empate caia numa
+        // combinacao quase COLINEAR — tres parafusos na mesma linha do rafter viram
+        // rotula, nao engaste.
+        var pol = 0;
+        for (a = 0; a < atual2.length; a++) {
+          var W = cand[atual2[a]].w;
+          pol += (W[0] - cc[0]) * (W[0] - cc[0]) + (W[1] - cc[1]) * (W[1] - cc[1]) +
+                 (W[2] - cc[2]) * (W[2] - cc[2]);
+        }
+        var ganha = !melhor;
+        if (!ganha && dmin > melhor.d + 1e-6) ganha = true;
+        else if (!ganha && Math.abs(dmin - melhor.d) <= 1e-6) {
+          if (pol > melhor.pol + 1e-9) ganha = true;
+          else if (Math.abs(pol - melhor.pol) <= 1e-9 && mant > melhor.m) ganha = true;
+        }
+        if (ganha) melhor = {d: dmin, pol: pol, m: mant, v: atual2.slice()};
+        return;
+      }
+      for (var z = 0; z < usaveis[ix].length; z++) combina(ix + 1, atual2.concat([usaveis[ix][z]]));
+    })(0, []);
+    if (!melhor) { N.semSolucao = true; continue; }
+    // move os parafusos para as posicoes escolhidas
+    N.escolha = melhor.v.slice();
+    var sobra = N.gs.slice();
+    // 1o: quem fica onde esta nao se mexe
+    var usados = {}, destino = [];
+    for (i = 0; i < melhor.v.length; i++) {
+      var alvo = melhor.v[i], j = N.at.indexOf(alvo);
+      if (j >= 0 && !usados[j]) { usados[j] = 1; destino.push([N.gs[j], alvo]); }
+      else destino.push([null, alvo]);
+    }
+    var livresG = [];
+    for (i = 0; i < N.gs.length; i++) if (!usados[i]) livresG.push(N.gs[i]);
+    for (i = 0; i < destino.length; i++) {
+      if (destino[i][0]) continue;
+      destino[i][0] = livresG.shift() || null;
+    }
+    for (i = 0; i < destino.length; i++) {
+      var gg = destino[i][0], pos = N.gr[destino[i][1]];
+      if (!gg) continue;
+      gg.position.set(pos.x, pos.y, 0);
+      gg.updateMatrixWorld(true);
+      if (window.BOLTS12) for (k = 0; k < window.BOLTS12.length; k++) {
+        if (window.BOLTS12[k].g === gg) { window.BOLTS12[k].x = pos.x; window.BOLTS12[k].y = pos.y; }
+      }
+    }
+    // parafuso que sobrou (linha inteira bloqueada): sai da cena
+    for (i = 0; i < livresG.length; i++) {
+      var ex = livresG[i];
+      if (ex && ex.parent) ex.parent.remove(ex);
+      if (window.BOLTS12) for (k = window.BOLTS12.length - 1; k >= 0; k--)
+        if (window.BOLTS12[k].g === ex) window.BOLTS12.splice(k, 1);
+      N.removeu = (N.removeu || 0) + 1;
+    }
+    if (window.NOS_LOG) window.NOS_LOG.push({
+      peca: N.peca, escolha: N.escolha, atuais: N.at.slice(),
+      livres: cand.map(function (c) { return !!c.livre; }),
+      grade: N.gr.map(function (g) { return [g.lx, g.ly]; }),
+      removeu: N.removeu || 0
+    });
+  }
+}
+// ── COSTURA DO PAR SOBREPOSTO (18/09/2026) ───────────────────────────
+// Dois perfis que trabalham unidos nao podem ficar sem fixacao efetiva por mais
+// de SOLID_GAP. A regra MEDE o que ja existe em vez de listar familia por
+// familia: `bolt12` registra todo 1/2" em BOLTS12 e a costura conta os que
+// atravessam o pacote, nao importa que ligacao os criou (sapata, mini, MF, no
+// do rafter, viga, emenda). Onde o vao passa do limite entram INDEX O13 na
+// linha CENTRAL, em partes iguais: so o necessario (R50).
+// Generaliza a R89 v2, que fazia isto com 2,5 m e so no pilar da empena.
+//
+// POR QUE E UM PASSE FINAL, e nao uma chamada dentro de cada build: o pilar
+// nasce ANTES das paredes, das tercas, dos minis e do mezanino. Medido em
+// 18/09: no instante do build o pilar enxergava 2 fixacoes das 12 a 23 que ele
+// teria no fim — e costurava em cima de parafusos que ainda nao existiam,
+// criando exatamente o INDEX redundante que a regra proibe. Alem disso a agua
+// direita do rafter e os clones do espelho so recebem a transformacao
+// DEFINITIVA depois do build: medir em mundo antes disso le a posicao errada.
+// Entao cada peca so REGISTRA o seu pacote; quem mede e costura e
+// costuraExecuta(), chamado uma vez com a cena inteira pronta.
+var SOLID_GAP=1.300;
+// A haste do bolt12 (nucleo O12,7) vai de -grip/2-wT ate +grip/2+wT+nH+tail. Estes dois
+// numeros SAO a geometria do lsf_core e sao os MESMOS que o fab_finaliza usa em segFix()
+// para dizer o que o furo atravessa — e por isso que a costura e o registro concordam.
+var HASTE_TRAS=0.003, HASTE_FRENTE=0.023;
+var PACOTES=[];
+var _cstM=new THREE.Matrix4(),_cstP=new THREE.Vector3(),_cstD=new THREE.Vector3();
+// pg       referencial do pacote (grupo da peca, ou `scene` quando ela e desenhada em mundo)
+// eixo     'x' ou 'y' — a direcao em que o pacote corre, NO referencial pg
+// lo,hi    extremos do trecho comum das duas almas (entram como ancora: ponta de pacote e
+//          sempre no — sapata, topo do pilar, apex — nunca ponta solta)
+// espPac  espessura TOTAL do pacote (face externa a face externa): o parafuso so conta
+//         quando o aperto dele cobre essa espessura — e isso que e 'atravessar e unir'
+// vC/banda centro e meia-largura da faixa da alma na transversal
+// bocaC    coordenada do PLANO do pacote na direcao da boca (z local)
+// gripNovo aperto do INDEX inserido: face externa a face externa das duas almas
+function costuraRegistra(pg,eixo,lo,hi,espPac,vC,bocaC,banda,gripNovo){
+  var d={pg:pg,eixo:eixo,lo:lo,hi:hi,esp:espPac,vC:vC,bocaC:bocaC,
+         banda:banda,gripNovo:gripNovo,peca:PIECE};
+  PACOTES.push(d);return PACOTES.length-1;}     // INDICE, nunca o objeto: ver costuraClone
+// Clone do espelho: o grupo clonado tem o MESMO referencial local do original
+// (o espelho vive na transformacao do grupo), entao o pacote e o mesmo descritor
+// com outro pg. Sem isto a metade espelhada ficaria sem costura.
+// O grupo guarda o INDICE do pacote, e nao o descritor: o Object3D.clone() do
+// three serializa userData com JSON.stringify, e um objeto THREE ali dentro tem
+// referencia circular (parent<->children) — estourava a pilha na hora do espelho.
+function costuraClone(orig,clone){
+  // Os 1/2" do clone sao COPIAS de malha: nunca passaram por bolt12, entao nao estao
+  // em BOLTS12. Sem registra-los o pacote clonado se enxerga vazio e ganha INDEX que
+  // ja existem ao lado (medido em 18/09: 5 INDEX redundantes nas MF espelhadas).
+  // Vale para QUALQUER clone, tenha ele pacote proprio ou nao.
+  if(window.BOLTS12)clone.traverse(function(o){
+    if(o.userData&&o.userData.fastener2)
+      window.BOLTS12.push({par:o.parent,x:o.position.x,y:o.position.y,z:o.position.z,
+                           grip:o.userData.grip12||0});});
+  var i=orig.userData?orig.userData.pacote:undefined;
+  if(i===undefined||i===null||!PACOTES[i])return;
+  var d=PACOTES[i],c={},k;
+  for(k in d)if(d.hasOwnProperty(k))c[k]=d[k];
+  c.pg=clone;PACOTES.push(c);}
+function costuraExecuta(){
+  if(!PACOTES.length)return;
+  scene.updateMatrixWorld(true);                  // agora sim: tudo no lugar definitivo
+  var B=window.BOLTS12||[],W=[],i,j;
+  for(i=0;i<B.length;i++){var b=B[i];
+    var w=new THREE.Vector3(b.x,b.y,b.z).applyMatrix4(b.par.matrixWorld);
+    var ax=b.ax||[0,0,1];
+    var dw=new THREE.Vector3(ax[0],ax[1],ax[2]).transformDirection(b.par.matrixWorld);
+    W.push({w:w,d:dw,grip:b.grip});}
+  for(j=0;j<PACOTES.length;j++){var d=PACOTES[j],us=[],dbg=[];
+    var ident=(d.pg===scene);
+    if(!ident)_cstM.copy(d.pg.matrixWorld).invert();
+    for(i=0;i<W.length;i++){
+      _cstP.copy(W[i].w);
+      _cstD.copy(W[i].d);
+      if(!ident){_cstP.applyMatrix4(_cstM);_cstD.transformDirection(_cstM);}
+      // O QUE CONTA COMO FIXACAO (medido, nao rotulado): a HASTE tem de atravessar as duas
+      // almas do pacote. Dois criterios foram testados e descartados em 18/09:
+      //  · "estar no plano do pacote" reprovava a SAPATA e os parafusos das tercas, que
+      //    nascem com o centro deslocado na boca e mesmo assim atravessam (Sidnei 20x50:
+      //    8 fixacoes reais do pilar ficavam de fora e entrou INDEX a 17 mm de uma delas);
+      //  · "o APERTO cobrir a espessura" reprovava os 1/2" da R89 e dos minis, modelados
+      //    com aperto de 2t num pacote de 4t (o aperto do modelo esta abaixo do real).
+      // Vale a HASTE, que e o que o registro FAB usa para dizer o que o furo atravessa:
+      // ela sobra HASTE_FORA alem do aperto de cada lado (lsf_core bolt12).
+      if(Math.abs(_cstD.z)<0.99)continue;            // haste nao cruza o pacote
+      var zA=_cstP.z+(-W[i].grip/2-HASTE_TRAS)*_cstD.z;
+      var zB=_cstP.z+( W[i].grip/2+HASTE_FRENTE)*_cstD.z;
+      if(Math.min(zA,zB)>d.bocaC-d.esp/2+0.001)continue;   // nao alcanca a face de tras
+      if(Math.max(zA,zB)<d.bocaC+d.esp/2-0.001)continue;   // nao alcanca a face da frente
+      var u=(d.eixo==='y')?_cstP.y:_cstP.x, v=(d.eixo==='y')?_cstP.x:_cstP.y;
+      if(Math.abs(v-d.vC)>d.banda)continue;          // fora da faixa da alma
+      if(u>d.lo-0.02&&u<d.hi+0.02){us.push(u);
+        if(window.COSTURA_LOG)dbg.push([u,W[i].w.x,W[i].w.y,W[i].w.z,W[i].grip]);}}
+    us.push(d.lo);us.push(d.hi);
+    us.sort(function(a,b){return a-b;});
+    var lg=null;
+    if(window.COSTURA_LOG){lg={peca:d.peca,eixo:d.eixo,lo:d.lo,hi:d.hi,
+        vistos:us.slice(),ancoras:dbg,novos:[],novosW:[]};window.COSTURA_LOG.push(lg);}
+    var postos=[];
+    for(var k=0;k<us.length-1;k++){var gp=us[k+1]-us[k];
+      if(gp>SOLID_GAP+1e-9){var n=Math.ceil(gp/SOLID_GAP);
+        for(var q=1;q<n;q++)postos.push(us[k]+gp*q/n);}}
+    for(k=0;k<postos.length;k++){var uu=postos[k];
+      if(lg)lg.novos.push(uu);
+      var bx,by;
+      if(d.eixo==='y'){bx=d.vC;by=uu;}else{bx=uu;by=d.vC;}
+      if(lg){var wv=new THREE.Vector3(bx,by,d.bocaC).applyMatrix4(d.pg.matrixWorld);
+        lg.novosW.push([wv.x,wv.y,wv.z]);}
+      bolt12(bx,by,d.bocaC,'z',d.gripNovo,d.pg);}}
+}
 function buildPilar(ox,oz,hh,emp,lados,ligY){novaPeca('pilar');
   // lados (13/07, print do Cassiano): cortes de lip da parede lateral
   // SO na(s) metade(s) com VAO adjacente — nos pilares de PONTA o lip
@@ -584,16 +968,8 @@ function buildPilar(ox,oz,hh,emp,lados,ligY){novaPeca('pilar');
   // INDEPENDE de latAtivo — a parede lateral nao toca o pilar da
   // empena (o gate _semParede deixava a empena SEM costura nenhuma).
   // So empenas por ora (principais: padrao proprio depois, Cassiano).
-  if(emp&&emp.ctr){
-    var SOLID_GAP=2.500;
-    var anc=[0.180,emp.ctr];
-    LGY.forEach(function(ly){anc.push(ly);});
-    _g24.forEach(function(by){anc.push(by);});
-    anc.sort(function(a,b){return a-b;});
-    for(var ai=0;ai<anc.length-1;ai++){var gp=anc[ai+1]-anc[ai];
-      if(gp>SOLID_GAP){var nn=Math.ceil(gp/SOLID_GAP);
-        for(var kk=1;kk<nn;kk++){bolt12(0,anc[ai]+gp*kk/nn,0,'z',t*2,pg);}}}
-  }
+  // (a costura da R89 v2 — 2,5 m, so na empena, com ancoras enumeradas — deu lugar ao
+  //  costuraPar no FIM desta funcao: 1,30 m, todo pilar, medindo os parafusos que existem)
   if(emp&&emp.ctr){
     // LIGACAO NO RAFTER — TRIANGULO (nova regra Cassiano 12/08, padrao
     // unico pilar-x-rafter): max 3x 1/2" nas INTERSECOES das linhas de
@@ -607,9 +983,18 @@ function buildPilar(ox,oz,hh,emp,lados,ligY){novaPeca('pilar');
     // de 13/07 — furos afastados do topo evitam encavalar com os 1/2"
     // dos mini rafters quando o pilar cai perto deles.
     var slpE=emp.slp||0;
-    bolt12(0,emp.ctr,0,'z',t*4,pg);
+    var _gsE=[bolt12(0,emp.ctr,0,'z',t*4,pg)];
     [-refX,refX].forEach(function(bx){
-      bolt12(bx,emp.ctr+slpE*bx-refX/cosT,0,'z',t*4,pg);});
+      _gsE.push(bolt12(bx,emp.ctr+slpE*bx-refX/cosT,0,'z',t*4,pg));});
+    // mesma grade 3x3 do no do portico, no referencial do PILAR:
+    // y = ctr + slp*Lx + Ly/cosT  (Lx = linha do pilar, Ly = linha do rafter)
+    var _grE=[],_atE=[];
+    [-refX,0,refX].forEach(function(Lx){[-refX,0,refX].forEach(function(Ly){
+      _grE.push({lx:Lx,ly:Ly,x:Lx,y:emp.ctr+slpE*Lx+Ly/cosT});});});
+    [[0,0],[-refX,-refX],[refX,-refX]].forEach(function(pr){
+      for(var i=0;i<_grE.length;i++)
+        if(Math.abs(_grE[i].lx-pr[0])<1e-9&&Math.abs(_grE[i].ly-pr[1])<1e-9)_atE.push(i);});
+    noRegistra(pg,_grE,_gsE,_atE,t*4);
     var topW=pBase+WEBH;
     mkDash(pg,[new V3(+wH/2,topW,pz1),new V3(-wH/2,topW,pz1)],0x4a9ad8,0.85);
     mkDash(pg,[new V3(+wH/2,topW,pz2),new V3(-wH/2,topW,pz2)],0x4a9ad8,0.75);
@@ -674,6 +1059,14 @@ function buildPilar(ox,oz,hh,emp,lados,ligY){novaPeca('pilar');
       var yb2=pilTopo+cy+sE*sinT+yl*cosT;
       bolt12(0,yb2,0,'z',0.018,pg);});
   }
+  // COSTURA DO PACOTE (18/09/2026): percorre a uniao das duas almas e, onde o vao
+  // entre fixacoes EFETIVAS passa de SOLID_GAP, poe INDEX central. Conta os 1/2" ja
+  // existentes deste pilar — sapata, mini, MF, verga, viga do mez, no do rafter —
+  // qualquer um que atravesse as duas almas. Vale para pilar principal E de empena.
+  // APERTO: as duas almas do pilar nao encostam — ficam a pz1/pz2 (5 mm de ar, o vao que
+  // recebe as duas almas do rafter nos nos). O 1/2" tem de ir de face EXTERNA a face
+  // EXTERNA: (pz1-pz2)+t = 4t = 10 mm. Medido na cena, nao assumido.
+  costuraRegistra(pg,'y',pBase,(emp&&emp.ctr)?emp.ctr:(pBase+PH),(pz1-pz2)+t,0,0,wH/2,(pz1-pz2)+t);
   return pg;  // caller pode marcar noMirror / girar (pilar direito direto)
 }
 
@@ -723,6 +1116,10 @@ function buildMF(ox,oz){novaPeca('mao-francesa');
   // meio do comprimento, linha 0 — unindo as duas almas do par de C
   // (mesma logica da solidarizacao do pilar; so atravessa as 2 chapas)
   bolt12(mfLen/2,0,0,'z',t*2,mg);
+  // COSTURA DO PACOTE (18/09/2026): a costura central acima resolve a MF curta do padrao
+  // (1,52 m -> 0,59 m de vao). Com mf_distancia maior o meio voltaria a abrir: aqui a
+  // regra mede e completa. Nas MF de hoje nao entra nenhum parafuso — e um no-op medido.
+  mg.userData.pacote=costuraRegistra(mg,'x',0,mfLen,t*2,0,0,wH/2,t*2);
   mkDash(mg,[new V3(almaA_mf,+wH/2,pz1),new V3(almaA_mf,-wH/2,pz1)],0x4a9ad8,0.85);
   mkDash(mg,[new V3(almaA_mf,+wH/2,pz1),new V3(fSupStartMF,+wH/2,pz1)],0x4a9ad8,0.85);
   mkDash(mg,[new V3(almaA_mf,-wH/2,pz1),new V3(fInfStartMF,-wH/2,pz1)],0x4a9ad8,0.85);
@@ -881,8 +1278,19 @@ function buildRafter(ox,oz,mirrorSwap,semTrav){novaPeca('rafter');
       var bx=(pr[0]-cx+pr[1]*sinT)/cosT;
       bolt12(bx,pr[1],0,'z',t*4,rg);});
   } else {
-  var cB=[{bx:(+refX-cx+(-refX)*sinT)/cosT,by:-refX},{bx:(0-cx)/cosT,by:0},{bx:(-refX-cx+(+refX)*sinT)/cosT,by:+refX}];
-  cB.forEach(function(b){bolt12(b.bx,b.by,0,'z',t*4,rg);});
+  var cB=[{bx:(+refX-cx+(-refX)*sinT)/cosT,by:-refX,lx:+refX,ly:-refX},
+          {bx:(0-cx)/cosT,by:0,lx:0,ly:0},
+          {bx:(-refX-cx+(+refX)*sinT)/cosT,by:+refX,lx:-refX,ly:+refX}];
+  var _gsR=cB.map(function(b){return bolt12(b.bx,b.by,0,'z',t*4,rg);});
+  // GRADE COMPLETA do no: as 9 intersecoes linha-do-pilar x linha-do-rafter. Nenhuma
+  // coordenada nova — sao os mesmos pontos de maquina que a diagonal ja usava, so que
+  // agora as 9 ficam disponiveis para o passe final escolher as livres.
+  var _grR=[],_atR=[];
+  [-refX,0,refX].forEach(function(Lx){[-refX,0,refX].forEach(function(Ly){
+    _grR.push({lx:Lx,ly:Ly,x:(Lx-cx+Ly*sinT)/cosT,y:Ly});});});
+  cB.forEach(function(b){for(var i=0;i<_grR.length;i++)
+    if(Math.abs(_grR[i].lx-b.lx)<1e-9&&Math.abs(_grR[i].ly-b.ly)<1e-9)_atR.push(i);});
+  noRegistra(rg,_grR,_gsR,_atR,t*4);
   }
   var zF1=pz1+t/2+0.001,zF2=pz2-t/2-0.001;
   mkDash(rg,[new V3(0,+wH/2,zF1),new V3(0,-wH/2,zF1),new V3(ghostZone,-wH/2,zF1)],0x4a9ad8,0.85);
@@ -897,6 +1305,10 @@ function buildRafter(ox,oz,mirrorSwap,semTrav){novaPeca('rafter');
   if(!semTrav){bolt12(travBolt1,-refX,0,'z',pz1*4,rg);
    bolt12(travBolt2,0,0,'z',pz1*4,rg);}
   [-refX,0,refX].forEach(function(ly){mkRef(rg,[new V3(0,ly,t/2+0.001),new V3(rafLen,ly,t/2+0.001)]);mkRef(rg,[new V3(0,ly,-t/2-0.001),new V3(rafLen,ly,-t/2-0.001)]);});
+  // COSTURA DO PACOTE (18/09/2026) — mesma regra do pilar. O rafter ja tem muitos 1/2"
+  // (no do pilar, apex, travessa, MF, minis), mas eles se concentram nos nos: entre o
+  // ultimo da MF e o primeiro do apex sobrava um vao livre. Aqui so entra o que falta.
+  costuraRegistra(rg,'x',0,rafLen,t*2,0,0,wH/2,t*2);
   return rg;
 }
 
@@ -941,6 +1353,11 @@ function buildTravessa(oz){novaPeca('travessa');
     mkRef(scene,[new V3(tx0,tcy+ly,oz+pz1+t/2+0.001),new V3(tx1,tcy+ly,oz+pz1+t/2+0.001)]);
     mkRef(scene,[new V3(tx0,tcy+ly,oz+pz2-t/2-0.001),new V3(tx1,tcy+ly,oz+pz2-t/2-0.001)]);
   });
+  // COSTURA DO PACOTE (18/09/2026): a travessa e desenhada em MUNDO (sem grupo), e os
+  // unicos 1/2" que unem as suas duas almas nascem no grupo do RAFTER, nos dois nos. Por
+  // isso a costura le os parafusos em coordenada de mundo: em coordenada local eles nao
+  // existiriam para esta peca. Sobrava o miolo inteiro sem fixacao.
+  costuraRegistra(scene,'x',tx0,tx1,(pz1-pz2)+t,tcy,oz,wH/2,(pz1-pz2)+t);
 }
 
 
@@ -1048,6 +1465,7 @@ function mezTravPos(){
   return P;
 }
 function buildViga(oz,cutNeg,cutPos){novaPeca('viga-mezanino');
+  
   if(!mezAtivo) return;
   var vwH=wH,vt=t,vfW=fW,vlL=lL,vrefX=refX,vr=r;
   var vigaGroupY = pBase + mezH + cy_viga;
@@ -1287,6 +1705,10 @@ function buildViga(oz,cutNeg,cutPos){novaPeca('viga-mezanino');
     mkRef(vg,[new V3(vL0,ly,+vt/2+0.001),new V3(vL1,ly,+vt/2+0.001)]);
     mkRef(vg,[new V3(vL0,ly,-vt/2-0.001),new V3(vL1,ly,-vt/2-0.001)]);
   });
+  // COSTURA DO PACOTE (18/09/2026): longarina do mezanino. As duas almas ENCOSTAM
+  // (+-vt/2), entao o aperto e vt*2. As ancoras reais sao as pontas nos pilares, as
+  // travessas e as MF; entre elas a medicao diz se falta alguma coisa.
+  costuraRegistra(vg,'x',vL0,vL1,vt*2,0,0,vwH/2,vt*2);
 }
 
 
@@ -1336,12 +1758,18 @@ function buildMFviga(ox,oz,dir){novaPeca('mf-mezanino');
   var _dxV=refX*(1-cosMFM)/sinMFM;          // topo: furos +-refX deslizam p/ as linhas da viga
   bolt12(0,0,0,'z',t*4,mg);                 // pe: linha CENTRAL (pilar)
   bolt12(_dxP,-refX,0,'z',t*4,mg);          // pe: -refX -> linha do pilar
+  // TOPO (longarina) — 2 PONTOS (Cassiano 18/09/2026): o terceiro furo, na linha
+  // +refX, caia a 8,11mm da PONTA da MF (u=1147,55 de L=1155,66) — perto demais da
+  // borda para ferragem e sem funcao na ligacao. Ele DEIXA DE EXISTIR: a MF NAO e
+  // alongada para acomoda-lo. Mesma decisao do pe (R54b), no outro extremo.
   bolt12(mfLenMez,0,0,'z',t*4,mg);          // topo: linha CENTRAL (viga)
-  bolt12(mfLenMez+_dxV,refX,0,'z',t*4,mg);  // topo: +refX -> linha da viga
   bolt12(mfLenMez-_dxV,-refX,0,'z',t*4,mg); // topo: -refX -> linha da viga
   // Costura CENTRAL da MF do mezanino (Cassiano 11/07): 1/2" no centro
   // geometrico (meio do comprimento, linha 0) unindo as duas almas do par
   bolt12(mfLenMez/2,0,0,'z',t*2,mg);
+  // COSTURA DO PACOTE (18/09/2026): mesma regra da MF do portico. Clonada no
+  // espelho, entao guarda o indice do pacote para costuraClone.
+  mg.userData.pacote=costuraRegistra(mg,'x',0,mfLenMez,t*2,0,0,wH/2,t*2);
   mkDash(mg,[new V3(almaA_mez,+wH/2,pz1),new V3(almaA_mez,-wH/2,pz1)],0x4a9ad8,0.85);
   mkDash(mg,[new V3(almaA_mez,+wH/2,pz1),new V3(fSupStartM,+wH/2,pz1)],0x4a9ad8,0.85);
   mkDash(mg,[new V3(almaA_mez,-wH/2,pz1),new V3(fInfStartM,-wH/2,pz1)],0x4a9ad8,0.85);
@@ -1413,6 +1841,12 @@ function buildPilarMez(ox,oz){novaPeca('pilar-mezanino');
   // R83 (Cassiano 08/08): SEM carreiras de solidarização no meio do pilar
   // avulso — parafuso demais. Fixação = sapata (base) + 3 pilar↔viga (topo)
   // + 3 mão-francesa. As carreiras a cada 1m foram removidas.
+  // COSTURA DO PACOTE (18/09/2026) — a regra nova do Cassiano nomeia "pilares do
+  // mezanino". ATENCAO: isto REPOE, a 1,30 m e medido, o que a R83 v4 tinha tirado
+  // ("avulso enxuto", parafuso demais). Nao e a mesma coisa: la eram carreiras de 3
+  // parafusos a cada 1 m, enumeradas; aqui e 1 INDEX na linha central, so onde a
+  // medicao acusa vao > 1,30 m. Aguarda a confirmacao dele.
+  costuraRegistra(pg,'y',pBase,pBase+pilMezH,t*2,0,0,wH/2,t*2);
 
   // Ligação ao topo: vive na VIGA (LEI R77 — a longarina emenda em
   // todo pilar; 2 colunas verticais de 3x 1/2" nas laterais do pilar).
@@ -1465,7 +1899,7 @@ function buildTravessaMez(oz){novaPeca('travessa-mezanino');
 
   var bodyLen=tLen-2*(swFlat+swRamp);
 
-  function buildTrav(item){
+  function buildTrav(item,_ti){
     var xi=item.x, inv=item.inv;
     var wx=vigaX0+xi;
     var tg=new THREE.Group();
@@ -1602,6 +2036,7 @@ for(var ip=0;ip<nPorticos;ip++){
     clone.position.x=-clone.position.x;clone.rotation.y+=Math.PI;
     clone.position.x+=cumXworld;clone.position.y+=cumYworld;
     scene.add(clone);
+    costuraClone(obj,clone);   // a metade espelhada tambem e um pacote a costurar
   });
   // Rafter da agua direita: construido (nao clonado) com os cortes de lip
   // por lado ja trocados (mirrorSwap), e entao espelhado como os clones.
@@ -1836,7 +2271,21 @@ function CL(C,ang,L,o){o=o||{};
 function mpSegs(yBot,yTop,cuts){var v=[[yBot,yTop]];for(var c=0;c<cuts.length;c++){var nv=[],a=cuts[c][0],e=cuts[c][1];for(var i=0;i<v.length;i++){var s=v[i][0],tt=v[i][1];if(e<=s||a>=tt){nv.push([s,tt]);}else{if(a>s)nv.push([s,a]);if(e<tt)nv.push([e,tt]);}}v=nv;}return v;}
 var LIPR_mp=0.0115;   // alivio do lip cut (83-60)/2
 // regra mestra: funde faixas sobrepostas/proximas em abertura unica
-function mpExp(cuts){return mergeBands(cuts,2*LIPR_mp+0.001).map(function(C){return [C[0]-LIPR_mp,C[1]+LIPR_mp];});}
+// BICO DO LIP (17/09/2026): quando a PEGADA da ferramenta (janela funcional + alivio de
+// 11,5 por borda) para a MENOS de um alivio da ponta da peca, sobra um bico de lip que a
+// batida nao teria como deixar — ela simplesmente corre PARA FORA da peca, onde nao existe
+// material. Encostar a janela FUNCIONAL em yBot+LIPR / yTop-LIPR faz o corte alcancar a
+// ponta. Encostar a janela na PONTA (e nao em ponta+alivio) e o que mata o bico: se a janela
+// parar em ponta+alivio, a RAMPA fica dentro da peca e vira uma aleta triangular cheia na
+// ponta — o mesmo bico, so que menor (medido em 17/09: cunha [0-11,5] com altura 1->0).
+// O mesmo valor alimenta o desenho (mpSegs/mpWedges) e o
+// registro (fabBandas), entao A, FAB, CSV e C continuam dizendo a mesma coisa.
+function mpSnap(cuts,yBot,yTop){return mergeBands(cuts,2*LIPR_mp+0.001).map(function(C){
+ var a=C[0],b=C[1],ra=(a-LIPR_mp)-yBot,rb=yTop-(b+LIPR_mp);
+ if(ra>1e-9&&ra<LIPR_mp)a=yBot;                      // janela encosta na ponta: a rampa cai FORA
+ if(rb>1e-9&&rb<LIPR_mp)b=yTop;
+ return [a,b];});}
+function mpExp(cuts,yBot,yTop){return mpSnap(cuts,yBot,yTop).map(function(C){return [C[0]-LIPR_mp,C[1]+LIPR_mp];});}
 // cunha do lip do mini: cheia na DOBRA (xc+-Hm/2), zero na borda livre
 function mpWedge(xc,xF,fdir,yE,dr,zlip){
  var sh=new THREE.Shape();
@@ -1845,9 +2294,12 @@ function mpWedge(xc,xF,fdir,yE,dr,zlip){
  var g2=new THREE.ExtrudeGeometry(sh,{depth:tm,bevelEnabled:false});
  var mm=new THREE.Mesh(g2,mMP_l);mm.position.z=zlip-tm/2;scene.add(mm);}
 function mpWedges(xc,yBot,yTop,cuts,lipZs){
- mergeBands(cuts,2*LIPR_mp+0.001).forEach(function(C){
+ mpSnap(cuts,yBot,yTop).forEach(function(C){
   [[C[0],-1],[C[1],1]].forEach(function(E){
    if(E[0]<yBot||E[0]>yTop)return;
+   // rampa que cai INTEIRA fora da peca (janela encostada na ponta) nao existe no material
+   if(E[1]<0&&E[0]<=yBot+1e-9)return;
+   if(E[1]>0&&E[0]>=yTop-1e-9)return;
    lipZs.forEach(function(zl){
     mpWedge(xc,xc+Hm/2,-1,E[0],E[1],zl);
     mpWedge(xc,xc-Hm/2,1,E[0],E[1],zl);});});});}
@@ -1863,8 +2315,8 @@ function mpL(xc,yc,zc,L,cuts,cutsNeg){cuts=cuts||[];
   scene.add(locBox(mMP_l,xc+Hm/2,yc,zc+zf,tm,L,Fm));
   scene.add(locBox(mMP_l,xc-Hm/2,yc,zc+zf,tm,L,Fm));});
  var lipZ=zM_mp+Fm/2;
- var segsP=mpSegs(yc-L/2,yc+L/2,mpExp(cuts));
- var segsN=mpSegs(yc-L/2,yc+L/2,mpExp(cutsNeg));
+ var segsP=mpSegs(yc-L/2,yc+L/2,mpExp(cuts,yc-L/2,yc+L/2));
+ var segsN=mpSegs(yc-L/2,yc+L/2,mpExp(cutsNeg,yc-L/2,yc+L/2));
  for(var i=0;i<segsP.length;i++){var a=segsP[i][0],e=segsP[i][1],sy=(a+e)/2,sh=e-a;
   scene.add(locBox(mMP_l,xc+Hm/2-Lm/2,sy,zc+lipZ,Lm,sh,tm));
   scene.add(locBox(mMP_l,xc-Hm/2+Lm/2,sy,zc+lipZ,Lm,sh,tm));}
@@ -1877,7 +2329,7 @@ function mpHalf(xc,yc,zc,sign,L,cuts){cuts=cuts||[];novaPeca('mini-pilar');
  scene.add(locBox(mMP_l,xc,yc,zc+sign*zA_mp,Hm,L,tm));
  scene.add(locBox(mMP_l,xc+Hm/2,yc,zc+sign*zM_mp,tm,L,Fm));
  scene.add(locBox(mMP_l,xc-Hm/2,yc,zc+sign*zM_mp,tm,L,Fm));
- var segs=mpSegs(yc-L/2,yc+L/2,mpExp(cuts));var lipZ=sign*(zM_mp+Fm/2);
+ var segs=mpSegs(yc-L/2,yc+L/2,mpExp(cuts,yc-L/2,yc+L/2));var lipZ=sign*(zM_mp+Fm/2);
  for(var i=0;i<segs.length;i++){var a=segs[i][0],e=segs[i][1],sy=(a+e)/2,sh=e-a;
   scene.add(locBox(mMP_l,xc+Hm/2-Lm/2,sy,zc+lipZ,Lm,sh,tm));
   scene.add(locBox(mMP_l,xc-Hm/2+Lm/2,sy,zc+lipZ,Lm,sh,tm));}
@@ -3334,6 +3786,12 @@ function oitao(zP,dirIn,portao){
   // linhas imaginárias (R76: esq×superior, centro×centro, dir×inferior).
   if(!HAS_MONT){[[-refX,refX],[0,0],[refX,-refX]].forEach(function(d){
    bolt12(fCx+d[0],d[1],0,'z',t*4,vg);});}
+  // COSTURA DO PACOTE (18/09/2026) — a R82 acima resolve o caso SEM montantes com 1 ponto
+  // no centro e, COM montantes, confia que cada montante costura a sua regiao. Numa porta
+  // larga os montantes ficam longe uns dos outros e sobrava vao livre entre eles. Aqui a
+  // costura MEDE o que existe (pontas nos pilares + cada montante) e completa so o que
+  // falta. As duas almas da viga ENCOSTAM (+-t/2), entao o aperto e t*2.
+  costuraRegistra(vg,'x',vA,vB,t*2,0,0,wH/2,t*2);
   // GUIA C140 "boca pra cima" SOBRE a viga da porta (Cassiano 10/08/2026):
   // encostada no TOPO da viga p/ APARAFUSAR A TELHA da empena acima da
   // porta. C140 deitado: alma 140 horizontal (repousa na viga), mesas 45
@@ -3502,14 +3960,19 @@ function oitao(zP,dirIn,portao){
  // 100) — mesma filosofia da placa de cumeeira do rafter; os 4,8 de
  // ponta das guias (30mm) atravessam alma+placa (reuso R50).
  var AP=[6.8642, 4.85, 0.226068];
+ // 18/09/2026: a placa une as PONTAS das duas guias na cumeeira. Com a TRAVESSA da
+ // empena as guias chegam ali HORIZONTAIS e coladas sob ela — a placa desce junto e
+ // fica reta (angulo 0) em vez de dobrada no angulo das aguas. Mesma peca, mesmo
+ // papel; a fachada sem travessa segue com a placa dobrada de sempre.
+ var APu=(dirIn>0)?[6.8642, 4.85, 0.226068]:AP;
  var mPlA=new THREE.MeshLambertMaterial({color:0xb8c0c8});
  novaPeca('placa-apex-guia');
  [1,-1].forEach(function(s){
-  var ca=Math.cos(AP[2]),sa=Math.sin(AP[2]);
-  var pzA=AP[1]-s*(ca*0.077-sa*0.0034);
-  var pyA=AP[0]-sa*0.077-ca*0.0034;
+  var ca=Math.cos(APu[2]),sa=Math.sin(APu[2]);
+  var pzA=APu[1]-s*(ca*0.077-sa*0.0034);
+  var pyA=APu[0]-sa*0.077-ca*0.0034;
   var pl=new THREE.Mesh(new THREE.BoxGeometry(0.100,0.0025,0.150),mPlA);
-  pl.position.set(XCE,pyA,pzA);pl.rotation.x=-s*AP[2];
+  pl.position.set(XCE,pyA,pzA);pl.rotation.x=-s*APu[2];
   pl.userData.p=PIECE;W.add(pl);});
  // MINI-PILARES DA EMPENA v2 (rosa, Cassiano 13/07): NA SECAO DA MESA
  // do pilar, de frente pro vao — ALMA do mini colada na face da mesa
@@ -5572,6 +6035,16 @@ grid.position.set(cumXworld,-BT-0.155,10.00);scene.add(grid);
 // são sub-pixel de qualquer jeito — deixando o visualizador LEVE. ──
 // 2 níveis: 4,8x19 (fastener) some <4m (zoom de nó); 1/2" (fastener2) some <16m
 // (aparece já no zoom médio — é o estrutural importante). Geral some tudo = leve.
+// ── COSTURA DOS PARES SOBREPOSTOS (18/09/2026) ─ passe FINAL, com a cena pronta ──
+// Tem de vir aqui: antes das paredes e do mezanino o pilar so conhece 2 das suas
+// fixacoes, e a agua direita do rafter e os clones ainda estao na transformacao
+// provisoria. Depois desta linha nenhuma peca nova entra, e os 1/2" inseridos
+// ainda entram no LOD (FAST2) logo abaixo e no registro FAB.
+// O NO PRIMEIRO: ele pode MOVER 1/2" do encontro pilar x rafter, e a costura conta
+// esses parafusos como fixacao do pacote — tem de ver a posicao final.
+nosExecuta();
+costuraExecuta();
+
 var FAST=[],FAST2=[];scene.traverse(function(o){if(o.userData){if(o.userData.fastener)FAST.push(o);else if(o.userData.fastener2)FAST2.push(o);}});
 // R45 v2 (Cassiano 03/07): LOD por distância REAL da CÂMERA a CADA parafuso
 // (antes usava o raio da órbita — girando em volta de alvo distante os
