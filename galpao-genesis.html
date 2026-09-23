@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Genesis · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD 939fbce · 18/09/2026 22:53</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD 58e5bd2 · 23/09/2026 20:35</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -829,7 +829,7 @@ function costuraExecuta(){
       // O QUE CONTA COMO FIXACAO (medido, nao rotulado): a HASTE tem de atravessar as duas
       // almas do pacote. Dois criterios foram testados e descartados em 18/09:
       //  · "estar no plano do pacote" reprovava a SAPATA e os parafusos das tercas, que
-      //    nascem com o centro deslocado na boca e mesmo assim atravessam (Sidnei 20x50:
+      //    nascem com o centro deslocado na boca e mesmo assim atravessam (galpao 20x50 de referencia:
       //    8 fixacoes reais do pilar ficavam de fora e entrou INDEX a 17 mm de uma delas);
       //  · "o APERTO cobrir a espessura" reprovava os 1/2" da R89 e dos minis, modelados
       //    com aperto de 2t num pacote de 4t (o aperto do modelo esta abaixo do real).
@@ -1614,7 +1614,8 @@ function buildViga(oz,cutNeg,cutPos){novaPeca('viga-mezanino');
       _dX(new V3(_xEnd,-vwH/2,pz),new V3(_xNear,-vwH/2,pz));   // borda -
     });
   }
-  EMD.forEach(function(){novaPeca('viga-mezanino');});  // 1 peca extra por emenda (romaneio)
+  // (as pecas extras de romaneio, 1 por emenda, sao criadas no FIM da funcao —
+  //  ver o comentario la; aqui elas roubavam os lips: 21/09/2026)
 
   // ── ABA (lip) — KIT UNIVERSAL DE JUNÇÃO (regra gravada) ──
   // Abertura funcional = faixa REAL ocupada pela travessa na linha do lip
@@ -1709,6 +1710,14 @@ function buildViga(oz,cutNeg,cutPos){novaPeca('viga-mezanino');
   // (+-vt/2), entao o aperto e vt*2. As ancoras reais sao as pontas nos pilares, as
   // travessas e as MF; entre elas a medicao diz se falta alguma coisa.
   costuraRegistra(vg,'x',vL0,vL1,vt*2,0,0,vwH/2,vt*2);
+  // 1 PECA EXTRA POR EMENDA (romaneio) — criada DEPOIS de toda a geometria da viga
+  // (Cassiano 21/09/2026). Antes ficava antes das abas: cada novaPeca troca o PIECE
+  // global, e os lips (com as janelas das travessas e as cunhas) nasciam carimbados
+  // na peca-emenda, que nao tem alma -> o fab_finaliza os descartava como fantasma,
+  // inferia LIP_CUT de ponta a ponta nas 10 barras e o CSV mandava 1.304 batidas
+  // falsas arrancar os lips inteiros. A peca-emenda continua existindo, so para o
+  // romaneio contar a emenda; nenhuma geometria pode nascer depois desta linha.
+  EMD.forEach(function(){novaPeca('viga-mezanino');});
 }
 
 
@@ -1987,6 +1996,37 @@ function buildTravessaMez(oz){novaPeca('travessa-mezanino');
 // ── Loop principal ──
 var cumXworld=cumX;
 var cumYworld=pilTopo+cy+rafLen*sinT+(wH/2)*cosT;
+// ── TERRENO (Cassiano 23/09/2026) — FONTE ÚNICA das medidas do piso ──
+// CALC = calçada além das bordas do galpão (m) · DEGRAU = topo do radier acima
+// da grama (m). Radier, calçada, grama, sombra de contato E as pessoas leem
+// daqui — as pessoas nascem ANTES do bloco do radier, por isso mora no topo.
+var CALC=2.0,DEGRAU=0.040;
+var radW=cumXworld*2+0.16+2*CALC, radD=(nPorticos-1)*modulo+2*CALC;
+// ── COLUNA DE BOTÕES DA DIREITA (Cassiano 23/09/2026) — FONTE ÚNICA ──
+// Antes cada módulo cravava o próprio `bottom` e os botões se encavalavam:
+// COBERTURA/LATERAIS/EMPENAS ficavam ESCONDIDOS atrás de PESSOAS/EMPILHADEIRA.
+// A ordem e os grupos moram SÓ aqui; cada módulo cria o botão e o entrega a
+// colunaBtn(chave,b). O empilhamento usa a ALTURA REAL de cada botão (os de 2
+// linhas não encavalam) e se refaz ao redimensionar a janela; se a coluna não
+// couber abaixo da legenda, os espaços apertam.
+var COLUNA_BTN=[                                        // de BAIXO para CIMA
+ ['CALHA','VENEZIANA','PRISMA','LANTERNIM'],            // acessórios
+ ['TELHAS','EMPENAS','LATERAIS','COBERTURA'],           // telhas (mestre + sistemas)
+ ['EMPILHADEIRA','PESSOA INT','PESSOAS EXT'],           // referências
+ ['RELATORIO','MONTAGEM TELHAS','FABRICACAO TELHAS']];  // documentos
+var _colBtn={};
+function colunaBtn(chave,b){_colBtn[chave]=b;arrumaColuna();return b;}
+function arrumaColuna(){
+ var base=96,gap=6,gapG=14,y=base,tot=0,n=0;
+ COLUNA_BTN.forEach(function(G){G.forEach(function(k){var b=_colBtn[k];
+  if(b){tot+=b.offsetHeight||30;n++;}});});
+ if(tot+n*gap+(COLUNA_BTN.length-1)*gapG>(window.innerHeight||900)-base-120){gap=2;gapG=6;}
+ COLUNA_BTN.forEach(function(G){var usou=false;
+  G.forEach(function(k){var b=_colBtn[k];if(!b)return;
+   b.style.bottom=y+'px';y+=(b.offsetHeight||30)+gap;usou=true;});
+  if(usou)y+=gapG-gap;});}
+window.addEventListener('resize',arrumaColuna);
+window.addEventListener('load',arrumaColuna);
 
 for(var ip=0;ip<nPorticos;ip++){
   var oz=ip*modulo;
@@ -2193,7 +2233,7 @@ function wallBloq(XC,yLoT,yHiT,Zb){
 var miniYc=3.1593,miniL=5.8746;
 var mMP_l=new THREE.MeshLambertMaterial({color:0xe54983});
 var apexZ=0.1;
-function dAtL(zc,swZ){if(!swZ)return Hm;var rv=0.005;  // rampa 5mm cada lado (flat 60 + 2x5 = total 70)
+function dAtL(zc,swZ){if(!swZ)return Hm;var rv=0.01;  // rampa do swage por lado — fonte unica (regra da casa 21/09: 10 mm)
  var regs=(swZ.length>0&&Array.isArray(swZ[0]))?swZ:[swZ];
  for(var i=0;i<regs.length;i++){var z0=regs[i][0],z1=regs[i][1];
   if(zc>=z0&&zc<=z1)return SWD_lat;if(zc>z0-rv&&zc<z0)return Hm+(SWD_lat-Hm)*((zc-(z0-rv))/rv);
@@ -2202,6 +2242,32 @@ function dAtL(zc,swZ){if(!swZ)return Hm;var rv=0.005;  // rampa 5mm cada lado (f
 // recuando (R60 ~ diagonais 45) e tira reta de 18mm no MEIO DA MESA ate a
 // ponta (pag.9 anotada pelo Cassiano). ALMA INTACTA; lips recuam.
 // Sem o.chamfer o comportamento e IDENTICO ao original (mudanca neutra).
+// ── LIP CUT DA CHEGADA DO V — REGRA FISICA UNICA (aprovada 09/09/2026) ──
+// Era codigo so da lateral; virou funcao em 23/09/2026 porque a EMPENA fazia
+// a MESMA ligacao fisica com OUTRA conta ([-0.25,+0.25] cravados), e a janela
+// saia deslocada do corpo da perna (medido no galpao 20x50 de referencia: +29,2 mm de um lado e
+// -177,2 mm do outro, ou seja, o lip invadindo a diagonal).
+// O lip so precisa liberar o CORPO FISICO da perna que o atravessa, + a folga
+// de cada lado; a folga e a MESMA do comprimento do swage (fonte unica).
+// Como a perna e inclinada e se afasta do apex ao descer, o ponto mais proximo
+// da borda do corte fica na face INFERIOR do lip; e o material mais externo da
+// perna swagada e a face do corrugado (tm/2 + CORR/2 alem do eixo). A gemea do
+// V e o espelho em torno do eixo do vao (Zc).
+// A FOLGA e a distancia MINIMA 3D entre a borda do corte e o corpo: a borda do
+// lip e paralela a mesa e a face da perna chega inclinada em aD, entao no plano
+// do lip o corte recua FOLGA/sin(aD) de cada extremo do corpo.
+//   aD = angulo da diagonal · CyD/CzD = centro dela (altura / eixo da terca)
+//   Ybot = face INFERIOR do lip da terca · Zc = eixo de simetria do V
+//   tm = espessura do perfil
+// devolve [lo,hi] no MESMO eixo de CzD (absolutos); quem chama subtrai o centro.
+function lipCutV(aD,CyD,CzD,Ybot,Zc,tm){
+ var sD=Math.sin(aD),cD=Math.cos(aD);
+ var wOut=tm/2+0.0008/2;
+ var zOut=CzD+((Ybot-CyD)*cD)/sD-wOut/sD;
+ var zOut2=2*Zc-zOut;
+ var gIn=0.01/Math.abs(sD);
+ return [Math.min(zOut,zOut2)-gIn,Math.max(zOut,zOut2)+gIn];
+}
 function CL(C,ang,L,o){o=o||{};
  // 1 CL = 1 peça física; terça também tem swage — separar pelo ÂNGULO
  novaPeca(Math.abs(ang)>0.01?'diagonal-lateral':'terca-lateral');
@@ -2220,7 +2286,7 @@ function CL(C,ang,L,o){o=o||{};
  // NUNCA invade a zona do receptor (antes a fatia de 48mm invadia ate 24mm).
  var bps=[];
  if(o.swZ){var rgS=(o.swZ.length>0&&Array.isArray(o.swZ[0]))?o.swZ:[o.swZ];
-  rgS.forEach(function(R){bps.push(R[0]-0.005,R[0],R[1],R[1]+0.005);});}
+  rgS.forEach(function(R){bps.push(R[0]-0.01,R[0],R[1],R[1]+0.01);});}
  LCZ.forEach(function(C){bps.push(C[0]-LIPR,C[1]+LIPR);});
  bps.sort(function(a,b){return a-b;});
  for(var i=0;i<nseg;i++){var zc0=-L/2+i*L/nseg,zc1=zc0+L/nseg;
@@ -2384,31 +2450,15 @@ for(var si=0;si<(LAT_PECAS?sides.length:0);si++){
    // do lip; e o material mais externo da perna swagada é a face do
    // corrugado (tm/2 + CORR/2 além do eixo). A gêmea do V é o espelho.
    if(ti>0&&BRL[vv]){
+    // REGRA FISICA UNICA (lipCutV, acima): a janela e o corpo da perna no
+    // plano do lip + a folga perpendicular. A EMPENA chama a MESMA funcao.
     var jd=ti-1;                                   // diagonal cujo TIP chega aqui
-    var aD=angD_lat[jd],sD=Math.sin(aD),cD=Math.cos(aD);
-    var YtD=tercaY_lat[jd+1]-dytef_lat[jd],CyD=(ybef_lat[jd]+YtD)/2;
+    var YtD=tercaY_lat[jd+1]-dytef_lat[jd];
     var Z0L=Zc-modulo/2;                           // início do vão
-    var CzD=(Z0L+zbef_lat[jd]+Z0L+ztip_lat[jd])/2;
-    var Ybot=tercaY_lat[ti]-Fm-tm/2;               // face INFERIOR do lip
-    var wOut=tm/2+0.0008/2;       // face externa do corrugado
-    // mesma transformação do CL (rotation.x = −aD): ponto local (w, u) →
-    // Y = Cy + w·cos + u·sin ; Z = Cz − w·sin + u·cos. Resolvendo Y=Ybot
-    // para a face w=+wOut: Z = Cz + (Ybot−Cy)·cot − wOut/sin.
-    var zOut=CzD+((Ybot-CyD)*cD)/sD-wOut/sD;       // extremo FÍSICO da perna esq.
-    var zOut2=2*Zc-zOut;                           // perna direita (V espelhado)
-    // FOLGA = distância MÍNIMA 3D entre a borda do corte e o corpo (regra
-    // do Cassiano, 09/09). A borda do lip é paralela à mesa e a face da
-    // perna chega inclinada em aD: a distância mínima é a PERPENDICULAR à
-    // face = folga_no_plano·sin(aD). Logo, no plano do lip, o corte recua
-    // FOLGA/sin(aD) de cada extremo do corpo (10 mm no plano dariam só
-    // 10·sin(25,9°) ≈ 4,4 mm reais — medido 4,77 na cena).
-    var gIn=0.01/sD;
-    // JANELA FUNCIONAL (o que a ferramenta remove por inteiro) = corpo +
-    // gIn de cada lado. O ALÍVIO (rampa de 11,5 por borda) fica FORA da
-    // janela — dentro dela o material remanescente da rampa encostava a
-    // 0,58 mm da perna (medido no C). Material removido = janela + 2·alívio.
-    var fLo=Math.min(zOut,zOut2)-gIn, fHi=Math.max(zOut,zOut2)+gIn;
-    opts.lipCutZ=[fLo-Zc,fHi-Zc];
+    var _wV=lipCutV(angD_lat[jd],(ybef_lat[jd]+YtD)/2,
+                    (Z0L+zbef_lat[jd]+Z0L+ztip_lat[jd])/2,
+                    tercaY_lat[ti]-Fm-tm/2,Zc,tm);
+    opts.lipCutZ=[_wV[0]-Zc,_wV[1]-Zc];
    }
    var tgL=CL([XC,tercaY_lat[ti],Zc],0.0,L_lat,opts);}}
    // (cabecas da terca: jFull b2/b4 nas mesas do MINI, no mesmo ponto — a
@@ -2426,8 +2476,11 @@ for(var si=0;si<(LAT_PECAS?sides.length:0);si++){
    // REGRA DO COMPRIMENTO (Cassiano): pelo angulo de entrada, da ALMA do
    // receptor ate SAIR DA MESA, medido ao longo do entrante, + 10mm de folga
    var mesaReach=fW+0.005;
-   var swBase=(mesaReach-zbef_lat[ti])/Math.cos(angD_lat[ti])+0.010;   // desde a ponta EFETIVA da base
-   var swTip=(Fm-dytef_lat[ti])/Math.sin(angD_lat[ti])+0.010;   // acompanha o tip avancado
+   // SWAGE MINIMO EM MATERIAL = 60 (21/09): ponta chanfrada recua a alma
+   // CHANFRO_RECUO, entao o piso da banda medida da face e SW + recuo
+   // (mesma regra da cobertura; aqui o alcance do C300 ja passa disso)
+   var swBase=Math.max(SW_lat+0.0135,(mesaReach-zbef_lat[ti])/Math.cos(angD_lat[ti])+0.010);   // desde a ponta EFETIVA da base
+   var swTip=Math.max(SW_lat+0.0135,(Fm-dytef_lat[ti])/Math.sin(angD_lat[ti])+0.010);   // acompanha o tip avancado
    var swD=[[-LA_lat[ti]/2,-LA_lat[ti]/2+swBase],[LA_lat[ti]/2-swTip,LA_lat[ti]/2]];
    var dA=CL([XC,Cy,Cz],angD_lat[ti],LA_lat[ti],{color:0x28c08a,nseg:50,swZ:swD,chamfer:1});
    // dimples do entrante na INTERSECAO das linhas centrais (regra do
@@ -2537,7 +2590,7 @@ for(var si=0;si<(LAT_PECAS?sides.length:0);si++){
 // KIT DA LATERAL exposto p/ as EMPENAS (v3b, 13/07): a parede do fundo/
 // frente REUSA a mesma peca CL (terca/diagonal com swage, lip cut,
 // chamfer R60) num wrapper girado — "mesma linguagem estrutural".
-window.KIT_LAT={CL:CL};
+window.KIT_LAT={CL:CL,lipCutV:lipCutV};
 })();
 // === FIM LATERAIS ===
 
@@ -2595,7 +2648,7 @@ window.KIT_LAT={CL:CL};
 })();
 // === FIM CANTONEIRA ===
 
-// parede de placa desativada
+// parede LSF desativada (h_parede = 0)
 
 
 // === FECHAMENTO COMPLETO: TELHA TP40-980 + CALHA (2 lados) ===
@@ -3192,7 +3245,11 @@ function buildEmpena(E){
   return yRoofUnder(xx)-0.004;}
  // PLATIBANDA: empena sobe RETA ate a altura da cumeeira (sem rake)
  if(typeof PLATIBANDA!=='undefined')ytopE=function(){return PLAT_TOPO;};
- function ybotE(x){return (E.porta&&x>E.porta.a&&x<E.porta.b)?E.porta.h+0.004:0.020;}
+ // BASE DA TELHA DA EMPENA (Cassiano 22/09/2026): onde há PAREDE LSF a telha
+ // não desce até o chão — ela começa acima da parede, como a telha da LATERAL
+ // já fazia (y0w = HPF+20mm). Sem parede (HPF=0) nada muda.
+ function ybotE(x){var yb=(E.porta&&x>E.porta.a&&x<E.porta.b)?E.porta.h+0.004:0.020;
+  return (HPF>0)?Math.max(yb,HPF+0.020):yb;}
  // (venezianas ficam nas LATERAIS — Cassiano 13/07; a infra de recorte
  // por tira fica disponivel p/ vaos futuros na empena)
  var VENTS=[];
@@ -3513,7 +3570,9 @@ function mkToggle(txt,bottom,fn){var b=document.createElement('button');
   // elemento OFF some 100% na hora, sem esperar a câmera mexer)
   if(typeof setFastVis==='function')setFastVis();
   if(typeof invalidate==='function')invalidate();};
- document.body.appendChild(b);return b}
+ document.body.appendChild(b);
+ if(typeof colunaBtn==='function')colunaBtn(txt,b);   // posição: fonte única da coluna
+ return b}
 // TELHAS = MESTRE VISUAL + 3 SISTEMAS INDEPENDENTES (Cassiano 18/08):
 // COBERTURA (telhado+cumeeira+lanternim+prisma+calha) · LATERAIS
 // (telha da parede+veneziana) · EMPENAS (telha da empena). Toggles SÓ
@@ -3616,9 +3675,13 @@ if(LUXG.length){
   scene.add(_glow);}
  var _lxAnim=null;
  function luzNatural(on){
-  var i0=_pl.length?_pl[0].intensity:0,i1=on?0.55:0; // calibrado por pixel 14/07 (decay 0 pede I baixo)
+  // LUZ DO PRISMA −40% (Cassiano 23/09/2026: "clarão" forte demais). Era 0,55
+  // (calibrado por pixel 14/07; decay 0 pede I baixo) → 0,33. O leque de luz na
+  // calçada acompanha na MESMA proporção: é a mesma luz vazando pela porta.
+  var LUX_ON=0.55*0.6;
+  var i0=_pl.length?_pl[0].intensity:0,i1=on?LUX_ON:0;
   mkGlow();
-  var g0=_glow?_glow.material.opacity:0,g1=on?0.55:0;
+  var g0=_glow?_glow.material.opacity:0,g1=on?LUX_ON:0;
   var t0=performance.now();if(_lxAnim)clearInterval(_lxAnim);
   _lxAnim=setInterval(function(){
    var f=Math.min(1,(performance.now()-t0)/600);
@@ -3675,7 +3738,7 @@ function yTopo(x){var d=Math.min(x-(-wH/2),(cumXworld*2+wH/2)-x);
  return pilTopo-quedaRaf+tanT*(d)-0.020;}
 function box(gr,cx,cy,cz,sx,sy,sz,m){var b=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),m);
  b.position.set(cx,cy,cz);b.userData.p=PIECE;gr.add(b);return b;}
-var T=[[0.157, 2.993, 0.297, 9000000000.0, 0.2753, [], [0.174, 2.9759], [[-0.0625, 0.0025]]], [0.157, 2.993, 2.2052, 9000000000.0, 2.1835, [], [0.174, 2.9759], [[-0.0625, 0.0625]]], [0.157, 2.993, 4.1134, 9000000000.0, 4.0917, [], [0.174, 2.9759], [[-0.0625, 0.0625]]], [1.1819, 2.993, 6.0216, 9000000000.0, 5.9999, [[-1, 1.1891, 0.2128, 1]], [2.9759], [[-0.575, -0.51]]], [3.307, 6.393, 0.297, 9000000000.0, 0.2753, [], [3.324, 6.3759]], [3.307, 6.393, 2.2052, -0.111, 2.1835, [], [3.324, 6.3759]], [3.307, 6.393, 4.1134, -0.111, 4.0917, [], [3.324, 6.3759]], [3.307, 6.393, 6.0216, -0.111, 5.9999, [], [3.324, 6.3759]], [6.707, 9.543, 0.297, 9000000000.0, 0.2753, [], [6.7241, 9.5259], [[-0.0625, 0.0025]]], [6.707, 9.543, 2.2052, 9000000000.0, 2.1835, [], [6.7241, 9.5259], [[-0.0625, 0.0625]]], [6.707, 9.543, 4.1134, 9000000000.0, 4.0917, [], [6.7241, 9.5259], [[-0.0625, 0.0625]]], [6.707, 8.5181, 6.0216, 9000000000.0, 5.9999, [[1, 8.5109, 0.2128, 1]], [6.7241], [[0.45, 0.515]]]], R=[], D=[[1.2868, 4.02, 0.90605, 2.3479, 0.1003, 0.0742, 4.85, 0.297, [[0.3635, 3.324], [2.1835, 4.7504]]], [3.195, 4.02, 0.90605, 2.3479, 0.1003, 0.0742, 4.85, 2.2052, [[2.2717, 3.324], [4.0917, 4.7504]]], [5.1032, 4.02, 0.90605, 2.3479, 0.1003, 0.0742, 4.85, 4.1134, [[4.1799, 3.324], [5.9999, 4.7504]]]], GG=[[5.8151, 0.2888, 0.226068, 0.213, null, [0.0, 0.0]], [6.2082, 1.998, 0.226068, 1.9948, [[-0.7269, 0.1485]], [0.0, 0.0]], [6.6891, 4.089, 0.226068, 1.5576, null, [0.0, 0.0]], [6.6891, 5.611, -0.226068, 1.5576, null, [0.0, 0.0]], [6.2082, 7.702, -0.226068, 1.9948, [[0.7269, 0.1485]], [0.0, 0.0]], [5.8151, 9.4112, -0.226068, 0.213, null, [0.0, 0.0]], [5.5638, 0.5989, 0.785398, 1.1001, null, [0.0, 0.0]], [5.5638, 9.1011, -0.785398, 1.1001, null, [0.0, 0.0]]], MM=[[0.0, 1, 0.2745, 0.2, [0.3495, 0.1995], [[0.2412, 0.3078]]], [0.0, 1, 2.1827, 0.2, [2.2577, 2.1077], [[2.1494, 2.216]]], [0.0, 1, 4.0909, 0.2, [4.1659, 4.0159], [[4.0576, 4.1242]]], [3.15, -1, 0.2745, 0.2, [0.3495, 0.1995], [[0.2412, 0.3078]]], [3.15, -1, 2.1827, 0.2, [2.2577, 2.1077], [[2.1494, 2.216]]], [3.15, -1, 4.0909, 0.2, [4.1659, 4.0159], [[4.0576, 4.1242]]], [3.15, -1, 5.9991, 0.2, [6.0741, 5.9241], [[5.9658, 6.0324]]], [3.15, 1, 0.3257, 0.288, [0.4447, 0.2067], [[0.2412, 0.3078], [0.2115, 0.4535]]], [3.15, 1, 2.234, 0.288, [2.353, 2.1149], [[2.1494, 2.216], [2.1197, 2.3617]]], [3.15, 1, 4.1422, 0.288, [4.2612, 4.0232], [[4.0576, 4.1242], [4.0279, 4.2699]]], [3.15, 1, 5.9991, 0.2, [6.0741, 5.9241], [[5.9658, 6.0324]]], [6.55, -1, 0.3257, 0.288, [0.4447, 0.2067], [[0.2412, 0.3078], [0.2115, 0.4535]]], [6.55, -1, 2.234, 0.288, [2.353, 2.1149], [[2.1494, 2.216], [2.1197, 2.3617]]], [6.55, -1, 4.1422, 0.288, [4.2612, 4.0232], [[4.0576, 4.1242], [4.0279, 4.2699]]], [6.55, -1, 5.9991, 0.2, [6.0741, 5.9241], [[5.9658, 6.0324]]], [6.55, 1, 0.2745, 0.2, [0.3495, 0.1995], [[0.2412, 0.3078]]], [6.55, 1, 2.1827, 0.2, [2.2577, 2.1077], [[2.1494, 2.216]]], [6.55, 1, 4.0909, 0.2, [4.1659, 4.0159], [[4.0576, 4.1242]]], [6.55, 1, 5.9991, 0.2, [6.0741, 5.9241], [[5.9658, 6.0324]]], [9.7, -1, 0.2745, 0.2, [0.3495, 0.1995], [[0.2412, 0.3078]]], [9.7, -1, 2.1827, 0.2, [2.2577, 2.1077], [[2.1494, 2.216]]], [9.7, -1, 4.0909, 0.2, [4.1659, 4.0159], [[4.0576, 4.1242]]]];
+var T=[[0.157, 2.993, 0.297, 9000000000.0, 0.2753, [], [0.174, 2.9759], [[-0.0625, 0.0025]]], [0.157, 2.993, 2.2052, 9000000000.0, 2.1835, [], [0.174, 2.9759], [[-0.0625, 0.0625]]], [0.157, 2.993, 4.1134, 9000000000.0, 4.0917, [], [0.174, 2.9759], [[-0.0625, 0.0625]]], [1.1819, 2.993, 6.0216, 9000000000.0, 5.9999, [[-1, 1.1891, 0.2128, 1]], [2.9759], [[-0.575, -0.51]]], [3.307, 6.393, 0.297, 9000000000.0, 0.2753, [], [3.324, 6.3759]], [3.307, 6.393, 2.2052, [0.90605, 1.2868, 4.02, 4.85, 2.15943, 0.00155], 2.1835, [], [3.324, 6.3759]], [3.307, 6.393, 4.1134, [0.90605, 3.195, 4.02, 4.85, 4.06763, 0.00155], 4.0917, [], [3.324, 6.3759]], [3.307, 6.393, 6.0216, [0.90605, 5.1032, 4.02, 4.85, 5.97583, 0.00155], 5.9999, [], [3.324, 6.3759]], [6.707, 9.543, 0.297, 9000000000.0, 0.2753, [], [6.7241, 9.5259], [[-0.0625, 0.0025]]], [6.707, 9.543, 2.2052, 9000000000.0, 2.1835, [], [6.7241, 9.5259], [[-0.0625, 0.0625]]], [6.707, 9.543, 4.1134, 9000000000.0, 4.0917, [], [6.7241, 9.5259], [[-0.0625, 0.0625]]], [6.707, 8.5181, 6.0216, 9000000000.0, 5.9999, [[1, 8.5109, 0.2128, 1]], [6.7241], [[0.45, 0.515]]]], R=[], D=[[1.2868, 4.02, 0.90605, 2.3479, 0.1003, 0.0742, 4.85, 0.297, [[0.3635, 3.324], [2.1835, 4.7504]]], [3.195, 4.02, 0.90605, 2.3479, 0.1003, 0.0742, 4.85, 2.2052, [[2.2717, 3.324], [4.0917, 4.7504]]], [5.1032, 4.02, 0.90605, 2.3479, 0.1003, 0.0742, 4.85, 4.1134, [[4.1799, 3.324], [5.9999, 4.7504]]]], GG=[[5.8151, 0.2888, 0.226068, 0.213, null, [0.0, 0.0]], [6.2082, 1.998, 0.226068, 1.9948, [[-0.7269, 0.1485]], [0.0, 0.0]], [6.6891, 4.089, 0.226068, 1.5576, null, [0.0, 0.0]], [6.6891, 5.611, -0.226068, 1.5576, null, [0.0, 0.0]], [6.2082, 7.702, -0.226068, 1.9948, [[0.7269, 0.1485]], [0.0, 0.0]], [5.8151, 9.4112, -0.226068, 0.213, null, [0.0, 0.0]], [5.5638, 0.5989, 0.785398, 1.1001, null, [0.0, 0.0]], [5.5638, 9.1011, -0.785398, 1.1001, null, [0.0, 0.0]]], MM=[[0.0, 1, 0.2745, 0.2, [0.3495, 0.1995], [[0.2412, 0.3078]]], [0.0, 1, 2.1827, 0.2, [2.2577, 2.1077], [[2.1494, 2.216]]], [0.0, 1, 4.0909, 0.2, [4.1659, 4.0159], [[4.0576, 4.1242]]], [3.15, -1, 0.2745, 0.2, [0.3495, 0.1995], [[0.2412, 0.3078]]], [3.15, -1, 2.1827, 0.2, [2.2577, 2.1077], [[2.1494, 2.216]]], [3.15, -1, 4.0909, 0.2, [4.1659, 4.0159], [[4.0576, 4.1242]]], [3.15, -1, 5.9991, 0.2, [6.0741, 5.9241], [[5.9658, 6.0324]]], [3.15, 1, 0.3257, 0.288, [0.4447, 0.2067], [[0.2412, 0.3078], [0.2115, 0.4535]]], [3.15, 1, 2.234, 0.288, [2.353, 2.1149], [[2.1494, 2.216], [2.1197, 2.3617]]], [3.15, 1, 4.1422, 0.288, [4.2612, 4.0232], [[4.0576, 4.1242], [4.0279, 4.2699]]], [3.15, 1, 5.9991, 0.2, [6.0741, 5.9241], [[5.9658, 6.0324]]], [6.55, -1, 0.3257, 0.288, [0.4447, 0.2067], [[0.2412, 0.3078], [0.2115, 0.4535]]], [6.55, -1, 2.234, 0.288, [2.353, 2.1149], [[2.1494, 2.216], [2.1197, 2.3617]]], [6.55, -1, 4.1422, 0.288, [4.2612, 4.0232], [[4.0576, 4.1242], [4.0279, 4.2699]]], [6.55, -1, 5.9991, 0.2, [6.0741, 5.9241], [[5.9658, 6.0324]]], [6.55, 1, 0.2745, 0.2, [0.3495, 0.1995], [[0.2412, 0.3078]]], [6.55, 1, 2.1827, 0.2, [2.2577, 2.1077], [[2.1494, 2.216]]], [6.55, 1, 4.0909, 0.2, [4.1659, 4.0159], [[4.0576, 4.1242]]], [6.55, 1, 5.9991, 0.2, [6.0741, 5.9241], [[5.9658, 6.0324]]], [9.7, -1, 0.2745, 0.2, [0.3495, 0.1995], [[0.2412, 0.3078]]], [9.7, -1, 2.1827, 0.2, [2.2577, 2.1077], [[2.1494, 2.216]]], [9.7, -1, 4.0909, 0.2, [4.1659, 4.0159], [[4.0576, 4.1242]]]];
 var HAS_MONT=0;   // R82: 1 = porta com montantes (montante solidariza a viga); 0 = solidarização central
 var mMPe=new THREE.MeshLambertMaterial({color:0xe54983});   // rosa (mini)
 var BB=[[1.545, 0.297, 2.2052], [1.605, 2.2052, 4.1134], [1.545, 4.1134, 6.0216], [8.095, 0.297, 2.2052], [8.155, 2.2052, 4.1134], [8.095, 4.1134, 6.0216]];  // R78 v2: bloqueadores da parede-mez [Zb,yLo,yHi]
@@ -3807,7 +3870,7 @@ function oitao(zP,dirIn,portao){
    // estrutura da viga da porta. MESMA condição que zera T/D/GG/MM acima:
    // sem o fechamento, ficam SÓ viga da porta + pilares (estrutura).
    if(typeof window.KIT_LAT==='undefined')return;
-   var gh=0.140,gfW=0.045,glL=0.020,gt=0.00155;
+   var gh=0.140,gfW=0.0450,glL=0.012,gt=0.00155;   // C140 da fonte unica (o lip era 0.020 chumbado — 21/09)
    var mGui=new THREE.MeshLambertMaterial({color:0x66ccff});
    function gb(x,y,z,dx,dy,dz){var b=new THREE.Mesh(new THREE.BoxGeometry(dx,dy,dz),mGui);
     b.position.set(x,y,z);b.userData.p=PIECE;vg.add(b);}
@@ -3902,6 +3965,11 @@ function oitao(zP,dirIn,portao){
  T.forEach(function(t){
   if(portao&&t[2]<portao.h+0.14&&t[1]>pa-0.165&&t[0]<pb+0.165)return;  // FRENTE: TOCA a porta -> sai (nada atravessa)
   T_REAL.push(t);                      // terca DESENHADA -> vale p/ costura
+  // T0G NA EMPENA (R47, regra aprovada 02/07 na lateral): a peca fisica deste
+  // nivel e a GUIA SUPERIOR do painel LSF ("os dois viram um") — desenhar a
+  // terca deitada aqui seria um SEGUNDO C140 na MESMA banda (R01). A costura
+  // da telha continua (T_REAL acima): a guia esta na mesma linha e orientacao.
+  if(t[10])return;
   if(t[8]===1){gmInv(t);return;}       // R90: guia invertida colada sobre a viga do mez
   var L=t[1]-t[0],Zc=(t[0]+t[1])/2;
   var swA=0.0600,swB=0.0600,chA=0,chB=0;
@@ -3913,7 +3981,12 @@ function oitao(zP,dirIn,portao){
   if(t[9]){var swl9=[];if(swA>0)swl9.push([-L/2,-L/2+swA]);if(swB>0)swl9.push([L/2-swB,L/2]);if(swl9.length)o.swZ=swl9;}
   else o.swZ=[[-L/2,-L/2+swA],[L/2-swB,L/2]];
   if(t[7])o.swZ=(o.swZ||[]).concat(t[7]);  // R78 v2: chegadas de bloqueador
-  if(t[3]<8e8)o.lipCutZ=[t[3]-0.25,t[3]+0.25];
+  // LIP CUT DA CHEGADA DA V: regra FISICA unica, a MESMA da lateral
+  // (KIT_LAT.lipCutV). t[3] traz [ang,Cy,Cz,eixo_do_vao,Ybot,tm] do Python;
+  // o numero solto era o modo antigo (+-250 mm cravados).
+  if(t[3]&&t[3].length===6){var _wV=KIT_LAT.lipCutV(t[3][0],t[3][1],t[3][2],t[3][4],t[3][3],t[3][5]);
+   o.lipCutZ=[_wV[0]-Zc,_wV[1]-Zc];}
+  else if(t[3]<8e8)o.lipCutZ=[t[3]-0.25,t[3]+0.25];
   // chanfro SO na ponta que entra na guia (07/09/2026): a ponta do MINI (90 graus) fica RETA (R60 — terca reta nao leva)
   if(chA||chB){o.chamfer=1;o.chamferEnds=[chA,chB];}
   var gk=KIT_LAT.CL([XCE,t[2],Zc],0,L,o);scene.remove(gk);W.add(gk);
@@ -3987,7 +4060,7 @@ function oitao(zP,dirIn,portao){
  // da boca da lateral, girado pra direcao da empena).
  function mb(x,y,z,dx,dy,dz){var b=new THREE.Mesh(new THREE.BoxGeometry(dx,dy,dz),mMPe);
   b.position.set(x,y,z);b.userData.p=PIECE;W.add(b);}
- var tmE=0.00155,FmE=0.045,LmE=0.020;
+ var tmE=0.00155,FmE=0.0450,LmE=0.012;   // C140 da fonte unica (o lip era 0.020 chumbado — 21/09)
  MM.forEach(function(m){var e=m[0],sd=m[1],yc=m[2],Ls=m[3];
   // FRENTE: nas faces INTERNAS dos pilares (lado da PORTA) nao ha
   // painel abaixo da verga — mini ali e peca sem funcao (R50; print
@@ -4122,10 +4195,10 @@ var zAm=0.005775,zMm=0.02905;
 var DMT=[0.410172, 1.876226, 3.34228, 4.808333],DMD=[0.499713, 1.965767, 3.431821],DIMZ=0.02905;
 var ANGc=[0.52569801, 0.52569801, 0.52569769],LAc=[2.774225, 2.774225, 2.774225],ZTc=[2.401408, 2.401408, 2.401408],SBc=[0.509902, 1.975956, 3.44201],STc=[1.902055, 3.368109, 4.834162],ZBEc=[0.001775, 0.001775, 0.001775];
 var DLB=[-1.368634, -1.368634, -1.368634],DLT=[1.374424, 1.374424, 1.374424],DZA=[2.401724, 2.401724, 2.401724];
-var TRGc=[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]],DRGA=[[[-1.387112, -1.319568, 0.1365], [-1.319568, -1.314568, 0.13825], [-1.314568, 1.275805, 0.14], [1.275805, 1.280804, 0.13825], [1.280804, 1.387112, 0.1365]], [[-1.387112, -1.319568, 0.1365], [-1.319568, -1.314568, 0.13825], [-1.314568, 1.275805, 0.14], [1.275805, 1.280804, 0.13825], [1.280804, 1.387112, 0.1365]], [[-1.387112, -1.319568, 0.1365], [-1.319568, -1.314568, 0.13825], [-1.314568, 1.275805, 0.14], [1.275805, 1.280804, 0.13825], [1.280804, 1.387112, 0.1365]]],DRGB=[[[-1.387112, -1.280804, 0.1365], [-1.280804, -1.275805, 0.13825], [-1.275805, 1.314568, 0.14], [1.314568, 1.319568, 0.13825], [1.319568, 1.387112, 0.1365]], [[-1.387112, -1.280804, 0.1365], [-1.280804, -1.275805, 0.13825], [-1.275805, 1.314568, 0.14], [1.314568, 1.319568, 0.13825], [1.319568, 1.387112, 0.1365]], [[-1.387112, -1.280804, 0.1365], [-1.280804, -1.275805, 0.13825], [-1.275805, 1.314568, 0.14], [1.314568, 1.319568, 0.13825], [1.319568, 1.387112, 0.1365]]];
+var TRGc=[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]],DRGA=[[[-1.387112, -1.313613, 0.1365], [-1.313613, -1.303613, 0.13825], [-1.303613, 1.270804, 0.14], [1.270804, 1.280804, 0.13825], [1.280804, 1.387112, 0.1365]], [[-1.387112, -1.313613, 0.1365], [-1.313613, -1.303613, 0.13825], [-1.303613, 1.270804, 0.14], [1.270804, 1.280804, 0.13825], [1.280804, 1.387112, 0.1365]], [[-1.387112, -1.313613, 0.1365], [-1.313613, -1.303613, 0.13825], [-1.303613, 1.270804, 0.14], [1.270804, 1.280804, 0.13825], [1.280804, 1.387112, 0.1365]]],DRGB=[[[-1.387112, -1.280804, 0.1365], [-1.280804, -1.270804, 0.13825], [-1.270804, 1.303613, 0.14], [1.303613, 1.313613, 0.13825], [1.313613, 1.387112, 0.1365]], [[-1.387112, -1.280804, 0.1365], [-1.280804, -1.270804, 0.13825], [-1.270804, 1.303613, 0.14], [1.303613, 1.313613, 0.13825], [1.313613, 1.387112, 0.1365]], [[-1.387112, -1.280804, 0.1365], [-1.280804, -1.270804, 0.13825], [-1.270804, 1.303613, 0.14], [1.303613, 1.313613, 0.13825], [1.313613, 1.387112, 0.1365]]];
 var LTc=4.9869,Zbc=0.00655,UPc=0.077;
 var BEIR=0.0,TRGb=[],LZb=(nPorticos-1)*modulo;   // beiral empena (Clássico): terça em balanço
-var TRGS=[null, [[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0075, 0.13825], [0.0075, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0675, 0.13825], [0.0675, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0675, 0.13825], [0.0675, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0075, 0.13825], [0.0075, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]], [[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0075, 0.13825], [0.0075, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0675, 0.13825], [0.0675, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0675, 0.13825], [0.0675, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42845, 0.13825], [-2.42845, -0.0675, 0.14], [-0.0675, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0075, 0.13825], [0.0075, 2.42845, 0.14], [2.42845, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]], null],FWSc=0.04325,OFFBc=0.03;   // ligação do bloqueador (= parede): bandas de swage na terça + mesa conificada
+var TRGS=[null, [[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]], [[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]], null],FWSc=0.04325,OFFBc=0.03;   // ligação do bloqueador (= parede): bandas de swage na terça + mesa conificada
 var mCt=new THREE.MeshLambertMaterial({color:0x66ccff});
 var mCd=new THREE.MeshLambertMaterial({color:0x28c08a});
 var mMR=new THREE.MeshLambertMaterial({color:0xe54983});
@@ -4458,35 +4531,37 @@ function empilhadeira(){
  return g;}
 // (caminhao trucado REMOVIDO a pedido do Cassiano 05/08 — "tira o
 //  caminhao do projeto"; se voltar um dia, esta no git em cdb75f3)
-// ── REGUA DE ESCALA (baliza 2m, faixas 0,5m) ──
-function regua(){
- var g=new THREE.Group();
- for(var i2=0;i2<4;i2++){
-  rCyl(g,0,0.25+i2*0.5,0,0.028,0.5,(i2%2?mBr:mVe));}
- rCyl(g,0,0.015,0,0.10,0.03,mEs);
- return g;}
+// (régua de escala REMOVIDA a pedido do Cassiano 23/09/2026)
 // ── POSICOES (parametricas: porta via window.EMP; fallback = centro) ──
 var _pf=null;(window.EMP||[]).forEach(function(e){if(e.dir>0&&e.porta)_pf=e.porta;});
 var doorCx=_pf?(_pf.a+_pf.b)/2:cumXworld;
 var comp=(nPorticos-1)*modulo;
 function olhaPara(g,tx,tz){g.rotation.y=Math.atan2(tx-g.position.x,tz-g.position.z);}
-var gPx=new THREE.Group(),gPi=new THREE.Group(),gEm=new THREE.Group(),
-    gEc=new THREE.Group();
-[gPx,gPi,gEm,gEc].forEach(function(gg){gg.visible=false;gg.userData.tgl=1;REF.add(gg);});
+var gPx=new THREE.Group(),gPi=new THREE.Group(),gEm=new THREE.Group();
+[gPx,gPi,gEm].forEach(function(gg){gg.visible=false;gg.userData.tgl=1;REF.add(gg);});
+// ONDE CADA UM PISA (Cassiano 23/09/2026): antes todos nasciam em pBase (a base
+// do PILAR, 34,5 mm acima do piso) e flutuavam — as externas ficavam 7 a 17 cm
+// acima da grama. Agora: FORA do galpão = na GRAMA; DENTRO = no topo do radier.
+// Níveis do bloco TERRENO (fonte única): topo do radier = -BT; grama = -BT-DEGRAU.
+var yPiso=-BT, yGrama=-BT-DEGRAU;
+var xCalcE=cumXworld-radW/2, zCalcF=(comp-radD)/2, zCalcT=(comp+radD)/2;
 // Pessoa 01 — externa, frontal (2,5-3m do galpao, mao na cintura), a
 // ESQUERDA da porta — visivel na vista de abertura (calibrado 05/08)
-var p1=pessoa(0);p1.position.set(doorCx-4.6,pBase,-2.9);
+var p1=pessoa(0);p1.position.set(doorCx-4.6,yGrama,zCalcF-0.9);   // 0,9 m além da calçada
 olhaPara(p1,doorCx,2.0);gPx.add(p1);
 // Pessoa 02 — externa, fundo/lado oposto (2,5-3m, olhando o galpao)
-var p2=pessoa(1);p2.position.set(-2.3,pBase,comp+2.5);
+var p2=pessoa(1);p2.position.set(xCalcE-0.8,yGrama,zCalcT+0.8);   // 0,8 m além da calçada
 olhaPara(p2,cumXworld*0.8,comp*0.85);gPx.add(p2);
 // Pessoa 03 — interna, centro do vao, observando a estrutura (p/ cima)
-var p3=pessoa(2);p3.position.set(cumXworld,pBase,comp*0.5);
+var p3=pessoa(2);p3.position.set(cumXworld,yPiso,comp*0.5);
 p3.rotation.y=Math.PI-0.6;gPi.add(p3);
-// Empilhadeira — na porta, garfo p/ o interior
-var em=empilhadeira();em.position.set(doorCx-1.9,pBase,2.3);gEm.add(em);
-// Regua — ao lado da Pessoa 01
-var ec=regua();ec.position.set(doorCx-5.6,pBase,-2.9);gEc.add(ec);
+// Empilhadeira — CENTRADA na porta, 3 m para dentro (Cassiano 21/09).
+// Antes era doorCx-1.9: um deslocamento FIXO somado ao centro da porta. Em
+// porta estreita esse 1,9 passava da borda do vao e a empilhadeira aparecia
+// dentro da parede. Agora a unica referencia e o proprio centro da porta, e
+// o recuo nunca passa do meio do galpao (galpao curto nao a joga pro fundo).
+var emZ=Math.min(3.0,comp*0.5);
+var em=empilhadeira();em.position.set(doorCx,yPiso,emZ);gEm.add(em);
 // ── BOTOES (mesmo visual do mkToggle da telha; NASCEM OFF — regra
 // "galpao abre pelado" + decisao Cassiano 05/08) ──
 function refBtn(txt,bottom,grp){var b=document.createElement('button');
@@ -4500,11 +4575,11 @@ function refBtn(txt,bottom,grp){var b=document.createElement('button');
   b.style.background=grp.visible?'#14532d':'#333a42';
   if(typeof setFastVis==='function')setFastVis();
   if(typeof invalidate==='function')invalidate();};
- document.body.appendChild(b);}
+ document.body.appendChild(b);
+ if(typeof colunaBtn==='function')colunaBtn(txt,b);}   // posição: fonte única da coluna
 refBtn('PESSOAS EXT',286,gPx);
 refBtn('PESSOA INT',324,gPi);
 refBtn('EMPILHADEIRA',362,gEm);
-refBtn('ESCALA',400,gEc);
 })();
 
 var DADOS={"projeto": "Galpão Genesis", "cliente": "", "responsavel": "Cassiano", "modelo": "Genesis", "vao": 10.0, "comprimento": 20.0, "pe_direito": 6.0, "area": 200.0, "nPorticos": 5};
@@ -4943,12 +5018,13 @@ function gerarRelatorio(){
 (function(){
  var b=document.createElement('button');
  b.textContent='📋 RELATORIO';
- b.style.cssText='position:fixed;bottom:438px;right:14px;z-index:9;'+
+ b.style.cssText='position:fixed;bottom:400px;right:14px;z-index:9;'+
   'padding:8px 0;background:#7a5b14;color:#f4ead2;border:1px solid #b08a2e;'+
   'border-radius:6px;font-family:inherit;font-size:10px;letter-spacing:1px;'+
   'cursor:pointer;width:120px;text-align:center';
  b.onclick=function(){gerarRelatorio();};
  document.body.appendChild(b);
+ if(typeof colunaBtn==='function')colunaBtn('RELATORIO',b);   // posição: fonte única da coluna
  if(location.search.indexOf('relatorio')>=0)setTimeout(gerarRelatorio,600);
 })();
 
@@ -5824,9 +5900,11 @@ function gerarFabricacaoTelhas(){
    'border-radius:6px;font-family:inherit;font-size:10px;letter-spacing:1px;'+
    'cursor:pointer;width:120px;text-align:center';
   b.onclick=function(){fn();};
-  document.body.appendChild(b);}
- mkBtn('🗺 MONTAGEM TELHAS',472,gerarMontagemTelhas);
- mkBtn('🏭 FABRICACAO TELHAS',506,gerarFabricacaoTelhas);
+  document.body.appendChild(b);
+  // posição: fonte única da coluna (chave = rótulo sem o ícone)
+  if(typeof colunaBtn==='function')colunaBtn(txt.replace(/^[^A-Za-z]+/,'').trim(),b);}
+ mkBtn('🗺 MONTAGEM TELHAS',434,gerarMontagemTelhas);
+ mkBtn('🏭 FABRICACAO TELHAS',468,gerarFabricacaoTelhas);
  if(location.search.indexOf('fabricacao')>=0)setTimeout(gerarFabricacaoTelhas,700);
  else if(location.search.indexOf('montagem')>=0||location.search.indexOf('paginacao')>=0)
   setTimeout(gerarMontagemTelhas,700);   // ?paginacao=1 = atalho legado
@@ -5942,11 +6020,13 @@ window.PECAS=PECAS;
 console.log('LISTA DE PECAS: '+PIECE+' pecas (clones espelhados nao contados)',q);})();
 
 // ── Piso ──
-// RADIER (Cassiano 13/07): plataforma de concreto 150mm de espessura,
-// avancando 1,0m alem das bordas do galpao em todo o perimetro. O topo
+// RADIER (Cassiano 13/07): plataforma de concreto 150mm de espessura. O topo
 // fica no nivel da base das sapatas (elas assentam sobre ele).
+// CALCADA (Cassiano 23/09/2026): avanca CALC = 2,0 m alem das bordas do galpao
+// nos 4 lados (era 1,0 m). DEGRAU: o terreno (grama) fica 40 mm abaixo do topo
+// do radier (era 140 mm) — a laje continua com 150 mm, so enterra mais 10 cm.
+// CALC/DEGRAU/radW/radD: fonte unica no bloco TERRENO, antes do loop principal.
 novaPeca('radier');
-var radW=cumXworld*2+0.16+2.0, radD=(nPorticos-1)*modulo+2.0;
 // CONCRETO procedural (Cassiano 13/07: "mais cara de concreto"):
 // CanvasTexture com manchas suaves + granulado fino (sem CDN) e juntas
 // de dilatacao serradas em grade ~3m (radier industrial real)
@@ -5974,7 +6054,7 @@ var matRadier=new THREE.MeshLambertMaterial({color:0xd8d6ce,map:texC});
 //   spots (sem isso a luz do prisma atravessava a parede e clareava o
 //   concreto de fora; sombra real e inviavel no Lambert r128 — a mascara
 //   escurece sol+ambiente juntos, faixa escura na parede externa).
-var bwR=radW-2.0,bdR=radD-2.0;
+var bwR=radW-2*CALC,bdR=radD-2*CALC;
 var radier=new THREE.Mesh(new THREE.BoxGeometry(bwR,0.15,bdR,
  Math.ceil(bwR),1,Math.ceil(bdR)),matRadier);
 radier.position.set(cumXworld,-BT-0.075,10.00);
@@ -5985,16 +6065,74 @@ radier.userData.p=PIECE;scene.add(radier);
  colC.r=Math.min(1,colC.r*(amb.color.r*amb.intensity+sun.color.r*k));
  colC.g=Math.min(1,colC.g*(amb.color.g*amb.intensity+sun.color.g*k));
  colC.b=Math.min(1,colC.b*(amb.color.b*amb.intensity+sun.color.b*k));
+ // DEGRAU VISÍVEL (Cassiano 23/09/2026): a calçada é MeshBasic (cor assada) e
+ // as faces VERTICAIS saíam com a MESMA cor do topo — vista de cima o radier
+ // parecia no plano da grama. Cada face vertical agora leva o Lambert dela
+ // (ambiente + sol pelo cosseno da SUA normal), assado igual ao topo e com um
+ // leve escurecimento de quina: as 4 bordas ganham tons próprios e o degrau
+ // de 140 mm lê como plataforma elevada. Só visual — geometria intacta.
+ function corFace(nx,nz){
+  var kk=Math.max(nx*sd.x+nz*sd.z,0)*sun.intensity,c=new THREE.Color(0xd8d6ce),q=0.70;
+  c.r=Math.min(1,c.r*q*(amb.color.r*amb.intensity+sun.color.r*kk));
+  c.g=Math.min(1,c.g*q*(amb.color.g*amb.intensity+sun.color.g*kk));
+  c.b=Math.min(1,c.b*q*(amb.color.b*amb.intensity+sun.color.b*kk));
+  return new THREE.MeshBasicMaterial({color:c});}
+ var mLado=[corFace(1,0),corFace(-1,0),null,null,corFace(0,1),corFace(0,-1)];
  function tira(w,d,x,z){
   var t4=texC.clone();t4.needsUpdate=true;t4.repeat.set(w/3.5,d/3.5);
+  var mTopo=new THREE.MeshBasicMaterial({color:colC,map:t4});
+  // ordem das faces do BoxGeometry: +x, −x, +y (topo), −y, +z, −z
   var m4=new THREE.Mesh(new THREE.BoxGeometry(w,0.15,d),
-   new THREE.MeshBasicMaterial({color:colC,map:t4}));
+   [mLado[0],mLado[1],mTopo,mTopo,mLado[4],mLado[5]]);
   m4.position.set(x,-BT-0.075,z);m4.userData.p=PIECE;scene.add(m4);}
  var cz=10.00;
- tira(1.0,radD,cumXworld-radW/2+0.5,cz);          // calcada esquerda
- tira(1.0,radD,cumXworld+radW/2-0.5,cz);          // calcada direita
- tira(bwR,1.0,cumXworld,cz-radD/2+0.5);           // calcada frente
- tira(bwR,1.0,cumXworld,cz+radD/2-0.5);})();     // calcada fundos
+ tira(CALC,radD,cumXworld-radW/2+CALC/2,cz);      // calcada esquerda
+ tira(CALC,radD,cumXworld+radW/2-CALC/2,cz);      // calcada direita
+ tira(bwR,CALC,cumXworld,cz-radD/2+CALC/2);       // calcada frente
+ tira(bwR,CALC,cumXworld,cz+radD/2-CALC/2);       // calcada fundos
+ // ARESTA do topo (e do pé) do radier: contorno fino e escuro — a borda do
+ // degrau fica desenhada em qualquer ângulo, inclusive de cima.
+ var xa=cumXworld-radW/2,xb=cumXworld+radW/2,za=cz-radD/2,zb=cz+radD/2;
+ [[-BT+0.0015,0x4a4943,0.90],[-BT-DEGRAU+0.0015,0x2f2e2a,0.55]].forEach(function(A){
+  var y=A[0],v=[xa,y,za,xb,y,za, xb,y,za,xb,y,zb, xb,y,zb,xa,y,zb, xa,y,zb,xa,y,za];
+  var gA=new THREE.BufferGeometry();
+  gA.setAttribute('position',new THREE.BufferAttribute(new Float32Array(v),3));
+  var lA=new THREE.LineSegments(gA,new THREE.LineBasicMaterial({color:A[1],transparent:true,opacity:A[2]}));
+  lA.userData.p=-1;scene.add(lA);});
+ // SOMBRA DE CONTATO na grama (faixa de 1,0 m, escura no pé do radier e
+ // sumindo para fora) — é o que faz a laje "sentar" acima do terreno.
+ // LADOS: gradiente linear, cada faixa só no comprimento do próprio lado.
+ // CANTOS: quadrante próprio com gradiente RADIAL a partir do canto da laje —
+ // a faixa lateral passando do canto desenhava um degrau falso na grama.
+ var wS=1.0,yS=-BT-DEGRAU+0.003;
+ function perfil(g){g.addColorStop(0,'rgba(0,0,0,0.55)');g.addColorStop(0.35,'rgba(0,0,0,0.24)');
+  g.addColorStop(1,'rgba(0,0,0,0)');}
+ var cS=document.createElement('canvas');cS.width=128;cS.height=4;
+ var gS=cS.getContext('2d'),grS=gS.createLinearGradient(0,0,128,0);perfil(grS);
+ gS.fillStyle=grS;gS.fillRect(0,0,128,4);
+ var cQ=document.createElement('canvas');cQ.width=cQ.height=128;
+ var gQ=cQ.getContext('2d'),grQ=gQ.createRadialGradient(0,0,0,0,0,128);perfil(grQ);
+ gQ.fillStyle=grQ;gQ.fillRect(0,0,128,128);
+ function matS(c){var t=new THREE.CanvasTexture(c);t.flipY=false;
+  return new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false,side:THREE.DoubleSide,
+   polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});}
+ var mS=matS(cS),mQ=matS(cQ);
+ // quad no plano da grama: p0 = borda da laje (u=0), p1/p2 = fora (u=1)
+ function quad(m,p0,p1,p2,p3){
+  var gq=new THREE.BufferGeometry();
+  gq.setAttribute('position',new THREE.BufferAttribute(new Float32Array([
+   p0[0],yS,p0[1], p1[0],yS,p1[1], p2[0],yS,p2[1], p3[0],yS,p3[1]]),3));
+  gq.setAttribute('uv',new THREE.BufferAttribute(new Float32Array([0,0, 1,0, 1,1, 0,1]),2));
+  gq.setIndex([0,1,2, 0,2,3]);
+  var mq=new THREE.Mesh(gq,m);mq.renderOrder=1;mq.userData.p=-1;scene.add(mq);}
+ // lados (u cresce para FORA; v ao longo do lado)
+ quad(mS,[xb,za],[xb+wS,za],[xb+wS,zb],[xb,zb]);        // direita
+ quad(mS,[xa,za],[xa-wS,za],[xa-wS,zb],[xa,zb]);        // esquerda
+ quad(mS,[xa,za],[xa,za-wS],[xb,za-wS],[xb,za]);        // frente
+ quad(mS,[xa,zb],[xa,zb+wS],[xb,zb+wS],[xb,zb]);        // fundos
+ // cantos: p0 = CANTO da laje (centro do gradiente radial)
+ [[xa,za,-1,-1],[xb,za,1,-1],[xb,zb,1,1],[xa,zb,-1,1]].forEach(function(C){
+  quad(mQ,[C[0],C[1]],[C[0]+C[2]*wS,C[1]],[C[0]+C[2]*wS,C[1]+C[3]*wS],[C[0],C[1]+C[3]*wS]);});})();
 // GRAMA (Cassiano 14/07: "faixa de ~5m em volta, depois do radier, sem
 // muitos detalhes"): esmeralda com granulado leve + manchas suaves de
 // tom, no nivel do terreno (o radier e uma laje elevada sobre ela)
@@ -6011,12 +6149,14 @@ radier.userData.p=PIECE;scene.add(radier);
   dG[p6]+=n6*0.6;dG[p6+1]+=n6;dG[p6+2]+=n6*0.5;}
  g6.putImageData(idG,0,0);
  var tG=new THREE.CanvasTexture(cG);tG.wrapS=tG.wrapT=THREE.RepeatWrapping;
- var gw=radW+10,gd=radD+10;tG.repeat.set(gw/4,gd/4);
+ // 4x a ÁREA (Cassiano 23/09/2026): lados ×2 — a faixa em volta passa de 5 m
+ // para ~21 m no 20×50; o fundo escuro quase não aparece mais na órbita.
+ var gw=(radW+10)*2,gd=(radD+10)*2;tG.repeat.set(gw/4,gd/4);
  var grama=new THREE.Mesh(new THREE.PlaneGeometry(gw,gd),
   new THREE.MeshLambertMaterial({color:0x9fbf8f,map:tG}));
  grama.rotation.x=-Math.PI/2;
  // +15mm sobre o grid helper (senao as linhas vazavam por cima da grama)
- grama.position.set(cumXworld,-BT-0.140,10.00);
+ grama.position.set(cumXworld,-BT-DEGRAU,10.00);
  grama.userData.p=-1;scene.add(grama);})();
 // juntas serradas (grade ~3m, linhas sutis no topo do radier)
 (function(){var ja=[],yJ=-BT+0.0008;
@@ -6028,13 +6168,17 @@ radier.userData.p=PIECE;scene.add(radier);
  gJ.setAttribute('position',new THREE.BufferAttribute(new Float32Array(ja),3));
  var lJ=new THREE.LineSegments(gJ,new THREE.LineBasicMaterial({color:0x8a887f,transparent:true,opacity:0.55}));
  lJ.userData.p=-1;scene.add(lJ);})();
+// chão escuro e grid AGORA ficam inteiros sob a grama (4x a área, 23/09/2026):
+// a 15 mm dela, de longe, a precisão do depth buffer fazia as linhas do grid
+// "furarem" a grama em fileiras de pontos. Descem 0,45 m — continuam lá, sem
+// z-fighting (nada deles aparece: a grama cobre tudo).
 var gndW=18.0,gndD=28.0;
 var gnd=new THREE.Mesh(new THREE.PlaneGeometry(gndW,gndD),matGnd);
-gnd.rotation.x=-Math.PI/2;gnd.position.set(cumXworld,-BT-0.155,10.00);
+gnd.rotation.x=-Math.PI/2;gnd.position.set(cumXworld,-BT-0.600,10.00);
 gnd.receiveShadow=true;scene.add(gnd);
 var gridSize=Math.max(gndW,gndD);
 var grid=new THREE.GridHelper(gridSize,Math.round(gridSize*2),0x0a160a,0x080e08);
-grid.position.set(cumXworld,-BT-0.155,10.00);scene.add(grid);
+grid.position.set(cumXworld,-BT-0.600,10.00);scene.add(grid);
 
 // ── Fixadores: visíveis só de perto (vista de nó); somem na vista geral —
 // são sub-pixel de qualquer jeito — deixando o visualizador LEVE. ──
