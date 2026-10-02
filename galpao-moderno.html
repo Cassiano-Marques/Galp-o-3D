@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Moderno · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD a605ef0 · 02/10/2026 19:24</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD 264a9b8 · 02/10/2026 20:17</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -5661,7 +5661,7 @@ if(window.FECH_EMPENA)window.EMP.forEach(window.FECH_EMPENA);
 })();
 
 // === C140 INTERNO DA PLATIBANDA (apoio da telha interna) — Frente F 26/09, PROTÓTIPO ===
-(function(){if(typeof KIT_LAT==='undefined')return;var D={"xc": 0.0755, "yw": 6.392243, "yd": 6.369743, "Lm": 0.2, "minis": [{"z": 0.003275, "s": 1, "lip": 0}, {"z": 5.003275, "s": 1, "lip": 0}, {"z": 4.994225, "s": -1, "lip": 1}, {"z": 10.005775, "s": 1, "lip": 1}, {"z": 9.996725, "s": -1, "lip": 0}, {"z": 15.005775, "s": 1, "lip": 1}, {"z": 14.996725, "s": -1, "lip": 0}, {"z": 19.996725, "s": -1, "lip": 0}], "guias": [{"zc": 2.49875, "L": 4.9874}, {"zc": 7.5, "L": 4.9899}, {"zc": 12.50125, "L": 4.9874}, {"zc": 17.50125, "L": 4.9874}], "bolts": [0.0, 5.0, 10.0, 15.0, 20.0], "sw": 0.06, "corte": [6.336468, 6.403018], "refX": 0.0755, "FL": 0.01};
+(function(){if(typeof KIT_LAT==='undefined')return;var D={"xc": 0.0755, "yw": 6.392243, "yd": 6.369743, "Lm": 0.2, "minis": [{"z": -0.001725, "s": 1, "lip": 0}, {"z": 4.998275, "s": 1, "lip": 0}, {"z": 4.994225, "s": -1, "lip": 1}, {"z": 10.005775, "s": 1, "lip": 1}, {"z": 10.001725, "s": -1, "lip": 0}, {"z": 15.005775, "s": 1, "lip": 1}, {"z": 15.001725, "s": -1, "lip": 0}, {"z": 20.001725, "s": -1, "lip": 0}], "guias": [{"zc": 2.49625, "L": 4.9924}, {"zc": 7.5, "L": 4.9999}, {"zc": 12.50375, "L": 4.9924}, {"zc": 17.50375, "L": 4.9924}], "bolts": [{"z": -0.002975, "g": 0.00405}, {"z": 4.99625, "g": 0.0056}, {"z": 10.00375, "g": 0.0056}, {"z": 15.00375, "g": 0.0056}, {"z": 20.002975, "g": 0.00405}], "sw": 0.06, "corte": [6.336468, 6.403018], "refX": 0.0755, "FL": 0.01};
  var UU=cumXworld*2,tm=0.00155,Fm=0.045,Hm=0.140;
  function add(g){scene.remove(g);scene.add(g);}
  [D.xc,UU-D.xc].forEach(function(X){
@@ -5676,8 +5676,8 @@ if(window.FECH_EMPENA)window.EMP.forEach(window.FECH_EMPENA);
    add(KIT_LAT.CL([X,D.yd,M.z],(M.s>0)?Math.PI/2:-Math.PI/2,D.Lm,{color:0xe54983,nseg:10,lipCutZ:[-hb,hb]}));
    PECAS[PECAS.length-1].subtipo='mini-c140-interno';});
   // 1/2" a 50 mm das pontas do mini: mini + alma do C300 + mini
-  D.bolts.forEach(function(zP){[D.yd-D.Lm/2+0.050,D.yd+D.Lm/2-0.050].forEach(function(yb){
-   bolt12(X,yb,zP,'z',0.012,scene);});});
+  D.bolts.forEach(function(B){[D.yd-D.Lm/2+0.050,D.yd+D.Lm/2-0.050].forEach(function(yb){
+   bolt12(X,yb,B.z,'z',B.g,scene);});});
  });
 })();
 
