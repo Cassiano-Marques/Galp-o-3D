@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Clássico · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD ecf97f4 · 03/10/2026 18:12</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD 7a06109 · 03/10/2026 18:55</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -151,6 +151,16 @@ function irGeral(){
   <button class="vBtn" onclick="sv(34,this)">╱ Guia da MF</button>
   <button class="vBtn" onclick="sv(35,this)">▤ Mini da empena</button>
   <button class="vBtn" onclick="sv(36,this)">⌐ Terça × guia do rafter</button>
+  <div class="vGrp">── COBERTURA SOBRE O RAFTER (Clássico) ──</div>
+  <button class="vBtn" onclick="sv(37,this)">▣ Cartola de emenda 100 (pórtico intermediário)</button>
+  <button class="vBtn" onclick="sv(38,this)">▣ Cartola 50 (pórtico de ponta)</button>
+  <button class="vBtn" onclick="sv(39,this)">◆ Diagonal nasce na terça (de cima)</button>
+  <button class="vBtn" onclick="sv(40,this)">◆ Diagonal nasce na terça (de baixo)</button>
+  <button class="vBtn" onclick="sv(41,this)">◫ Cobertura sobre o rafter (geral)</button>
+  <button class="vBtn" onclick="sv(42,this)">━ Beiral: terça contínua pórtico → ponta</button>
+  <button class="vBtn" onclick="sv(43,this)">┐ Beiral: ponta da terça na guia</button>
+  <button class="vBtn" onclick="sv(44,this)">∧ Beiral: guia no ápice (esquadro)</button>
+  <button class="vBtn" onclick="sv(45,this)">▲ Beiral: borda da empena (de fora)</button>
 </div>
 
 <div id="infoBar" style="position:fixed;bottom:18px;left:18px;background:rgba(6,10,16,0.75);padding:5px 12px;border-radius:16px;color:#2a4a2a;font-size:8px;border:1px solid #1a3a1a;letter-spacing:1px;pointer-events:none;">⬡ ARRASTAR · ZOOM · 2× RESET</div>
@@ -276,10 +286,10 @@ var LAT_CUTS=[[0.2408, 0.447], [0.2412, 0.3078], [2.149, 2.3552], [2.1494, 2.216
 var LAT_CUTS_KL=[], LAT_CUTS_KR=[];
 // Parede lateral ativa? Se sim, o mini-pilar solidariza as almas (nos niveis
 // de terca/diagonal) e os pontos fixos 2000/4000 do pilar saem.
-var latAtivo=1;var BEIRAL=0.7;
+var latAtivo=1;var BEIRAL=0.7;var RCOB=0.1431;
 // ── Cobertura: bandas de corte do lip SUPERIOR do rafter ──
-var RAF_CUTS_T=[[0.3769, 0.4434], [1.8901, 1.9567], [3.4034, 3.4699], [4.9166, 4.9831]];
-var RAF_CUTS_D=[[0.3975, 0.568], [1.9107, 2.0812], [3.424, 3.5944]];
+var RAF_CUTS_T=[];
+var RAF_CUTS_D=[];
 var COB_BRACED=[1, 0, 0, 1];
 var RAF_CUT_BEIRAL=0.0832;   // R51b: lip sup do rafter cortado na ponta do beiral
 
@@ -2158,18 +2168,7 @@ for(var ip=0;ip<nPorticos;ip++){
   }
 }
 
-// ── RAFTER DE EMPENA (beiral frente/fundo — Clássico, passo 2): rafter
-// completo na PONTA do beiral (z=∓BEIRAL), reusa buildRafter (já traz o
-// rabo do eave nos 2 lados). Fica em balanço, segurado pelas mãos-francesas.
-if(typeof BEIRAL!=='undefined'){
- var _LZb=(nPorticos-1)*modulo;
- [-BEIRAL,_LZb+BEIRAL].forEach(function(zb){
-  buildRafter(0,zb,false,true);                  // água esquerda
-  var _rr=buildRafter(0,zb,true,true);           // água direita (espelhada)
-  _rr.position.x-=cumXworld;_rr.position.x=-_rr.position.x;
-  _rr.rotation.y+=Math.PI;_rr.position.x+=cumXworld;
- });
-}
+// BEIRAL DE EMPENA (Frente F 03/10): sem rafter de empena — a terça contínua + guia da ponta fazem a borda
 
 
 // === PAREDES LATERAIS LSF (parametrico) ===
@@ -2727,7 +2726,7 @@ window.TP_INFO={nome:TP_NOME,pp:TPP,ph:TPH,wb:WB,wt:WT,ribw:RIBW,ribh:RIBH,
  // física pela ficha TP-40-980, 28/09): bobina 1.200 (peso/custo) · física
  // conformada 1.030 (encaixe no desenho) · útil 0.980 (modulação/paginação)
  // — nunca confundir
-var HPF=0.000000, TERCAS=[0.297, 2.2052, 4.1134, 6.0216], TSR=[0.4327, 1.9459, 3.4591, 4.9724];
+var HPF=0.000000, TERCAS=[0.297, 2.2052, 4.1134, 6.0216], TSR=[0.4327, 1.9569, 3.4812, 5.0054];
 var COMPF=(nPorticos-1)*modulo;
 // PLANO DA TELHA DA EMPENA (distância ao eixo do pórtico de ponta): face
 // externa do pilar + cantoneira de arranque 2,5 + a chapa (TT) — a onda
@@ -2998,7 +2997,7 @@ function tpCumeeiraSobre(s,u){if(typeof _cuU==='undefined'||typeof CU_DEV==='und
  for(var i=0;i<_cuU.length;i++){if(_cuSkip[i])continue;
   var u0=_cuU[i][0]+(_cuOff[i]||0),u1=_cuU[i][1]+(_cuOff[i]||0);
   if(u<u0+WT/2||u>u1-WT/2)continue;                     // topo da crista inteiro sob a peça
-  var y=wH/2+TT+2*TP_SOB+((i%2)?TP_SOB:0)+TPH;           // face de cima da crista da peça i
+  var y=wH/2+RCOB+TT+2*TP_SOB+((i%2)?TP_SOB:0)+TPH;           // face de cima da crista da peça i
   if(top===null||y>top)top=y;}
  return top;}
 // Perfil LOCAL de uma chapa (0..física). A borda que monta sobre a anterior
@@ -3097,7 +3096,7 @@ var y0w=HPF>0?HPF+0.02:0.020, y1w=yCant-0.008, hW=y1w-y0w;
 // largura maior -> cumeeira e platibanda sobem juntas)
 if(typeof PLATIBANDA!=='undefined'){y1w=PLAT_TOPO;hW=y1w-y0w;}
 var cs=Math.cos(theta),sn=Math.sin(theta);
-var NRM=wH/2+TT+TPH;
+var NRM=wH/2+RCOB+TT+TPH;
 var Ex=cx-NRM*sn, Ey=pilTopo+cy+NRM*cs;
 var Rx=cx+rafLen*cs-NRM*sn, Ry=pilTopo+cy+rafLen*sn+NRM*cs;
 var xq=xw-TT-TPH-0.004;                             // face externa das ondas
@@ -3105,7 +3104,7 @@ var xPan=xw-TT;                                     // face externa da onda baix
 var TULT=TERCAS.length?TERCAS[TERCAS.length-1]:(Ey-0.10);
 var yTab=TULT+0.001;                                // topo da terca (medido)
 function zPar(u){return Z0+WTOT-u;}                 // telha da parede: ESPELHADA
-function yRoofUnder(x){return pilTopo+cy+((x-cx+(wH/2+TT)*sn)/cs)*sn+(wH/2)*cs;}
+function yRoofUnder(x){return pilTopo+cy+((x-cx+(wH/2+RCOB+TT)*sn)/cs)*sn+(wH/2+RCOB)*cs;}
 // TOPO DA TELHA LATERAL NO BEIRAL (Cassiano 28/09/2026 — os 15 mm são PROVISÓRIOS,
 // só p/ validação visual, não é regra): a borda de cima para RECUO_LAT_BEIRAL abaixo
 // do ENCONTRO REAL com a telha da cobertura = a face de baixo da cobertura no plano
@@ -3116,7 +3115,7 @@ function yRoofUnder(x){return pilTopo+cy+((x-cx+(wH/2+TT)*sn)/cs)*sn+(wH/2)*cs;}
 var yTopCant=y1w,RECUO_LAT_BEIRAL=0.015;
 if(typeof PLATIBANDA==='undefined'){y1w=yRoofUnder(xw-TT-TPH)-RECUO_LAT_BEIRAL;hW=y1w-y0w;}
 // telha da cobertura avanca 50mm alem do plano das ondas (hidraulica)
-var sEdge=(xq-0.050-cx+(wH/2+TT)*sn)/cs;
+var sEdge=(xq-0.050-cx+(wH/2+RCOB+TT)*sn)/cs;
 // RECUO NA CUMEEIRA (Cassiano 15/08): as duas aguas NAO se encontram —
 // cada telha para 30mm ANTES do eixo, medido AO LONGO DO RAMPANTE
 // (abertura total ~60mm, protegida pelo capote de 220mm/agua).
@@ -3314,7 +3313,7 @@ if(ESTR_C){
   // vizinha sobe TP_SOB — 28/09/2026: antes a cumeeira ficava 0,5 mm acima
   // do plano nominal e a crista de emenda entrava nela); as peças ímpares
   // passam TP_SOB sobre as vizinhas na sobreposição cumeeira × cumeeira.
-  m.position.set(rafLen+CU_DEV,wH/2+TT+2*TP_SOB+((i%2)?TP_SOB:0),Z0R);
+  m.position.set(rafLen+CU_DEV,wH/2+RCOB+TT+2*TP_SOB+((i%2)?TP_SOB:0),Z0R);
   if(FORN_C)m.userData.p=PIECE;_gCu.add(m);
  });
 }
@@ -3491,7 +3490,7 @@ function buildLado(gS){
   var g=new THREE.ExtrudeGeometry(tpForma(P),{depth:len,bevelEnabled:false});
   var m=new THREE.Mesh(g,mTel);
   m.rotation.y=-Math.PI/2;if(FORN_C)m.userData.p=c.pi;
-  m.position.set(sTopo,wH/2+TT,Z0R+c.x0);(par||wg).add(m);addVincos(m,len,P);
+  m.position.set(sTopo,wH/2+RCOB+TT,Z0R+c.x0);(par||wg).add(m);addVincos(m,len,P);
   if(c.ov>0&&u0<1e-6){var vS=TP_BASE[0][1]+0.0003;tpSombra(m,[0,vS,0.002],[0,vS,len-0.002]);}
   m.userData.tpRaise=(c.ov>0&&u0<tpFimElev(c.ov))?TP_SOB:0;m.userData.fVis=tpVis(c,u0,u1);
   EMENDA_TLH.push({m:m,k:'cob',pl:PLc,i:c.i,sTopo:sTopo,pts:P});}
@@ -3532,7 +3531,7 @@ function buildLado(gS){
    if(PRISMA_ATIVO)novaPeca('skylux');   // simulacao nao registra peca
    var g=new THREE.ExtrudeGeometry(telhaShape(v.u2,v.u1).sh,{depth:sM2-sM1,bevelEnabled:false});
    var m=new THREE.Mesh(g,mLux);
-   m.rotation.y=-Math.PI/2;m.position.set(sM2,wH/2+TT+0.001,Z0R);
+   m.rotation.y=-Math.PI/2;m.position.set(sM2,wH/2+RCOB+TT+0.001,Z0R);
    if(PRISMA_ATIVO)m.userData.p=PIECE;gLx.add(m);});
   // versao OFF: SO as bandas dos modulos em metal (o resto ja existe)
   LUX.forEach(function(v){
@@ -3557,10 +3556,10 @@ function buildLado(gS){
  if(ESTR_C){var CRc=tpEixos(LYC,'crista'),CSc=tpCosturas(LYC),MESA_T=0.0450;
   TSR.forEach(function(sT){var s=sT-MESA_T/2;
    CRc.forEach(function(q){var zc=Z0R+q.x;if(!ondaOK(zc))return;
-    var k=Math.round((q.x-LYC.a)/LYC.P),yc=tpCumeeiraSobre(s,q.x),y=(yc!==null)?yc:wH/2+TT+TPH+q.el;
+    var k=Math.round((q.x-LYC.a)/LYC.P),yc=tpCumeeiraSobre(s,q.x),y=(yc!==null)?yc:wH/2+RCOB+TT+TPH+q.el;
     var lx=comLux?luxEm(s,q.x):null,par=lx?gLxOff:wg;
     if(k%2===0){tpFix('A',s,y,zc,'y',-1,par,FORN_C);
-     if(lx)tpFix('A',s,wH/2+TT+0.001+TPH,zc,'y',-1,gLx,FORN_C);}
+     if(lx)tpFix('A',s,wH/2+RCOB+TT+0.001+TPH,zc,'y',-1,gLx,FORN_C);}
     else if(CSc[Math.round(q.x*1e5)])tpFix('C',s,y,zc,'y',-1,par,FORN_C);});});}
  // SISTEMA DE AGUAS num subgrupo proprio (botao CALHAS ON/OFF):
  // suportes + calha + tampas + condutores
@@ -5032,22 +5031,24 @@ if(window.FECH_EMPENA)window.EMP.forEach(window.FECH_EMPENA);
 // === COBERTURA: tercas C140 + contraventamento V (parametrico) ===
 (function(){
 var tc=0.00155,Fc=0.045,Lc=0.012,Hmc=0.14,SWDc=0.1365;
-var TS=[0.432672, 1.945903, 3.459135, 4.972366],BR=[1, 0, 0, 1],NB=nPorticos-1;
-var MRS=[[0.455052, 0.28976], [1.968283, 0.28976], [3.481515, 0.28976], [4.949866, 0.2]],MRB=[[0.360172, 0.549932], [1.873403, 2.063163], [3.386635, 3.576395], [4.899866, 4.999866]],MRS_S=[[0.410172, 0.2], [1.923403, 0.2], [3.436635, 0.2], [4.949866, 0.2]],MRB_S=[[0.360172, 0.460172], [1.873403, 1.973403], [3.386635, 3.486635], [4.899866, 4.999866]],MRCT=[[0.3769, 0.4434], [1.8901, 1.9567], [3.4034, 3.4699], [4.9166, 4.9831]],MRCD=[[0.4123, 0.5532], [1.9255, 2.0664], [3.4388, 3.5796]];
+var TS=[0.432672, 1.956926, 3.48118, 5.005434],BR=[1, 0, 0, 1],NB=nPorticos-1;
+var MRS=[[0.455077, 0.28981], [1.979331, 0.28981], [3.503585, 0.28981], [4.982934, 0.2]],MRB=[[0.360172, 0.549982], [1.884426, 2.074236], [3.40868, 3.59849], [4.932934, 5.032934]],MRS_S=[[0.410172, 0.2], [1.934426, 0.2], [3.45868, 0.2], [4.982934, 0.2]],MRB_S=[[0.360172, 0.460172], [1.884426, 1.984426], [3.40868, 3.50868], [4.932934, 5.032934]],MRCT=[[0.3769, 0.4434], [1.9012, 1.9677], [3.4254, 3.492], [4.9497, 5.0162]],MRCD=[[0.4119, 0.5534], [1.9362, 2.0777], [3.4604, 3.6019]];
 var zAm=0.005775,zMm=0.02905;
-var DMT=[0.410172, 1.923403, 3.436635, 4.949866],DMD=[0.499932, 2.013163, 3.526395],DIMZ=0.02905;
-var ANGc=[0.54038872, 0.54038903, 0.54038872],LAc=[2.803184, 2.803185, 2.803184],ZTc=[2.40536, 2.40536, 2.40536],SBc=[0.509705, 2.022936, 3.536168],STc=[1.951857, 3.465089, 4.97832],ZBEc=[0.001605, 0.001605, 0.001605];
-var DLB=[-1.383086, -1.383086, -1.383086],DLT=[1.383592, 1.383592, 1.383592],DZA=[2.4015, 2.4015, 2.4015];
-var TRGc=[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]],DRGA=[[[-1.401592, -1.328092, 0.1365], [-1.328092, -1.318092, 0.13825], [-1.318092, 1.401592, 0.14]], [[-1.401593, -1.328093, 0.1365], [-1.328093, -1.318093, 0.13825], [-1.318093, 1.401593, 0.14]], [[-1.401592, -1.328092, 0.1365], [-1.328092, -1.318092, 0.13825], [-1.318092, 1.401592, 0.14]]],DRGB=[[[-1.401592, 1.318092, 0.14], [1.318092, 1.328092, 0.13825], [1.328092, 1.401592, 0.1365]], [[-1.401593, 1.318093, 0.14], [1.318093, 1.328093, 0.13825], [1.328093, 1.401593, 0.1365]], [[-1.401592, 1.318092, 0.14], [1.318092, 1.328092, 0.13825], [1.328092, 1.401592, 0.1365]]];
-var PTA=[{"dim": [1.923303, 2.4015], "band": [2.309138, 2.438511], "wc": [[1.281606, 1.402592]], "lc": [[1.356611, 1.402592]]}, {"dim": [3.436535, 2.4015], "band": [2.309138, 2.438511], "wc": [[1.281606, 1.402592]], "lc": [[1.356611, 1.402592]]}, {"dim": [4.949766, 2.4015], "band": [2.309138, 2.438511], "wc": [[1.281606, 1.402592]], "lc": [[1.356611, 1.402592]]}],NCH=["max","min"];   // tip com ABAS (boca → cumeeira) · chanfro por ponta de cada perna
-var LTc=4.9869,Zbc=0.00655,UPc=0.077;
+var DMT=[0.410172, 1.934426, 3.45868, 4.982934],DMD=[0.499982, 2.024236, 3.54849],DIMZ=0.02905;
+var ANGc=[0.59550061, 0.59550061, 0.59550061],LAc=[2.749538, 2.749538, 2.749538],ZTc=[2.40361, 2.40361, 2.40361],SBc=[0.42077, 1.945024, 3.469278],STc=[1.96305, 3.487304, 5.011558],ZBEc=[0.127356, 0.127356, 0.127356];
+var DLB=[-1.360455, -1.360455, -1.360455],DLT=[1.356769, 1.356769, 1.356769],DZA=[2.401329, 2.401329, 2.401329];
+var TRGc=[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]],DRGA=[[[-1.374769, -1.27461, 0.1365], [-1.27461, -1.26461, 0.13825], [-1.26461, 1.374769, 0.14]], [[-1.374769, -1.27461, 0.1365], [-1.27461, -1.26461, 0.13825], [-1.26461, 1.374769, 0.14]], [[-1.374769, -1.27461, 0.1365], [-1.27461, -1.26461, 0.13825], [-1.26461, 1.374769, 0.14]]],DRGB=[[[-1.374769, 1.26461, 0.14], [1.26461, 1.27461, 0.13825], [1.27461, 1.374769, 0.1365]], [[-1.374769, 1.26461, 0.14], [1.26461, 1.27461, 0.13825], [1.27461, 1.374769, 0.1365]], [[-1.374769, 1.26461, 0.14], [1.26461, 1.27461, 0.13825], [1.27461, 1.374769, 0.1365]]];
+var PTA=[{"dim": [1.934326, 2.401329], "band": [2.317012, 2.438851], "wc": [[1.264417, 1.375769]], "lc": [[1.330833, 1.375769]]}, {"dim": [3.45858, 2.401329], "band": [2.317012, 2.438851], "wc": [[1.264417, 1.375769]], "lc": [[1.330833, 1.375769]]}, {"dim": [4.982834, 2.401329], "band": [2.317012, 2.438851], "wc": [[1.264417, 1.375769]], "lc": [[1.330833, 1.375769]]}],NCH=["max","min"];   // tip com ABAS (boca → cumeeira) · chanfro por ponta de cada perna
+var LTc=4.9869,Zbc=0.00655,UPc=0.220775;
 var BEIR=0.7,TRGb=[[-0.35, -0.29, 0.1365], [-0.29, -0.28, 0.13825], [-0.28, 0.28, 0.14], [0.28, 0.29, 0.13825], [0.29, 0.35, 0.1365]],LZb=(nPorticos-1)*modulo;   // beiral empena (Clássico): terça em balanço
-var TRGS=[[[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.200862, 0.14], [-0.200862, -0.190862, 0.13825], [-0.190862, -0.061489, 0.1365], [-0.061489, -0.051489, 0.13825], [-0.051489, 0.051489, 0.14], [0.051489, 0.061489, 0.13825], [0.061489, 0.190862, 0.1365], [0.190862, 0.200862, 0.13825], [0.200862, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.200862, 0.14], [-0.200862, -0.190862, 0.13825], [-0.190862, -0.061489, 0.1365], [-0.061489, -0.051489, 0.13825], [-0.051489, 0.051489, 0.14], [0.051489, 0.061489, 0.13825], [0.061489, 0.190862, 0.1365], [0.190862, 0.200862, 0.13825], [0.200862, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.200862, 0.14], [-0.200862, -0.190862, 0.13825], [-0.190862, -0.061489, 0.1365], [-0.061489, -0.051489, 0.13825], [-0.051489, 0.051489, 0.14], [0.051489, 0.061489, 0.13825], [0.061489, 0.190862, 0.1365], [0.190862, 0.200862, 0.13825], [0.200862, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]], [[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]], [[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]], [[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.200862, 0.14], [-0.200862, -0.190862, 0.13825], [-0.190862, -0.061489, 0.1365], [-0.061489, -0.051489, 0.13825], [-0.051489, 0.051489, 0.14], [0.051489, 0.061489, 0.13825], [0.061489, 0.190862, 0.1365], [0.190862, 0.200862, 0.13825], [0.200862, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.200862, 0.14], [-0.200862, -0.190862, 0.13825], [-0.190862, -0.061489, 0.1365], [-0.061489, -0.051489, 0.13825], [-0.051489, 0.051489, 0.14], [0.051489, 0.061489, 0.13825], [0.061489, 0.190862, 0.1365], [0.190862, 0.200862, 0.13825], [0.200862, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.200862, 0.14], [-0.200862, -0.190862, 0.13825], [-0.190862, -0.061489, 0.1365], [-0.061489, -0.051489, 0.13825], [-0.051489, 0.051489, 0.14], [0.051489, 0.061489, 0.13825], [0.061489, 0.190862, 0.1365], [0.190862, 0.200862, 0.13825], [0.200862, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]]],FWSc=0.04325,OFFBc=0.03;   // ligação do bloqueador (= parede): bandas de swage na terça + mesa conificada
+var PBR=1,TRGP=[[[[-2.84595, -2.78595, 0.1365], [-2.78595, -2.77595, 0.13825], [-2.77595, 2.84595, 0.14]], [[-2.84595, -2.78595, 0.1365], [-2.78595, -2.77595, 0.13825], [-2.77595, 0.159512, 0.14], [0.159512, 0.169512, 0.13825], [0.169512, 0.291351, 0.1365], [0.291351, 0.301351, 0.13825], [0.301351, 0.403649, 0.14], [0.403649, 0.413649, 0.13825], [0.413649, 0.535488, 0.1365], [0.535488, 0.545488, 0.13825], [0.545488, 2.84595, 0.14]], [[-2.84595, -2.78595, 0.1365], [-2.78595, -2.77595, 0.13825], [-2.77595, 0.159512, 0.14], [0.159512, 0.169512, 0.13825], [0.169512, 0.291351, 0.1365], [0.291351, 0.301351, 0.13825], [0.301351, 0.403649, 0.14], [0.403649, 0.413649, 0.13825], [0.413649, 0.535488, 0.1365], [0.535488, 0.545488, 0.13825], [0.545488, 2.84595, 0.14]], [[-2.84595, -2.78595, 0.1365], [-2.78595, -2.77595, 0.13825], [-2.77595, 0.159512, 0.14], [0.159512, 0.169512, 0.13825], [0.169512, 0.291351, 0.1365], [0.291351, 0.301351, 0.13825], [0.301351, 0.403649, 0.14], [0.403649, 0.413649, 0.13825], [0.413649, 0.535488, 0.1365], [0.535488, 0.545488, 0.13825], [0.545488, 2.84595, 0.14]]], [[[-2.49345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.49345, 0.14]], [[-2.49345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.49345, 0.14]], [[-2.49345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.49345, 0.14]], [[-2.49345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.49345, 0.14]]], [[[-2.49345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.49345, 0.14]], [[-2.49345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.49345, 0.14]], [[-2.49345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.49345, 0.14]], [[-2.49345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.49345, 0.14]]], [[[-2.84595, 2.77595, 0.14], [2.77595, 2.78595, 0.13825], [2.78595, 2.84595, 0.1365]], [[-2.84595, -0.545488, 0.14], [-0.545488, -0.535488, 0.13825], [-0.535488, -0.413649, 0.1365], [-0.413649, -0.403649, 0.13825], [-0.403649, -0.301351, 0.14], [-0.301351, -0.291351, 0.13825], [-0.291351, -0.169512, 0.1365], [-0.169512, -0.159512, 0.13825], [-0.159512, 2.77595, 0.14], [2.77595, 2.78595, 0.13825], [2.78595, 2.84595, 0.1365]], [[-2.84595, -0.545488, 0.14], [-0.545488, -0.535488, 0.13825], [-0.535488, -0.413649, 0.1365], [-0.413649, -0.403649, 0.13825], [-0.403649, -0.301351, 0.14], [-0.301351, -0.291351, 0.13825], [-0.291351, -0.169512, 0.1365], [-0.169512, -0.159512, 0.13825], [-0.159512, 2.77595, 0.14], [2.77595, 2.78595, 0.13825], [2.78595, 2.84595, 0.1365]], [[-2.84595, -0.545488, 0.14], [-0.545488, -0.535488, 0.13825], [-0.535488, -0.413649, 0.1365], [-0.413649, -0.403649, 0.13825], [-0.403649, -0.301351, 0.14], [-0.301351, -0.291351, 0.13825], [-0.291351, -0.169512, 0.1365], [-0.169512, -0.159512, 0.13825], [-0.159512, 2.77595, 0.14], [2.77595, 2.78595, 0.13825], [2.78595, 2.84595, 0.1365]]]],PBD=[],DZB=[0.151827, 0.151827, 0.151827],PLB=[[0.123855, 0.2455], [0.123855, 0.2455], [0.123855, 0.2455]],SUPc={"t": 0.00155, "wn": 0.05, "we": 0.1, "g": 0.0005, "aba": 0.04};PTA=[{"dim": [1.934326, 2.401329], "band": [2.317012, 2.438851], "wc": [[1.264417, 1.375769]], "lc": [[1.330833, 1.375769]]}, {"dim": [3.45858, 2.401329], "band": [2.317012, 2.438851], "wc": [[1.264417, 1.375769]], "lc": [[1.330833, 1.375769]]}, {"dim": [4.982834, 2.401329], "band": [2.317012, 2.438851], "wc": [[1.264417, 1.375769]], "lc": [[1.330833, 1.375769]]}];NCH=["max", "min"];
+var TRGS=[[[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.192988, 0.14], [-0.192988, -0.182988, 0.13825], [-0.182988, -0.061149, 0.1365], [-0.061149, -0.051149, 0.13825], [-0.051149, 0.051149, 0.14], [0.051149, 0.061149, 0.13825], [0.061149, 0.182988, 0.1365], [0.182988, 0.192988, 0.13825], [0.192988, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.192988, 0.14], [-0.192988, -0.182988, 0.13825], [-0.182988, -0.061149, 0.1365], [-0.061149, -0.051149, 0.13825], [-0.051149, 0.051149, 0.14], [0.051149, 0.061149, 0.13825], [0.061149, 0.182988, 0.1365], [0.182988, 0.192988, 0.13825], [0.192988, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.192988, 0.14], [-0.192988, -0.182988, 0.13825], [-0.182988, -0.061149, 0.1365], [-0.061149, -0.051149, 0.13825], [-0.051149, 0.051149, 0.14], [0.051149, 0.061149, 0.13825], [0.061149, 0.182988, 0.1365], [0.182988, 0.192988, 0.13825], [0.192988, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]], [[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]], [[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0625, 0.1365], [0.0625, 0.0725, 0.13825], [0.0725, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.0725, 0.14], [-0.0725, -0.0625, 0.13825], [-0.0625, 0.0025, 0.1365], [0.0025, 0.0125, 0.13825], [0.0125, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]], [[[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.192988, 0.14], [-0.192988, -0.182988, 0.13825], [-0.182988, -0.061149, 0.1365], [-0.061149, -0.051149, 0.13825], [-0.051149, 0.051149, 0.14], [0.051149, 0.061149, 0.13825], [0.061149, 0.182988, 0.1365], [0.182988, 0.192988, 0.13825], [0.192988, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.192988, 0.14], [-0.192988, -0.182988, 0.13825], [-0.182988, -0.061149, 0.1365], [-0.061149, -0.051149, 0.13825], [-0.051149, 0.051149, 0.14], [0.051149, 0.061149, 0.13825], [0.061149, 0.182988, 0.1365], [0.182988, 0.192988, 0.13825], [0.192988, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]], [[-2.49345, -2.43345, 0.1365], [-2.43345, -2.42345, 0.13825], [-2.42345, -0.192988, 0.14], [-0.192988, -0.182988, 0.13825], [-0.182988, -0.061149, 0.1365], [-0.061149, -0.051149, 0.13825], [-0.051149, 0.051149, 0.14], [0.051149, 0.061149, 0.13825], [0.061149, 0.182988, 0.1365], [0.182988, 0.192988, 0.13825], [0.192988, 2.42345, 0.14], [2.42345, 2.43345, 0.13825], [2.43345, 2.49345, 0.1365]]]],FWSc=0.04325,OFFBc=0.03;   // ligação do bloqueador (= parede): bandas de swage na terça + mesa conificada
 // BOCA → CUMEEIRA (02/10/2026): seção da terça girada 180° no PRÓPRIO eixo (alma em TS−Fc,
 // lips em TS); o bloqueador pega a boca da de baixo e cruza a alma da de cima. O V mantém o
 // sentido original; o tip, que agora encontra a ALMA da terça de cima, usa as ABAS (PTA).
 // _PBNC = ponta SEM chanfro R60 na próxima cobPiece: 'min' | 'max' | 'ambos' (null = as duas).
 var BCU=1,_PBNC=null;
+DRGA=[[[-1.374769, -1.27461, 0.1365], [-1.27461, -1.26461, 0.13825], [-1.26461, 1.374769, 0.14]], [[-1.374769, -1.27461, 0.1365], [-1.27461, -1.26461, 0.13825], [-1.26461, 1.374769, 0.14]], [[-1.374769, -1.27461, 0.1365], [-1.27461, -1.26461, 0.13825], [-1.26461, 1.374769, 0.14]]];DRGB=[[[-1.374769, 1.26461, 0.14], [1.26461, 1.27461, 0.13825], [1.27461, 1.374769, 0.1365]], [[-1.374769, 1.26461, 0.14], [1.26461, 1.27461, 0.13825], [1.27461, 1.374769, 0.1365]], [[-1.374769, 1.26461, 0.14], [1.26461, 1.27461, 0.13825], [1.27461, 1.374769, 0.1365]]];
 var mCt=new THREE.MeshLambertMaterial({color:0x66ccff});
 var mCd=new THREE.MeshLambertMaterial({color:0x28c08a});
 var mMR=new THREE.MeshLambertMaterial({color:0xe54983});
@@ -5256,6 +5257,64 @@ function junctionDimples(wg,dx,s,zq){
  screwV(dx*s,wH/2,zq,'y',-1,wg);
  screwV(dx*s,UPc-Hmc/2-tc/2,zq,'y',1,wg);
 }
+// ── COBERTURA SOBRE O RAFTER (Frente F 26/09 — PROTÓTIPO, NÃO APROVADO) ──────────
+// CARTOLA: chapa dobrada (aba → sobe → atravessa → desce → aba) que abraça a terça
+// C140 apoiada na mesa do rafter; abas aparafusadas na mesa do rafter (de cima),
+// topo na mesa de cima da terça, perna de cima da água na ALMA da terça (lateral).
+// Pernas: a de baixo encosta nos LIPS da terça → sem parafuso nela (R70.2).
+// BOCA → CUMEEIRA (02/10/2026): a cartola é simétrica no eixo da terça; o parafuso
+// lateral passa p/ a perna de BAIXO (agora na alma) e a de cima (nos lips) fica sem.
+// Parafusos = POSIÇÕES POSSÍVEIS; quantidade/capacidade = calculista.
+var mSup=new THREE.MeshLambertMaterial({color:0xf0a030});
+function pbBox(wg,dx,s0,s1,y0,y1,zc,w){var b=new THREE.Mesh(new THREE.BoxGeometry(Math.abs(s1-s0),Math.abs(y1-y0),w),mSup);
+ b.position.set(dx*(s0+s1)/2,(y0+y1)/2,zc);b.userData.p=PIECE;wg.add(b);}
+function pbHat(wg,dx,TSv,zc,w,emenda){
+ novaPeca('suporte-terca');PECAS[PECAS.length-1].subtipo=emenda?'cartola-emenda-100':'cartola-50';
+ var th=SUPc.t,g=SUPc.g,ab=SUPc.aba,yR=wH/2,yT=UPc+Hmc/2+tc/2;
+ var su=TSv+tc/2+g, sd=TSv-Fc-tc/2-g;                  // faces internas das pernas
+ pbBox(wg,dx,sd-th,su+th,yT,yT+th,zc,w);                // topo (sobre a mesa de cima da terça)
+ pbBox(wg,dx,su,su+th,yR,yT+th,zc,w);                   // perna de cima (na alma da terça)
+ pbBox(wg,dx,sd-th,sd,yR,yT+th,zc,w);                   // perna de baixo (nos lips)
+ pbBox(wg,dx,su+th,su+th+ab,yR,yR+th,zc,w);             // aba de cima (na mesa do rafter)
+ pbBox(wg,dx,sd-th-ab,sd-th,yR,yR+th,zc,w);             // aba de baixo
+ var zs=emenda?[zc-w/4,zc+w/4]:[zc];                    // 1 posição por terça que chega
+ zs.forEach(function(z){
+  screwV(dx*(TSv-Fc/2),yT+th,z,'y',-1,wg);              // topo → mesa de cima da terça
+  if(BCU)screwV(dx*(sd-th),UPc,z,'x',dx,wg);            // perna de baixo → alma da terça
+  else screwV(dx*(su+th),UPc,z,'x',-dx,wg);             // perna → alma da terça
+  screwV(dx*(su+th+ab/2),yR+th,z,'y',-1,wg);            // abas → mesa do rafter (de cima)
+  screwV(dx*(sd-th-ab/2),yR+th,z,'y',-1,wg);});}
+function pbHats(wg,dx){
+ for(var pp=0;pp<nPorticos;pp++){var zP=pp*modulo,ponta=(pp===0||pp===nPorticos-1);
+  var w=ponta?SUPc.wn:SUPc.we;
+  var zc=zP;   // BEIRAL: a terça passa por cima do pórtico de ponta → cartola normal, centrada
+  for(var ti=0;ti<TS.length;ti++)pbHat(wg,dx,TS[ti],zc,w,!ponta);}}
+// BASE DA DIAGONAL NA TERÇA DE BAIXO. Boca → cumeeira (Cassiano 03/10/2026): a terça mostra
+// a BOCA à diagonal → a diagonal recebe o swage e ENTRA no canal (kit de encaixe: swage,
+// chanfro R105, lip cut na terça — tudo na própria cobPiece/terça); aqui só o 4,8 por face
+// na interseção das linhas centrais das mesas (DZB), atravessando mesa da terça + mesa
+// conificada da diagonal, cabeça fora e broca pra dentro (= apex da cobertura antiga).
+// Sistema antigo (boca rampante abaixo): ligação do BLOQUEADOR — abas R136 via cobAbas.
+function pbDiagBase(wg,dx,di,zRef,sg){
+ if(PBD.length){cobAbas(wg,dx,PBD[di],ANGc[di],zRef,sg);return;}
+ var sB=dx*(TS[di]-Fc/2),zD=zRef+sg*DZB[di];
+ screwV(sB,UPc+Hmc/2+tc/2,zD,'y',-1,wg);screwV(sB,UPc-Hmc/2-tc/2,zD,'y',1,wg);}
+
+// ── BEIRAL DE EMPENA (Frente F 03/10 — PROTÓTIPO, NÃO APROVADO): GUIA DA PONTA ──
+// C140 contínua por água no plano das terças (UPc), boca p/ DENTRO, alma com a face
+// externa na extremidade do beiral; as terças entram swageadas no canal (lip cut na guia,
+// 4,8 por mesa na interseção das linhas centrais das mesas). Ponta de cima em esquadro,
+// antes do plano da cumeeira (ligação no ápice: a decidir).
+var BEG={"sc": 2.742661, "L": 4.771528, "lips": [[-2.365764, -2.299214], [-0.84151, -0.77496], [0.682744, 0.749294], [2.206998, 2.273548]], "regs": [[-2.385764, 2.385764, 0.14]], "zwf": -0.699225, "zwb": 20.699225, "ts": [0.432672, 1.956926, 3.48118, 5.005434], "dimz": 0.02405};
+function pbGuiaBeiral(wg,dx,lay){
+ [[BEG.zwf,1,lay],[BEG.zwb,-1,-lay]].forEach(function(Q){
+  var zw=Q[0],sg=Q[1],layG=Q[2];
+  var hg=new THREE.Group();hg.position.set(dx*BEG.sc,UPc,zw);hg.rotation.y=dx*Math.PI/2;wg.add(hg);
+  cobPiece(hg,mCt,layG,BEG.regs,BEG.lips,true);
+  var pc=PECAS[PECAS.length-1];pc.tipo='guia-oitao';pc.subtipo='guia-beiral-empena';
+  BEG.ts.forEach(function(TSv){var zd=zw+sg*BEG.dimz;
+   screwV(dx*(TSv-Fc/2),UPc+Hmc/2+tc/2+tc,zd,'y',-1,wg);
+   screwV(dx*(TSv-Fc/2),UPc-Hmc/2-tc/2-tc,zd,'y',1,wg);});});}
 var waters=[{x0:cx,dx:1},{x0:2*cumXworld-cx,dx:-1}];
 for(var wi=0;wi<2;wi++){
  var W=waters[wi];
@@ -5277,6 +5336,7 @@ for(var wi=0;wi<2;wi++){
    // BOCA → CUMEEIRA: o tip não entra mais no canal (as abas passam POR FORA das
    // mesas e o corpo para antes da alma) → nenhum corte de lip na terça.
    var lip=[];
+   if(PLB.length&&BR[vv]&&ti<TS.length-1){var _pb=PLB[ti];lip=[[_pb[0]-modulo/2,_pb[1]-modulo/2],[modulo/2-_pb[1],modulo/2-_pb[0]]];}
    if(BR[vv]&&!BCU&&ti>0){
     var di=ti-1,aD=ANGc[di],sD=Math.sin(aD),cD=Math.cos(aD);
     var Cs=(SBc[di]+STc[di])/2,CzA=zA+(ZBEc[di]+ZTc[di])/2,Zc=zA+modulo/2;
@@ -5287,10 +5347,14 @@ for(var wi=0;wi<2;wi++){
     var gIn=0.01/sD;
     lip=[[Math.min.apply(null,zs)-gIn-Zc,Math.max.apply(null,zs)+gIn-Zc]];
    }
-   var hold=new THREE.Group();hold.position.set(W.dx*(TS[ti]-BCU*Fc),UPc,zA+modulo/2);wg.add(hold);   // alma real
-   var trg=(TRGS[vv]&&TRGS[vv][ti])?TRGS[vv][ti]:TRGc;  // baia SEM V: banda de swage p/ o bloqueador
+   var zHc=zA+modulo/2;if(vv===0)zHc=2.1475;else if(vv===NB-1)zHc=17.8525;   // BEIRAL: terça contínua até a ponta
+   // R171: o lip cut da base da diagonal foi calculado com a terça centrada no vão; a peça
+   // contínua tem outro centro → o corte acompanha, ficando na posição FÍSICA da entrada
+   if(zHc!==zA+modulo/2)lip=lip.map(function(C){return [C[0]+zA+modulo/2-zHc,C[1]+zA+modulo/2-zHc];});
+   var hold=new THREE.Group();hold.position.set(W.dx*(TS[ti]-BCU*Fc),UPc,zHc);wg.add(hold);   // alma real
+   var trg=TRGP[vv][ti];   // sobre o rafter: sem swage nas pontas (cartola abraça a seção)
    var tg=cobPiece(hold,mCt,layT,trg,lip,true); // terca reta: SEM chamfer
-   cobDimple(tg,SWDc,-(LTc/2-0.0225));cobDimple(tg,SWDc,(LTc/2-0.0225));}
+   }
   // CONTRAVENTAMENTO V — so baias contraventadas
   if(BR[vv]){
    for(var di=0;di<ANGc.length;di++){
@@ -5298,10 +5362,10 @@ for(var wi=0;wi<2;wi++){
     var CzA=zA+(ZBEc[di]+ZTc[di])/2,CzB=zA+modulo-(ZBEc[di]+ZTc[di])/2;   // base EFETIVA (regra comum 07/09)
     var wrA=new THREE.Group();wrA.position.set(W.dx*Cs,UPc,CzA);wrA.rotation.y=W.dx*ANGc[di];wg.add(wrA);
     var PA=PTA?PTA[di]:null,espZ=function(cs){return cs.map(function(C){return [-C[1],-C[0]];});};
-    _PBNC=NCH[0];var dgA=cobPiece(wrA,mCd,lay,DRGA[di],PA?PA.lc:[],false,PA?PA.wc:[]);_PBNC=null;
+    _PBNC=NCH[0];var dgA=cobPiece(wrA,mCd,lay,DRGA[di],PA?PA.lc:[],false,PA?PA.wc:[]);_PBNC=null;pbDiagBase(wg,W.dx,di,zA,1);
     if(PTA)cobAbas(wg,W.dx,PTA[di],ANGc[di],zA,1);         // tip com ABAS na alma da terça de cima
     var wrB=new THREE.Group();wrB.position.set(W.dx*Cs,UPc,CzB);wrB.rotation.y=-W.dx*ANGc[di];wg.add(wrB);
-    _PBNC=NCH[1];var dgB=cobPiece(wrB,mCd,lay,DRGB[di],PA?espZ(PA.lc):[],false,PA?espZ(PA.wc):[]);_PBNC=null;
+    _PBNC=NCH[1];var dgB=cobPiece(wrB,mCd,lay,DRGB[di],PA?espZ(PA.lc):[],false,PA?espZ(PA.wc):[]);_PBNC=null;pbDiagBase(wg,W.dx,di,zA+modulo,-1);
     if(PTA)cobAbas(wg,W.dx,PTA[di],ANGc[di],zA+modulo,-1);  // a perna B é o espelho
     // (R33d: diagonal NAO desenha cabeca girada — base coberta pelo
     //  junctionDimples do mini-rafter; tip coberto pelo apex abaixo)
@@ -5328,7 +5392,7 @@ for(var wi=0;wi<2;wi++){
   var cutsP=MRCT.concat((hasP&&BR[pp])?MRCD:[]);
   var cutsN=MRCT.concat((hasN&&BR[pp-1])?MRCD:[]);
   var hasDiag=(hasP&&BR[pp])||(hasN&&BR[pp-1]);   // diagonal chega neste no? (vao adjacente contraventado)
-  for(var ms=0;ms<MRS.length;ms++){
+  for(var ms=0;ms<(PBR?0:MRS.length);ms++){
    var seg=hasDiag?MRS[ms]:MRS_S[ms],lv=hasDiag?MRB[ms]:MRB_S[ms];
    var sc=seg[0],sL=seg[1];   // FULL (288mm) com diagonal | SHORT (200mm) so terca
    novaPeca('mini-rafter');   // as duas metades (+z/-z) = 1 peça física
@@ -5338,16 +5402,17 @@ for(var wi=0;wi<2;wi++){
    mrBolt(wg,W.dx,lv[1],zP);   // 1/2" a 50mm da outra ponta (centro livre p/ terca/diagonal)
   }
   // DIMPLES DA JUNCAO (todas as camadas, dos dois lados): terca sempre, diag so c/ V
-  for(var dt=0;dt<DMT.length;dt++){
+  for(var dt=0;dt<(PBR?0:DMT.length);dt++){
    if(hasP)junctionDimples(wg,W.dx,DMT[dt],zP+DIMZ);
    if(hasN)junctionDimples(wg,W.dx,DMT[dt],zP-DIMZ);}
-  for(var dd2=0;dd2<DMD.length;dd2++){
+  for(var dd2=0;dd2<(PBR?0:DMD.length);dd2++){
    if(hasP&&BR[pp])junctionDimples(wg,W.dx,DMD[dd2],zP+DIMZ);
    if(hasN&&BR[pp-1])junctionDimples(wg,W.dx,DMD[dd2],zP-DIMZ);}}
+ pbHats(wg,W.dx);pbGuiaBeiral(wg,W.dx,lay);
  // ── BEIRAL de empena (Clássico, passo 2B): as TERÇAS avançam em BALANÇO
  // além do pórtico de ponta (z<0 e z>LZb) até o rafter de empena — seguram
  // o rafter de empena e apoiam o telhado do beiral. Mesmo cobPiece (C140).
- if(BEIR>0){
+ if(false){
   [-BEIR/2,LZb+BEIR/2].forEach(function(zbc){
    for(var tb=0;tb<TS.length;tb++){
     var holdb=new THREE.Group();holdb.position.set(W.dx*(TS[tb]-BCU*Fc),UPc,zbc);wg.add(holdb);
@@ -7314,9 +7379,9 @@ function setView(i){
     {tx:-0.08, ty:1.2511, tz:5.000, r:0.80, camT:Math.PI*0.95, camP:1.10}, // 24 MINI-PILAR DENTRO
     {tx:-0.08, ty:2.2052, tz:2.500, r:0.80, camT:Math.PI*0.95, camP:1.10}, // 25 APEX V
     {tx:4.850, ty:6.176, tz:10.000, r:16.0, camT:0.85, camP:0.55}, // 26 COBERTURA GERAL
-    {tx:3.2372, ty:6.7304, tz:10.000, r:0.55, camT:2.60, camP:0.50}, // 27 NO TERCA x RAFTER
-    {tx:3.2372, ty:6.7304, tz:10.000, r:0.30, camT:2.95, camP:0.42}, // 28 MINI-RAFTER + PARAFUSOS
-    {tx:1.0251, ty:6.2217, tz:2.500, r:0.90, camT:2.70, camP:0.40}, // 29 APEX V COBERTURA
+    {tx:3.2587, ty:6.7354, tz:10.000, r:0.55, camT:2.60, camP:0.50}, // 27 NO TERCA x RAFTER
+    {tx:3.2587, ty:6.7354, tz:10.000, r:0.30, camT:2.95, camP:0.42}, // 28 MINI-RAFTER + PARAFUSOS
+    {tx:1.0305, ty:6.2229, tz:2.500, r:0.90, camT:2.70, camP:0.40}, // 29 APEX V COBERTURA
     {tx:4.850, ty:7.176, tz:10.000, r:1.80, camT:0.65, camP:0.38}, // 30 CUMEEIRA + TERCAS
     {tx:-0.150, ty:0.08, tz:7.500, r:0.70, camT:Math.PI*0.92, camP:1.25}, // 31 CANTONEIRA ARRANQUE
     {tx:cumXworld, ty:3.300, tz:0, r:13.5, camT:Math.PI, camP:1.30}, // 32 EMPENA GERAL (frente, de fora)
@@ -7324,6 +7389,15 @@ function setView(i){
     {tx:mfLen*0.55*Math.cos(mfAng), ty:pilTopo+mfPillarY+mfLen*0.55*Math.sin(mfAng)-0.08, tz:0, r:1.30, camT:0.45, camP:1.15}, // 34 GUIA DA MF
     {tx:travCx-travComp/2, ty:3.120, tz:0.15, r:2.84, camT:0.68, camP:1.36}, // 35 MINI DA EMPENA (pilar frente, canal do vao central — camera pela direita: pela esq a MF bloqueia; enquadrado no browser 13/07)
     {tx:1.1891, ty:5.9999, tz:20.010, r:0.50, camT:2.98, camP:1.90}, // 36 TERCA x GUIA DO RAFTER (inspecao 07/09)
+    {tx:1.703, ty:6.599, tz:modulo, r:0.75, camT:0.9, camP:1.05}, // 37 COBERTURA SOBRE O RAFTER (Clássico)
+    {tx:1.703, ty:6.599, tz:0.03, r:0.75, camT:0.9, camP:1.05}, // 38 COBERTURA SOBRE O RAFTER (Clássico)
+    {tx:0.217, ty:6.258, tz:modulo-0.152, r:0.8, camT:1.2, camP:0.55}, // 39 COBERTURA SOBRE O RAFTER (Clássico)
+    {tx:0.217, ty:6.118, tz:modulo-0.152, r:0.7, camT:1.9, camP:2.3}, // 40 COBERTURA SOBRE O RAFTER (Clássico)
+    {tx:cumXworld, ty:5.5, tz:(nPorticos-1)*modulo/2, r:19, camT:0.62, camP:0.95}, // 41 COBERTURA SOBRE O RAFTER (Clássico)
+    {tx:1.703, ty:6.599, tz:-0.350, r:1.6, camT:Math.PI+0.9, camP:1.15}, // 42 COBERTURA SOBRE O RAFTER (Clássico)
+    {tx:1.703, ty:6.599, tz:-0.700, r:0.8, camT:Math.PI+0.5, camP:1.25}, // 43 COBERTURA SOBRE O RAFTER (Clássico)
+    {tx:cumXworld, ty:7.283, tz:-0.700, r:1.4, camT:Math.PI, camP:1.35}, // 44 COBERTURA SOBRE O RAFTER (Clássico)
+    {tx:cumXworld, ty:6.599, tz:-0.700, r:9.0, camT:Math.PI, camP:1.35}, // 45 COBERTURA SOBRE O RAFTER (Clássico)
   ];
   var v=views[Math.min(i,views.length-1)];
   target.set(v.tx,v.ty,v.tz);camR=v.r;camT=v.camT;camP=v.camP;camUpdate();
