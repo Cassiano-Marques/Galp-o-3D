@@ -23,7 +23,7 @@ body { background:#060a10; overflow:hidden; width:100vw; height:100vh; }
   <h1>Galpão Moderno · LSF · 10×20m</h1>
   <p>5 PÓRTICOS · 5m · PÉ-DIREITO 6.0m · θ=12.95° · MF 45°/700mm</p>
   <p style="margin-top:2px">C300-75-20-2.5 · 100% PARAFUSADO · Cassiano</p>
-  <p style="margin-top:2px;color:#3a5a7a">BUILD d3fa05d · 03/10/2026 10:08</p>
+  <p style="margin-top:2px;color:#3a5a7a">BUILD 09632a4 · 03/10/2026 10:47</p>
 </div>
 <div id="legend">
   <h3>Elementos</h3>
@@ -5774,8 +5774,12 @@ function cobPiece(par,m,rotLay,regs,lipCuts,semChamfer,webCuts){
  // MESA com os DOIS cantos recuando (R60 ~ diagonais 45) e TIRA RETA de
  // 18mm no MEIO DA MESA indo ate a ponta (onde mora o dimple).
  // ALMA intacta; LIP recua (chZ).
- var wE=regs[0][2];
+ // R123 (Frente D 03/10/2026): a cunha do chanfro fica no plano da secao DAQUELA ponta.
+ // Era regs[0][2] para as duas: com a R167 (tip com flat 0) a perna B passou a ter o
+ // corpo de 140 como primeira regiao e o chanfro da BASE saiu no plano 70, uma aleta de
+ // 1,75 mm fora do rebaixo do swage (medido no 10x20: 24 pontas, A=70,00 x C=68,25).
  function chamferEnd(tipZ,dir){
+  var wE=(dir>0?regs[regs.length-1]:regs[0])[2]; // largura da regiao desta ponta
   var zb=tipZ-dir*CH;                          // lado do corpo da zona
   var yA=-(Fc/2-0.009),yB=-(Fc/2+0.009);       // tira central de 18mm (fonte comum)
   var sh=new THREE.Shape();
